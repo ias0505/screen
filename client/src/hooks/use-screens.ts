@@ -92,6 +92,29 @@ export function useDeleteScreen() {
   });
 }
 
+export function useUpdateScreen() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { groupId: number | null } }) => {
+      const url = buildUrl(api.screens.update.path, { id });
+      const res = await fetch(url, {
+        method: api.screens.update.method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      
+      if (!res.ok) throw new Error('فشل في تحديث الشاشة');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.screens.list.path] });
+    },
+  });
+}
+
 export function useScreenSchedules(screenId: number) {
   return useQuery({
     queryKey: [api.schedules.list.path, screenId],

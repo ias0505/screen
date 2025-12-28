@@ -88,6 +88,17 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/screens/:id',
+      input: z.object({
+        groupId: z.number().nullable(),
+      }),
+      responses: {
+        200: z.custom<typeof screens.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
   },
   media: {
     list: {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useScreenGroups, useCreateScreenGroup, useDeleteScreenGroup } from "@/hooks/use-groups";
-import { useScreens } from "@/hooks/use-screens";
+import { useScreens, useUpdateScreen } from "@/hooks/use-screens";
 import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -8,11 +8,14 @@ import {
   Plus, 
   Trash2,
   Monitor,
-  MoreVertical
+  MoreVertical,
+  X,
+  Check
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -28,15 +31,20 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Groups() {
   const { data: groups = [], isLoading } = useScreenGroups();
   const { data: screens = [] } = useScreens();
   const createGroup = useCreateScreenGroup();
   const deleteGroup = useDeleteScreenGroup();
+  const updateScreen = useUpdateScreen();
+  const { toast } = useToast();
   
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ name: "", description: "" });
+  const [manageGroupId, setManageGroupId] = useState<number | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +59,17 @@ export default function Groups() {
       await deleteGroup.mutateAsync(id);
     }
   };
+
+  const handleToggleScreen = async (screenId: number, currentGroupId: number | null, targetGroupId: number) => {
+    const newGroupId = currentGroupId === targetGroupId ? null : targetGroupId;
+    await updateScreen.mutateAsync({ id: screenId, data: { groupId: newGroupId } });
+    toast({
+      title: newGroupId ? "تمت الإضافة" : "تمت الإزالة",
+      description: newGroupId ? "تمت إضافة الشاشة للمجموعة" : "تمت إزالة الشاشة من المجموعة",
+    });
+  };
+
+  const manageGroup = groups.find(g => g.id === manageGroupId);
 
   return (
     <Layout>
@@ -71,6 +90,7 @@ export default function Groups() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>إنشاء مجموعة جديدة</DialogTitle>
+                <DialogDescription>أدخل اسم ووصف المجموعة</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                 <div className="space-y-2">
@@ -153,6 +173,13 @@ export default function Groups() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem 
+                                onClick={() => setManageGroupId(group.id)}
+                                data-testid={`button-manage-screens-${group.id}`}
+                              >
+                                <Monitor className="w-4 h-4 ml-2" />
+                                إدارة الشاشات
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
                                 onClick={() => handleDelete(group.id)}
                                 className="text-destructive"
                                 data-testid={`button-delete-group-${group.id}`}
@@ -164,13 +191,43 @@ export default function Groups() {
                           </DropdownMenu>
                         </div>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="space-y-3">
                         <div className="flex items-center gap-2">
                           <Badge variant="secondary" className="gap-1">
                             <Monitor className="w-3 h-3" />
                             {groupScreens.length} شاشة
                           </Badge>
                         </div>
+                        {groupScreens.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {groupScreens.map(screen => (
+                              <div 
+                                key={screen.id} 
+                                className="flex items-center gap-1 text-xs bg-muted/50 px-2 py-1 rounded-md"
+                              >
+                                <Monitor className="w-3 h-3" />
+                                <span>{screen.name}</span>
+                                <button
+                                  onClick={() => handleToggleScreen(screen.id, screen.groupId, group.id)}
+                                  className="mr-1 text-muted-foreground hover:text-destructive"
+                                  data-testid={`button-remove-screen-${screen.id}-from-group-${group.id}`}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full gap-2"
+                          onClick={() => setManageGroupId(group.id)}
+                          data-testid={`button-add-screens-to-group-${group.id}`}
+                        >
+                          <Plus className="w-4 h-4" />
+                          إضافة شاشات
+                        </Button>
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -180,6 +237,61 @@ export default function Groups() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!manageGroupId} onOpenChange={(open) => !open && setManageGroupId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إدارة شاشات المجموعة</DialogTitle>
+            <DialogDescription>
+              {manageGroup?.name} - اختر الشاشات التي تريد إضافتها أو إزالتها
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-80 overflow-y-auto py-4">
+            {screens.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">لا توجد شاشات متاحة</p>
+            ) : (
+              screens.map(screen => {
+                const isInGroup = screen.groupId === manageGroupId;
+                const inOtherGroup = screen.groupId && screen.groupId !== manageGroupId;
+                const otherGroupName = inOtherGroup ? groups.find(g => g.id === screen.groupId)?.name : null;
+                
+                return (
+                  <div 
+                    key={screen.id}
+                    className={`flex items-center justify-between p-3 rounded-xl border ${isInGroup ? 'border-primary bg-primary/5' : 'border-border'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={isInGroup}
+                        onCheckedChange={() => manageGroupId && handleToggleScreen(screen.id, screen.groupId, manageGroupId)}
+                        data-testid={`checkbox-screen-${screen.id}`}
+                      />
+                      <div>
+                        <p className="font-medium">{screen.name}</p>
+                        {screen.location && (
+                          <p className="text-xs text-muted-foreground">{screen.location}</p>
+                        )}
+                        {otherGroupName && (
+                          <p className="text-xs text-amber-600">في مجموعة: {otherGroupName}</p>
+                        )}
+                      </div>
+                    </div>
+                    {isInGroup && <Check className="w-4 h-4 text-primary" />}
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => setManageGroupId(null)}
+            className="w-full"
+            data-testid="button-close-manage-screens"
+          >
+            إغلاق
+          </Button>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
