@@ -147,14 +147,14 @@ export default function Screens() {
                   <div className="space-y-2">
                     <Label>المجموعة (اختياري)</Label>
                     <Select 
-                      value={form.groupId} 
-                      onValueChange={(v) => setForm({...form, groupId: v})}
+                      value={form.groupId || "none"} 
+                      onValueChange={(v) => setForm({...form, groupId: v === "none" ? "" : v})}
                     >
                       <SelectTrigger className="rounded-xl" data-testid="select-screen-group">
                         <SelectValue placeholder="بدون مجموعة" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">بدون مجموعة</SelectItem>
+                        <SelectItem value="none">بدون مجموعة</SelectItem>
                         {groups.map(g => (
                           <SelectItem key={g.id} value={g.id.toString()}>
                             {g.name}
