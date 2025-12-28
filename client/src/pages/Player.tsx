@@ -1,26 +1,94 @@
 import { useEffect, useState, useRef } from "react";
 import { useRoute } from "wouter";
 import { useScreenSchedules, useScreen } from "@/hooks/use-screens";
-import { useQuery } from "@tanstack/react-query";
-import { WifiOff, AlertCircle, CreditCard } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { WifiOff, AlertCircle, CreditCard, Shield, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Player() {
   const [, params] = useRoute("/player/:id");
   const screenId = params?.id ? parseInt(params.id) : 0;
   
+  const [activationCode, setActivationCode] = useState("");
+  const [activationError, setActivationError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(true);
+  const [isDeviceBound, setIsDeviceBound] = useState(false);
+  
   const { data: screen } = useScreen(screenId);
   const { data: schedules = [], isLoading } = useScreenSchedules(screenId);
   const { data: playableStatus } = useQuery<{ playable: boolean; reason?: string }>({
     queryKey: ['/api/screens', screenId, 'playable'],
-    enabled: screenId > 0,
+    enabled: screenId > 0 && isDeviceBound,
     refetchInterval: 60000,
   });
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const preloadedImages = useRef<Set<string>>(new Set());
 
+  // Check device binding on mount
+  useEffect(() => {
+    async function verifyDevice() {
+      const deviceToken = localStorage.getItem(`device_token_${screenId}`);
+      
+      if (!deviceToken) {
+        setIsVerifying(false);
+        setIsDeviceBound(false);
+        return;
+      }
+      
+      try {
+        const response = await fetch("/api/player/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceToken, screenId }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.bound) {
+          setIsDeviceBound(true);
+        } else {
+          localStorage.removeItem(`device_token_${screenId}`);
+          setIsDeviceBound(false);
+        }
+      } catch (error) {
+        setIsDeviceBound(false);
+      }
+      
+      setIsVerifying(false);
+    }
+    
+    if (screenId > 0) {
+      verifyDevice();
+    }
+  }, [screenId]);
+
+  const activateMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const deviceInfo = navigator.userAgent;
+      const response = await apiRequest("POST", "/api/player/activate", {
+        code,
+        screenId,
+        deviceInfo,
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      localStorage.setItem(`device_token_${screenId}`, data.deviceToken);
+      setIsDeviceBound(true);
+      setActivationError("");
+    },
+    onError: (error: Error) => {
+      setActivationError(error.message || "فشل في تفعيل الجهاز");
+    },
+  });
+
   // Preload all images on mount
   useEffect(() => {
+    if (!isDeviceBound) return;
     schedules.forEach((item: any) => {
       if (item.mediaItem.type === 'image' && !preloadedImages.current.has(item.mediaItem.url)) {
         const img = new Image();
@@ -28,13 +96,12 @@ export default function Player() {
         preloadedImages.current.add(item.mediaItem.url);
       }
     });
-  }, [schedules]);
+  }, [schedules, isDeviceBound]);
 
   useEffect(() => {
-    if (!schedules.length) return;
+    if (!isDeviceBound || !schedules.length) return;
 
     const currentItem = schedules[currentIndex] as any;
-    // Use schedule's duration, not mediaItem's duration
     const duration = (currentItem.duration || 10) * 1000;
 
     const timer = setTimeout(() => {
@@ -42,7 +109,83 @@ export default function Player() {
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [currentIndex, schedules.length, schedules]);
+  }, [currentIndex, schedules.length, schedules, isDeviceBound]);
+
+  // Loading state while verifying device
+  if (isVerifying) {
+    return (
+      <div className="w-screen h-screen bg-black flex items-center justify-center text-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-white"></div>
+      </div>
+    );
+  }
+
+  // Activation form
+  if (!isDeviceBound) {
+    return (
+      <div className="w-screen h-screen bg-zinc-900 flex items-center justify-center" dir="rtl">
+        <Card className="w-full max-w-md mx-4">
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">تفعيل الشاشة</CardTitle>
+            <p className="text-muted-foreground mt-2">
+              أدخل رمز التفعيل للوصول إلى محتوى الشاشة
+            </p>
+          </CardHeader>
+          <CardContent>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (activationCode.trim()) {
+                  activateMutation.mutate(activationCode.trim());
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <Input
+                  data-testid="input-activation-code"
+                  type="text"
+                  placeholder="أدخل رمز التفعيل"
+                  value={activationCode}
+                  onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
+                  className="text-center text-2xl tracking-widest font-mono"
+                  maxLength={6}
+                  autoFocus
+                />
+              </div>
+              
+              {activationError && (
+                <p className="text-destructive text-sm text-center">{activationError}</p>
+              )}
+              
+              <Button
+                data-testid="button-activate"
+                type="submit"
+                className="w-full"
+                disabled={activateMutation.isPending || activationCode.length < 4}
+              >
+                {activateMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    جاري التفعيل...
+                  </>
+                ) : (
+                  "تفعيل"
+                )}
+              </Button>
+            </form>
+            
+            <p className="text-xs text-muted-foreground text-center mt-6">
+              احصل على رمز التفعيل من لوحة تحكم المدير
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

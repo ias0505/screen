@@ -395,6 +395,96 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Device Binding - إنشاء رمز تفعيل
+  app.post("/api/screens/:id/activation-codes", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const screenId = Number(req.params.id);
+    
+    const screen = await storage.getScreen(screenId);
+    if (!screen || screen.userId !== userId) {
+      return res.status(404).json({ message: "الشاشة غير موجودة" });
+    }
+    
+    const code = await storage.createActivationCode(screenId, userId);
+    res.status(201).json(code);
+  });
+
+  // Device Binding - تفعيل جهاز (public endpoint)
+  app.post("/api/player/activate", async (req, res) => {
+    const { code, screenId, deviceInfo } = req.body;
+    
+    if (!code || !screenId) {
+      return res.status(400).json({ message: "يرجى إدخال رمز التفعيل" });
+    }
+    
+    const activation = await storage.getActivationCode(code);
+    if (!activation) {
+      return res.status(404).json({ message: "رمز التفعيل غير صحيح" });
+    }
+    
+    if (activation.screenId !== Number(screenId)) {
+      return res.status(400).json({ message: "رمز التفعيل لا يخص هذه الشاشة" });
+    }
+    
+    if (activation.usedAt) {
+      return res.status(400).json({ message: "تم استخدام رمز التفعيل مسبقاً" });
+    }
+    
+    if (new Date() > new Date(activation.expiresAt)) {
+      return res.status(400).json({ message: "انتهت صلاحية رمز التفعيل" });
+    }
+    
+    // Generate device token
+    const deviceToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const binding = await storage.useActivationCode(code, deviceToken, deviceInfo);
+    
+    if (!binding) {
+      return res.status(500).json({ message: "فشل في تفعيل الجهاز" });
+    }
+    
+    res.json({ deviceToken, bindingId: binding.id });
+  });
+
+  // Device Binding - التحقق من ربط الجهاز (public endpoint)
+  app.post("/api/player/verify", async (req, res) => {
+    const { deviceToken, screenId } = req.body;
+    
+    if (!deviceToken || !screenId) {
+      return res.json({ bound: false });
+    }
+    
+    const binding = await storage.getDeviceBinding(deviceToken, Number(screenId));
+    if (!binding) {
+      return res.json({ bound: false });
+    }
+    
+    // Update last seen
+    await storage.updateDeviceLastSeen(binding.id);
+    
+    return res.json({ bound: true, bindingId: binding.id });
+  });
+
+  // Device Binding - عرض الأجهزة المرتبطة
+  app.get("/api/screens/:id/devices", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const screenId = Number(req.params.id);
+    
+    const screen = await storage.getScreen(screenId);
+    if (!screen || screen.userId !== userId) {
+      return res.status(404).json({ message: "الشاشة غير موجودة" });
+    }
+    
+    const bindings = await storage.getDeviceBindingsByScreen(screenId);
+    res.json(bindings);
+  });
+
+  // Device Binding - إلغاء ربط جهاز
+  app.delete("/api/device-bindings/:id", requireAuth, async (req: any, res) => {
+    const bindingId = Number(req.params.id);
+    await storage.revokeDeviceBinding(bindingId);
+    res.status(204).send();
+  });
+
   // Legacy subscription endpoints (for backwards compatibility)
   app.get("/api/subscription/plans", async (_req, res) => {
     const plans = await storage.getSubscriptionPlans();

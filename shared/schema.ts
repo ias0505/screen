@@ -93,6 +93,28 @@ export const schedules = pgTable("schedules", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// رموز تفعيل الشاشات - تُستخدم لمرة واحدة لربط جهاز بشاشة
+export const screenActivationCodes = pgTable("screen_activation_codes", {
+  id: serial("id").primaryKey(),
+  screenId: integer("screen_id").references(() => screens.id).notNull(),
+  code: text("code").notNull(), // رمز من 6 أحرف
+  expiresAt: timestamp("expires_at").notNull(), // ينتهي بعد ساعة
+  usedAt: timestamp("used_at"), // null إذا لم يُستخدم بعد
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ربط الأجهزة بالشاشات - كل جهاز مرتبط بشاشة واحدة
+export const screenDeviceBindings = pgTable("screen_device_bindings", {
+  id: serial("id").primaryKey(),
+  screenId: integer("screen_id").references(() => screens.id).notNull(),
+  deviceToken: text("device_token").notNull().unique(), // token فريد للجهاز
+  deviceInfo: text("device_info"), // معلومات الجهاز (اختياري)
+  activatedAt: timestamp("activated_at").defaultNow(),
+  lastSeenAt: timestamp("last_seen_at").defaultNow(),
+  revokedAt: timestamp("revoked_at"), // null = فعال
+});
+
 // Relations
 export const screenGroupsRelations = relations(screenGroups, ({ many }) => ({
   screens: many(screens),
@@ -157,6 +179,10 @@ export const insertScheduleSchema = createInsertSchema(schedules).omit({ id: tru
 // Subscription schema
 export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true, startDate: true, status: true });
 
+// Device binding schemas
+export const insertActivationCodeSchema = createInsertSchema(screenActivationCodes).omit({ id: true, createdAt: true, usedAt: true });
+export const insertDeviceBindingSchema = createInsertSchema(screenDeviceBindings).omit({ id: true, activatedAt: true, lastSeenAt: true, revokedAt: true });
+
 // Types
 export type ScreenGroup = typeof screenGroups.$inferSelect;
 export type MediaGroup = typeof mediaGroups.$inferSelect;
@@ -166,6 +192,8 @@ export type Schedule = typeof schedules.$inferSelect;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
+export type ScreenActivationCode = typeof screenActivationCodes.$inferSelect;
+export type ScreenDeviceBinding = typeof screenDeviceBindings.$inferSelect;
 
 export type InsertScreenGroup = z.infer<typeof insertScreenGroupSchema>;
 export type InsertMediaGroup = z.infer<typeof insertMediaGroupSchema>;
@@ -173,3 +201,5 @@ export type InsertScreen = z.infer<typeof insertScreenSchema>;
 export type InsertMediaItem = z.infer<typeof insertMediaItemSchema>;
 export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type InsertActivationCode = z.infer<typeof insertActivationCodeSchema>;
+export type InsertDeviceBinding = z.infer<typeof insertDeviceBindingSchema>;

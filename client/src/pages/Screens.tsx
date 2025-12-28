@@ -5,6 +5,8 @@ import { useAvailableSlots } from "@/hooks/use-subscriptions";
 import { useAuth } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Monitor, 
   Plus, 
@@ -13,7 +15,12 @@ import {
   ExternalLink,
   MoreVertical,
   Layers,
-  AlertCircle
+  AlertCircle,
+  Key,
+  Smartphone,
+  Copy,
+  Check,
+  XCircle
 } from "lucide-react";
 import {
   Dialog,
@@ -27,6 +34,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,6 +50,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
 
 export default function Screens() {
   const { user } = useAuth();
@@ -54,8 +64,62 @@ export default function Screens() {
   
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ name: "", location: "", groupId: "" });
+  const [activationDialogScreen, setActivationDialogScreen] = useState<number | null>(null);
+  const [deviceDialogScreen, setDeviceDialogScreen] = useState<number | null>(null);
+  const [generatedCode, setGeneratedCode] = useState<{code: string; expiresAt: Date} | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   const availableSlots = slotsData?.availableSlots || 0;
+
+  // Generate activation code mutation
+  const generateCodeMutation = useMutation({
+    mutationFn: async (screenId: number) => {
+      const response = await apiRequest("POST", `/api/screens/${screenId}/activation-codes`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setGeneratedCode({ code: data.code, expiresAt: new Date(data.expiresAt) });
+      toast({
+        title: "تم إنشاء رمز التفعيل",
+        description: `الرمز: ${data.code} (ينتهي خلال ساعة)`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Fetch device bindings for a screen
+  const { data: deviceBindings = [] } = useQuery<any[]>({
+    queryKey: ['/api/screens', deviceDialogScreen, 'devices'],
+    enabled: deviceDialogScreen !== null,
+  });
+
+  // Revoke device binding mutation
+  const revokeBindingMutation = useMutation({
+    mutationFn: async (bindingId: number) => {
+      await apiRequest("DELETE", `/api/device-bindings/${bindingId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/screens', deviceDialogScreen, 'devices'] });
+      toast({
+        title: "تم إلغاء الربط",
+        description: "تم إلغاء ربط الجهاز بنجاح",
+      });
+    }
+  });
+
+  const copyCode = () => {
+    if (generatedCode) {
+      navigator.clipboard.writeText(generatedCode.code);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,6 +320,25 @@ export default function Screens() {
                                   فتح العرض
                                 </Link>
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setActivationDialogScreen(screen.id);
+                                  setGeneratedCode(null);
+                                }}
+                                data-testid={`button-generate-code-${screen.id}`}
+                              >
+                                <Key className="w-4 h-4 ml-2" />
+                                إنشاء رمز تفعيل
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => setDeviceDialogScreen(screen.id)}
+                                data-testid={`button-view-devices-${screen.id}`}
+                              >
+                                <Smartphone className="w-4 h-4 ml-2" />
+                                الأجهزة المرتبطة
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 onClick={() => handleDelete(screen.id)}
                                 className="text-destructive"
@@ -288,6 +371,104 @@ export default function Screens() {
             </AnimatePresence>
           </div>
         )}
+
+        {/* Activation Code Dialog */}
+        <Dialog open={activationDialogScreen !== null} onOpenChange={(open) => !open && setActivationDialogScreen(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-primary" />
+                إنشاء رمز تفعيل
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <p className="text-muted-foreground text-sm">
+                أنشئ رمز تفعيل لربط جهاز بهذه الشاشة. الرمز صالح لمدة ساعة واحدة ويستخدم مرة واحدة فقط.
+              </p>
+              
+              {generatedCode ? (
+                <div className="space-y-4">
+                  <div className="bg-muted p-6 rounded-xl text-center">
+                    <p className="text-4xl font-mono font-bold tracking-widest">
+                      {generatedCode.code}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      ينتهي: {format(generatedCode.expiresAt, 'HH:mm', { locale: ar })}
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={copyCode} 
+                    variant="outline" 
+                    className="w-full gap-2"
+                    data-testid="button-copy-code"
+                  >
+                    {codeCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {codeCopied ? 'تم النسخ' : 'نسخ الرمز'}
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  onClick={() => activationDialogScreen && generateCodeMutation.mutate(activationDialogScreen)}
+                  disabled={generateCodeMutation.isPending}
+                  className="w-full"
+                  data-testid="button-create-activation-code"
+                >
+                  {generateCodeMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء رمز جديد'}
+                </Button>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Device Bindings Dialog */}
+        <Dialog open={deviceDialogScreen !== null} onOpenChange={(open) => !open && setDeviceDialogScreen(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-primary" />
+                الأجهزة المرتبطة
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              {deviceBindings.length === 0 ? (
+                <div className="text-center py-8">
+                  <Smartphone className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <p className="text-muted-foreground">لا توجد أجهزة مرتبطة بهذه الشاشة</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {deviceBindings.map((binding: any) => (
+                    <div key={binding.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">جهاز مرتبط</p>
+                        <p className="text-xs text-muted-foreground">
+                          تم التفعيل: {format(new Date(binding.activatedAt), 'yyyy/MM/dd HH:mm', { locale: ar })}
+                        </p>
+                        {binding.lastSeenAt && (
+                          <p className="text-xs text-muted-foreground">
+                            آخر ظهور: {format(new Date(binding.lastSeenAt), 'yyyy/MM/dd HH:mm', { locale: ar })}
+                          </p>
+                        )}
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => {
+                          if (window.confirm('هل أنت متأكد من إلغاء ربط هذا الجهاز؟')) {
+                            revokeBindingMutation.mutate(binding.id);
+                          }
+                        }}
+                        data-testid={`button-revoke-binding-${binding.id}`}
+                      >
+                        <XCircle className="w-5 h-5 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

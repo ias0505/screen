@@ -2,14 +2,16 @@ import { db } from "./db";
 import {
   screens, mediaItems, schedules, screenGroups, mediaGroups,
   subscriptionPlans, userSubscriptions, subscriptions,
+  screenActivationCodes, screenDeviceBindings,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
   type Schedule, type InsertSchedule,
   type ScreenGroup, type InsertScreenGroup,
   type MediaGroup, type InsertMediaGroup,
-  type SubscriptionPlan, type UserSubscription, type Subscription
+  type SubscriptionPlan, type UserSubscription, type Subscription,
+  type ScreenActivationCode, type ScreenDeviceBinding
 } from "@shared/schema";
-import { eq, desc, and, gt, lte } from "drizzle-orm";
+import { eq, desc, and, gt, lte, isNull } from "drizzle-orm";
 
 export interface IStorage {
   // Screen Groups
@@ -53,6 +55,15 @@ export interface IStorage {
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   getUserSubscription(userId: string): Promise<(UserSubscription & { plan?: SubscriptionPlan }) | undefined>;
   updateUserSubscription(userId: string, planId: number): Promise<UserSubscription>;
+
+  // Device binding
+  createActivationCode(screenId: number, createdBy: string): Promise<ScreenActivationCode>;
+  getActivationCode(code: string): Promise<ScreenActivationCode | undefined>;
+  useActivationCode(code: string, deviceToken: string, deviceInfo?: string): Promise<ScreenDeviceBinding | null>;
+  getDeviceBinding(deviceToken: string, screenId: number): Promise<ScreenDeviceBinding | undefined>;
+  getDeviceBindingsByScreen(screenId: number): Promise<ScreenDeviceBinding[]>;
+  revokeDeviceBinding(id: number): Promise<void>;
+  updateDeviceLastSeen(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -318,6 +329,79 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSchedule(id: number): Promise<void> {
     await db.delete(schedules).where(eq(schedules.id, id));
+  }
+
+  // Device Binding
+  async createActivationCode(screenId: number, createdBy: string): Promise<ScreenActivationCode> {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    const [newCode] = await db.insert(screenActivationCodes).values({
+      screenId,
+      code,
+      expiresAt,
+      createdBy
+    }).returning();
+    
+    return newCode;
+  }
+
+  async getActivationCode(code: string): Promise<ScreenActivationCode | undefined> {
+    const [result] = await db.select().from(screenActivationCodes)
+      .where(eq(screenActivationCodes.code, code.toUpperCase()));
+    return result;
+  }
+
+  async useActivationCode(code: string, deviceToken: string, deviceInfo?: string): Promise<ScreenDeviceBinding | null> {
+    const activation = await this.getActivationCode(code);
+    
+    if (!activation) return null;
+    if (activation.usedAt) return null;
+    if (new Date() > new Date(activation.expiresAt)) return null;
+
+    await db.update(screenActivationCodes)
+      .set({ usedAt: new Date() })
+      .where(eq(screenActivationCodes.id, activation.id));
+
+    const [binding] = await db.insert(screenDeviceBindings).values({
+      screenId: activation.screenId,
+      deviceToken,
+      deviceInfo
+    }).returning();
+
+    return binding;
+  }
+
+  async getDeviceBinding(deviceToken: string, screenId: number): Promise<ScreenDeviceBinding | undefined> {
+    const [binding] = await db.select().from(screenDeviceBindings)
+      .where(and(
+        eq(screenDeviceBindings.deviceToken, deviceToken),
+        eq(screenDeviceBindings.screenId, screenId),
+        isNull(screenDeviceBindings.revokedAt)
+      ));
+    return binding;
+  }
+
+  async getDeviceBindingsByScreen(screenId: number): Promise<ScreenDeviceBinding[]> {
+    return await db.select().from(screenDeviceBindings)
+      .where(and(
+        eq(screenDeviceBindings.screenId, screenId),
+        isNull(screenDeviceBindings.revokedAt)
+      ))
+      .orderBy(desc(screenDeviceBindings.activatedAt));
+  }
+
+  async revokeDeviceBinding(id: number): Promise<void> {
+    await db.update(screenDeviceBindings)
+      .set({ revokedAt: new Date() })
+      .where(eq(screenDeviceBindings.id, id));
+  }
+
+  async updateDeviceLastSeen(id: number): Promise<void> {
+    await db.update(screenDeviceBindings)
+      .set({ lastSeenAt: new Date() })
+      .where(eq(screenDeviceBindings.id, id));
   }
 }
 
