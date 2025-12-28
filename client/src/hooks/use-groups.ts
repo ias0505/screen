@@ -61,3 +61,44 @@ export function useCreateMediaGroup() {
     },
   });
 }
+
+export function useGroupSchedules(groupId: number) {
+  return useQuery({
+    queryKey: ['/api/group-schedules', groupId],
+    queryFn: async () => {
+      if (!groupId) return [];
+      const res = await fetch(`/api/group-schedules/${groupId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("فشل في تحميل الجدول");
+      return res.json();
+    },
+    enabled: !!groupId,
+  });
+}
+
+export function useCreateGroupSchedule() {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (data: { screenGroupId: number; mediaItemId: number; priority?: number; isActive?: boolean }) => {
+      const response = await apiRequest('POST', '/api/group-schedules', data);
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/group-schedules', variables.screenGroupId] });
+      toast({ title: "تمت الجدولة", description: "تمت إضافة المحتوى للجدول بنجاح" });
+    },
+  });
+}
+
+export function useDeleteGroupSchedule() {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({ id, groupId }: { id: number; groupId: number }) => {
+      await apiRequest('DELETE', `/api/group-schedules/${id}`);
+      return { groupId };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/group-schedules', data.groupId] });
+      toast({ title: "تم الحذف", description: "تم إزالة المحتوى من الجدول" });
+    },
+  });
+}

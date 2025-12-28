@@ -315,6 +315,55 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Group Schedules
+  app.get("/api/group-schedules/:groupId", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const groupId = Number(req.params.groupId);
+    
+    const groups = await storage.getScreenGroups(userId);
+    const group = groups.find(g => g.id === groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'المجموعة غير موجودة' });
+    }
+    
+    const schedules = await storage.getSchedulesByGroup(groupId);
+    res.json(schedules);
+  });
+
+  app.post("/api/group-schedules", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { screenGroupId, mediaItemId, priority, isActive } = req.body;
+      
+      const groups = await storage.getScreenGroups(userId);
+      const group = groups.find(g => g.id === screenGroupId);
+      if (!group) {
+        return res.status(403).json({ message: "غير مصرح" });
+      }
+      
+      const schedule = await storage.createSchedule({
+        screenGroupId,
+        mediaItemId,
+        priority: priority || 1,
+        isActive: isActive !== false
+      });
+      res.status(201).json(schedule);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  app.delete("/api/group-schedules/:id", requireAuth, async (req, res) => {
+    await storage.deleteSchedule(Number(req.params.id));
+    res.status(204).send();
+  });
+
   // Legacy subscription endpoints (for backwards compatibility)
   app.get("/api/subscription/plans", async (_req, res) => {
     const plans = await storage.getSubscriptionPlans();
