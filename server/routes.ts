@@ -315,6 +315,17 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  app.patch("/api/schedules/reorder", requireAuth, async (req: any, res) => {
+    try {
+      const { updates } = req.body;
+      await storage.updateSchedulesOrder(updates);
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Reorder error:', err);
+      res.status(500).json({ message: 'فشل في إعادة الترتيب' });
+    }
+  });
+
   app.patch("/api/schedules/:id", requireAuth, async (req: any, res) => {
     try {
       const id = Number(req.params.id);
@@ -326,17 +337,8 @@ export async function registerRoutes(
       const updated = await storage.updateSchedule(id, updateData);
       res.json(updated);
     } catch (err) {
+      console.error('Update schedule error:', err);
       res.status(500).json({ message: 'فشل في تحديث الجدولة' });
-    }
-  });
-
-  app.patch("/api/schedules/reorder", requireAuth, async (req: any, res) => {
-    try {
-      const { updates } = req.body;
-      await storage.updateSchedulesOrder(updates);
-      res.json({ success: true });
-    } catch (err) {
-      res.status(500).json({ message: 'فشل في إعادة الترتيب' });
     }
   });
 
