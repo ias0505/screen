@@ -100,31 +100,37 @@ export default function Player() {
     );
   }
 
-  const currentItem = schedules[currentIndex];
-
   return (
     <div className="w-screen h-screen bg-black overflow-hidden relative">
-      <div className="absolute inset-0 w-full h-full">
-        {currentItem.mediaItem.type === 'video' ? (
-           <video 
-             key={currentItem.id}
-             src={currentItem.mediaItem.url} 
-             autoPlay 
-             muted 
-             loop={false}
-             className="w-full h-full object-contain"
-           />
-        ) : (
-          <img 
-            key={currentItem.id}
-            src={currentItem.mediaItem.url} 
-            alt={currentItem.mediaItem.title} 
-            className="w-full h-full object-cover"
-          />
-        )}
-      </div>
+      {/* Render all items but only show current one */}
+      {schedules.map((item: any, index: number) => (
+        <div 
+          key={item.id}
+          className="absolute inset-0 w-full h-full"
+          style={{ 
+            visibility: index === currentIndex ? 'visible' : 'hidden',
+            zIndex: index === currentIndex ? 1 : 0
+          }}
+        >
+          {item.mediaItem.type === 'video' ? (
+            <video 
+              src={item.mediaItem.url} 
+              autoPlay={index === currentIndex}
+              muted 
+              loop={false}
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <img 
+              src={item.mediaItem.url} 
+              alt={item.mediaItem.title} 
+              className="w-full h-full object-cover"
+            />
+          )}
+        </div>
+      ))}
       
-      <div className="absolute bottom-4 left-4 bg-black/50 text-white/50 text-xs p-2 rounded backdrop-blur-sm pointer-events-none">
+      <div className="absolute bottom-4 left-4 bg-black/50 text-white/50 text-xs p-2 rounded backdrop-blur-sm pointer-events-none z-10">
          {screen.name} • {currentIndex + 1}/{schedules.length}
       </div>
     </div>

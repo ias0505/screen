@@ -189,15 +189,18 @@ export async function registerRoutes(
   });
 
   app.get(api.screens.get.path, async (req: any, res) => {
+    const screen = await storage.getScreen(Number(req.params.id));
+    if (!screen) {
+      return res.status(404).json({ message: 'Screen not found' });
+    }
+    // If authenticated, verify ownership; otherwise allow public read for player
     if (req.isAuthenticated()) {
       const userId = req.user.claims.sub;
-      const screen = await storage.getScreen(Number(req.params.id));
-      if (!screen || screen.userId !== userId) {
+      if (screen.userId !== userId) {
         return res.status(404).json({ message: 'Screen not found' });
       }
-      return res.json(screen);
     }
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.json(screen);
   });
 
   app.delete(api.screens.delete.path, requireAuth, async (req: any, res) => {
