@@ -234,6 +234,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteScreen(id: number): Promise<void> {
+    await db.delete(schedules).where(eq(schedules.screenId, id));
     await db.delete(screens).where(eq(screens.id, id));
   }
 
