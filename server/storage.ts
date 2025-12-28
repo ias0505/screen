@@ -1,15 +1,15 @@
 import { db } from "./db";
 import {
   screens, mediaItems, schedules, screenGroups, mediaGroups,
-  subscriptionPlans, userSubscriptions,
+  subscriptionPlans, userSubscriptions, screenGroupSubscriptions,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
   type Schedule, type InsertSchedule,
   type ScreenGroup, type InsertScreenGroup,
   type MediaGroup, type InsertMediaGroup,
-  type SubscriptionPlan, type UserSubscription
+  type SubscriptionPlan, type UserSubscription, type ScreenGroupSubscription
 } from "@shared/schema";
-import { eq, desc, and, gt } from "drizzle-orm";
+import { eq, desc, and, gt, lte } from "drizzle-orm";
 
 export interface IStorage {
   // Screen Groups
@@ -41,6 +41,13 @@ export interface IStorage {
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   getUserSubscription(userId: string): Promise<(UserSubscription & { plan?: SubscriptionPlan }) | undefined>;
   updateUserSubscription(userId: string, planId: number): Promise<UserSubscription>;
+  
+  // Group Subscriptions
+  getGroupSubscription(groupId: number): Promise<ScreenGroupSubscription | undefined>;
+  getGroupsWithSubscriptions(userId: string): Promise<(ScreenGroup & { subscription?: ScreenGroupSubscription })[]>;
+  createGroupSubscription(groupId: number, userId: string, maxScreens: number, durationYears: number): Promise<ScreenGroupSubscription>;
+  getActiveGroupsForUser(userId: string): Promise<ScreenGroup[]>;
+  expireOldSubscriptions(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -122,6 +129,73 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return inserted;
     }
+  }
+
+  // Group Subscriptions
+  async getGroupSubscription(groupId: number): Promise<ScreenGroupSubscription | undefined> {
+    const [sub] = await db.select().from(screenGroupSubscriptions)
+      .where(eq(screenGroupSubscriptions.groupId, groupId));
+    return sub;
+  }
+
+  async getGroupsWithSubscriptions(userId: string): Promise<(ScreenGroup & { subscription?: ScreenGroupSubscription })[]> {
+    const groups = await db.select().from(screenGroups).where(eq(screenGroups.userId, userId)).orderBy(desc(screenGroups.createdAt));
+    
+    const groupsWithSubs = await Promise.all(groups.map(async (group) => {
+      const [sub] = await db.select().from(screenGroupSubscriptions)
+        .where(eq(screenGroupSubscriptions.groupId, group.id));
+      return { ...group, subscription: sub || undefined };
+    }));
+    
+    return groupsWithSubs;
+  }
+
+  async createGroupSubscription(groupId: number, userId: string, maxScreens: number, durationYears: number): Promise<ScreenGroupSubscription> {
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + durationYears);
+    
+    const pricePerScreen = 50;
+    const totalPrice = maxScreens * pricePerScreen * durationYears;
+
+    // Delete existing subscription if any
+    await db.delete(screenGroupSubscriptions).where(eq(screenGroupSubscriptions.groupId, groupId));
+    
+    const [sub] = await db.insert(screenGroupSubscriptions).values({
+      groupId,
+      userId,
+      maxScreens,
+      durationYears,
+      endDate,
+      pricePerScreen,
+      totalPrice,
+      status: 'active'
+    }).returning();
+    
+    return sub;
+  }
+
+  async getActiveGroupsForUser(userId: string): Promise<ScreenGroup[]> {
+    const now = new Date();
+    const result = await db.select({ group: screenGroups })
+      .from(screenGroups)
+      .innerJoin(screenGroupSubscriptions, eq(screenGroups.id, screenGroupSubscriptions.groupId))
+      .where(and(
+        eq(screenGroups.userId, userId),
+        eq(screenGroupSubscriptions.status, 'active'),
+        gt(screenGroupSubscriptions.endDate, now)
+      ));
+    
+    return result.map(r => r.group);
+  }
+
+  async expireOldSubscriptions(): Promise<void> {
+    const now = new Date();
+    await db.update(screenGroupSubscriptions)
+      .set({ status: 'expired' })
+      .where(and(
+        eq(screenGroupSubscriptions.status, 'active'),
+        lte(screenGroupSubscriptions.endDate, now)
+      ));
   }
 
   // Screen Groups

@@ -42,6 +42,21 @@ export const userSubscriptions = pgTable("user_subscriptions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// اشتراكات مجموعات الشاشات - كل مجموعة لها اشتراك مستقل
+export const screenGroupSubscriptions = pgTable("screen_group_subscriptions", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").references(() => screenGroups.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  maxScreens: integer("max_screens").notNull().default(1),
+  durationYears: integer("duration_years").notNull().default(1),
+  startDate: timestamp("start_date").defaultNow(),
+  endDate: timestamp("end_date").notNull(),
+  status: text("status").notNull().default("active"), // active, expired
+  pricePerScreen: integer("price_per_screen").default(50), // السعر لكل شاشة بالريال
+  totalPrice: integer("total_price").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const screens = pgTable("screens", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -145,6 +160,7 @@ export type MediaItem = typeof mediaItems.$inferSelect;
 export type Schedule = typeof schedules.$inferSelect;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type ScreenGroupSubscription = typeof screenGroupSubscriptions.$inferSelect;
 
 export type InsertScreenGroup = z.infer<typeof insertScreenGroupSchema>;
 export type InsertMediaGroup = z.infer<typeof insertMediaGroupSchema>;
