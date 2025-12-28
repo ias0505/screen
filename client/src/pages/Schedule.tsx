@@ -211,7 +211,7 @@ export default function Schedule() {
               <div className="p-12 text-center text-muted-foreground">
                 <p>الجدول فارغ لهذه الشاشة</p>
                 <Button 
-                  variant="link" 
+                  variant="ghost" 
                   onClick={() => setIsAddOpen(true)}
                   className="mt-2 text-primary"
                 >

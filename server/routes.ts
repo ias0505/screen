@@ -45,15 +45,17 @@ export async function registerRoutes(
   });
 
   // Screens
-  app.get(api.screens.list.path, requireAuth, async (req, res) => {
-    const screens = await storage.getScreens(req.user!.claims.sub);
+  app.get(api.screens.list.path, requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const screens = await storage.getScreens(userId);
     res.json(screens);
   });
 
-  app.post(api.screens.create.path, requireAuth, async (req, res) => {
+  app.post(api.screens.create.path, requireAuth, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const input = api.screens.create.input.parse(req.body);
-      const screen = await storage.createScreen({ ...input, userId: req.user!.claims.sub });
+      const screen = await storage.createScreen({ ...input, userId });
       res.status(201).json(screen);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -66,10 +68,11 @@ export async function registerRoutes(
     }
   });
 
-  app.get(api.screens.get.path, async (req, res) => {
+  app.get(api.screens.get.path, async (req: any, res) => {
     if (req.isAuthenticated()) {
+      const userId = req.user.claims.sub;
       const screen = await storage.getScreen(Number(req.params.id));
-      if (!screen || screen.userId !== req.user!.claims.sub) {
+      if (!screen || screen.userId !== userId) {
         return res.status(404).json({ message: 'Screen not found' });
       }
       return res.json(screen);
@@ -77,9 +80,10 @@ export async function registerRoutes(
     return res.status(401).json({ message: "Unauthorized" });
   });
 
-  app.delete(api.screens.delete.path, requireAuth, async (req, res) => {
+  app.delete(api.screens.delete.path, requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
     const screen = await storage.getScreen(Number(req.params.id));
-    if (!screen || screen.userId !== req.user!.claims.sub) {
+    if (!screen || screen.userId !== userId) {
       return res.status(404).json({ message: 'Screen not found' });
     }
     await storage.deleteScreen(Number(req.params.id));
@@ -87,15 +91,17 @@ export async function registerRoutes(
   });
 
   // Media
-  app.get(api.media.list.path, requireAuth, async (req, res) => {
-    const media = await storage.getMediaItems(req.user!.claims.sub);
+  app.get(api.media.list.path, requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const media = await storage.getMediaItems(userId);
     res.json(media);
   });
 
-  app.post(api.media.create.path, requireAuth, async (req, res) => {
+  app.post(api.media.create.path, requireAuth, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const input = api.media.create.input.parse(req.body);
-      const media = await storage.createMediaItem({ ...input, userId: req.user!.claims.sub });
+      const media = await storage.createMediaItem({ ...input, userId });
       res.status(201).json(media);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -108,9 +114,10 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.media.delete.path, requireAuth, async (req, res) => {
+  app.delete(api.media.delete.path, requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
     const media = await storage.getMediaItem(Number(req.params.id));
-    if (!media || media.userId !== req.user!.claims.sub) {
+    if (!media || media.userId !== userId) {
       return res.status(404).json({ message: 'Media not found' });
     }
     await storage.deleteMediaItem(Number(req.params.id));
@@ -124,11 +131,12 @@ export async function registerRoutes(
     res.json(schedules);
   });
 
-  app.post(api.schedules.create.path, requireAuth, async (req, res) => {
+  app.post(api.schedules.create.path, requireAuth, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const input = api.schedules.create.input.parse(req.body);
       const screen = await storage.getScreen(input.screenId);
-      if (!screen || screen.userId !== req.user!.claims.sub) {
+      if (!screen || screen.userId !== userId) {
          return res.status(403).json({ message: "Forbidden" });
       }
 
