@@ -13,7 +13,8 @@ import {
   ArrowRight,
   Layers,
   GripVertical,
-  Check
+  Check,
+  Pencil
 } from "lucide-react";
 import {
   Dialog,
@@ -76,6 +77,7 @@ export default function Schedule() {
   
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedMediaId, setSelectedMediaId] = useState<string>("");
+  const [newItemDuration, setNewItemDuration] = useState<string>("10");
   const [editingDuration, setEditingDuration] = useState<{ id: number; value: string } | null>(null);
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
   const [localSchedules, setLocalSchedules] = useState<ScheduleItem[]>([]);
@@ -90,26 +92,29 @@ export default function Schedule() {
   const handleAddSchedule = async () => {
     if (!selectedMediaId) return;
     
-    const newOrder = schedules.length;
+    const duration = parseInt(newItemDuration) || 10;
     
     if (scheduleType === "screen" && selectedScreenId) {
       await createSchedule.mutateAsync({
         screenId: parseInt(selectedScreenId),
         mediaItemId: parseInt(selectedMediaId),
         priority: 1,
-        isActive: true
+        isActive: true,
+        duration
       });
     } else if (scheduleType === "group" && selectedGroupId) {
       await createGroupSchedule.mutateAsync({
         screenGroupId: parseInt(selectedGroupId),
         mediaItemId: parseInt(selectedMediaId),
         priority: 1,
-        isActive: true
+        isActive: true,
+        duration
       });
     }
     
     setIsAddOpen(false);
     setSelectedMediaId("");
+    setNewItemDuration("10");
     setLocalSchedules([]);
   };
 
@@ -310,6 +315,21 @@ export default function Schedule() {
                      </div>
                   )}
                 </div>
+                {selectedMediaId && (
+                  <div className="flex items-center gap-3 py-2 px-3 bg-muted/50 rounded-xl">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">مدة العرض:</span>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={newItemDuration}
+                      onChange={(e) => setNewItemDuration(e.target.value)}
+                      className="w-20 h-8"
+                      data-testid="input-new-duration"
+                    />
+                    <span className="text-sm text-muted-foreground">ثانية</span>
+                  </div>
+                )}
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="outline" onClick={() => setIsAddOpen(false)} className="rounded-xl">إلغاء</Button>
                   <Button 
@@ -395,7 +415,7 @@ export default function Schedule() {
                       <h4 className="font-semibold text-foreground">{schedule.mediaItem.title}</h4>
                       <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
                         {editingDuration?.id === schedule.id ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 bg-primary/10 px-2 py-1 rounded-lg">
                             <Input
                               type="number"
                               min="1"
@@ -416,14 +436,19 @@ export default function Schedule() {
                             </Button>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => handleDurationEdit(schedule.id, getScheduleDuration(schedule))}
-                            className="flex items-center gap-1 hover:text-primary transition-colors"
-                            data-testid={`button-edit-duration-${schedule.id}`}
-                          >
+                          <div className="flex items-center gap-2 bg-muted/50 px-2 py-1 rounded-lg">
                             <Clock className="w-3 h-3" />
-                            {getScheduleDuration(schedule)} ثانية
-                          </button>
+                            <span className="font-medium">{getScheduleDuration(schedule)} ثانية</span>
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-6 w-6"
+                              onClick={() => handleDurationEdit(schedule.id, getScheduleDuration(schedule))}
+                              data-testid={`button-edit-duration-${schedule.id}`}
+                            >
+                              <Pencil className="w-3 h-3 text-primary" />
+                            </Button>
+                          </div>
                         )}
                         <span>
                            أضيف: {schedule.createdAt ? format(new Date(schedule.createdAt), "d MMMM yyyy", { locale: ar }) : '-'}
