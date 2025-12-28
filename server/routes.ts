@@ -409,7 +409,39 @@ export async function registerRoutes(
     res.status(201).json(code);
   });
 
-  // Device Binding - تفعيل جهاز (public endpoint)
+  // Device Binding - تفعيل جهاز موحد (public endpoint - unified activation)
+  app.post("/api/screens/activate", async (req, res) => {
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ message: "يرجى إدخال رمز التفعيل" });
+    }
+    
+    const activation = await storage.getActivationCode(code);
+    if (!activation) {
+      return res.status(404).json({ message: "رمز التفعيل غير صحيح" });
+    }
+    
+    if (activation.usedAt) {
+      return res.status(400).json({ message: "تم استخدام رمز التفعيل مسبقاً" });
+    }
+    
+    if (new Date() > new Date(activation.expiresAt)) {
+      return res.status(400).json({ message: "انتهت صلاحية رمز التفعيل" });
+    }
+    
+    // Generate device token
+    const deviceToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const binding = await storage.useActivationCode(code, deviceToken, req.headers['user-agent'] || '');
+    
+    if (!binding) {
+      return res.status(500).json({ message: "فشل في تفعيل الجهاز" });
+    }
+    
+    res.json({ deviceToken, screenId: activation.screenId, bindingId: binding.id });
+  });
+
+  // Device Binding - تفعيل جهاز (public endpoint - legacy with screenId)
   app.post("/api/player/activate", async (req, res) => {
     const { code, screenId, deviceInfo } = req.body;
     

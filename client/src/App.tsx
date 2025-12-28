@@ -13,6 +13,7 @@ import Schedule from "@/pages/Schedule";
 import Player from "@/pages/Player";
 import Login from "@/pages/Login";
 import Subscriptions from "@/pages/Subscriptions";
+import Activate from "@/pages/Activate";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -34,8 +35,9 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       
-      {/* Public Player Route - Does not need auth usually, but can secure if needed */}
+      {/* Public Routes */}
       <Route path="/player/:id" component={Player} />
+      <Route path="/activate" component={Activate} />
 
       {/* Protected Admin Routes */}
       <Route path="/">
