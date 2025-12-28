@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSubscriptions, useCreateSubscription, useAvailableSlots } from "@/hooks/use-subscriptions";
+import { useSubscriptions, useCreateSubscription, useAvailableSlots, useSubscriptionScreensCount } from "@/hooks/use-subscriptions";
 import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -31,6 +31,42 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Subscription } from "@shared/schema";
+
+function SubscriptionCard({ sub }: { sub: Subscription }) {
+  const { data: screensData } = useSubscriptionScreensCount(sub.id);
+  const usedScreens = screensData?.count || 0;
+
+  return (
+    <Card data-testid={`card-subscription-${sub.id}`}>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Monitor className="w-5 h-5 text-primary" />
+            {sub.screenCount} شاشة
+          </CardTitle>
+          <Badge variant="default" className="bg-green-500">فعّال</Badge>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">الشاشات المستخدمة</span>
+            <Badge variant="outline">{usedScreens} / {sub.screenCount}</Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="w-4 h-4" />
+            <span>ينتهي: {format(new Date(sub.endDate), 'dd MMMM yyyy', { locale: ar })}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CreditCard className="w-4 h-4" />
+            <span>{sub.totalPrice} ريال ({sub.durationYears} سنة)</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Subscriptions() {
   const { data: subscriptions = [], isLoading } = useSubscriptions();
@@ -184,29 +220,7 @@ export default function Subscriptions() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                       >
-                        <Card data-testid={`card-subscription-${sub.id}`}>
-                          <CardHeader className="pb-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <CardTitle className="text-lg flex items-center gap-2">
-                                <Monitor className="w-5 h-5 text-primary" />
-                                {sub.screenCount} شاشة
-                              </CardTitle>
-                              <Badge variant="default" className="bg-green-500">فعّال</Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Calendar className="w-4 h-4" />
-                                <span>ينتهي: {format(new Date(sub.endDate), 'dd MMMM yyyy', { locale: ar })}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <CreditCard className="w-4 h-4" />
-                                <span>{sub.totalPrice} ريال ({sub.durationYears} سنة)</span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <SubscriptionCard sub={sub} />
                       </motion.div>
                     ))}
                   </AnimatePresence>

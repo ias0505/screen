@@ -76,6 +76,12 @@ export async function registerRoutes(
     res.json({ availableSlots: slots });
   });
 
+  app.get("/api/subscriptions/:id/screens-count", requireAuth, async (req: any, res) => {
+    const subId = Number(req.params.id);
+    const count = await storage.getScreensCountBySubscription(subId);
+    res.json({ count });
+  });
+
   // Screen Groups
   app.get(api.screenGroups.list.path, requireAuth, async (req: any, res) => {
     const userId = req.user.claims.sub;
@@ -148,14 +154,18 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const input = api.screens.create.input.parse(req.body);
       
-      const availableSlots = await storage.getAvailableScreenSlots(userId);
-      if (availableSlots <= 0) {
+      const subscription = await storage.findSubscriptionWithAvailableSlot(userId);
+      if (!subscription) {
         return res.status(403).json({ 
           message: 'لا توجد شاشات متاحة في اشتراكك. يرجى إضافة اشتراك جديد.' 
         });
       }
 
-      const screen = await storage.createScreen({ ...input, userId });
+      const screen = await storage.createScreen({ 
+        ...input, 
+        userId,
+        subscriptionId: subscription.id 
+      });
       res.status(201).json(screen);
     } catch (err) {
       if (err instanceof z.ZodError) {

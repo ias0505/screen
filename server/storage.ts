@@ -45,6 +45,8 @@ export interface IStorage {
   getSubscription(id: number): Promise<Subscription | undefined>;
   createSubscription(userId: string, screenCount: number, durationYears: number): Promise<Subscription>;
   getAvailableScreenSlots(userId: string): Promise<number>;
+  findSubscriptionWithAvailableSlot(userId: string): Promise<Subscription | null>;
+  getScreensCountBySubscription(subscriptionId: number): Promise<number>;
   expireOldSubscriptions(): Promise<void>;
   
   // Legacy subscription plans (for reference)
@@ -97,12 +99,44 @@ export class DatabaseStorage implements IStorage {
         gt(subscriptions.endDate, now)
       ));
     
-    const totalSlots = activeSubs.reduce((sum, sub) => sum + sub.screenCount, 0);
+    let totalAvailable = 0;
+    for (const sub of activeSubs) {
+      const screensInSub = await db.select().from(screens)
+        .where(eq(screens.subscriptionId, sub.id));
+      const available = sub.screenCount - screensInSub.length;
+      totalAvailable += Math.max(0, available);
+    }
     
-    const userScreens = await db.select().from(screens).where(eq(screens.userId, userId));
-    const usedSlots = userScreens.length;
+    return totalAvailable;
+  }
+
+  async findSubscriptionWithAvailableSlot(userId: string): Promise<Subscription | null> {
+    await this.expireOldSubscriptions();
     
-    return Math.max(0, totalSlots - usedSlots);
+    const now = new Date();
+    const activeSubs = await db.select().from(subscriptions)
+      .where(and(
+        eq(subscriptions.userId, userId),
+        eq(subscriptions.status, 'active'),
+        gt(subscriptions.endDate, now)
+      ))
+      .orderBy(subscriptions.endDate);
+    
+    for (const sub of activeSubs) {
+      const screensInSub = await db.select().from(screens)
+        .where(eq(screens.subscriptionId, sub.id));
+      if (screensInSub.length < sub.screenCount) {
+        return sub;
+      }
+    }
+    
+    return null;
+  }
+
+  async getScreensCountBySubscription(subscriptionId: number): Promise<number> {
+    const screensInSub = await db.select().from(screens)
+      .where(eq(screens.subscriptionId, subscriptionId));
+    return screensInSub.length;
   }
 
   async expireOldSubscriptions(): Promise<void> {
