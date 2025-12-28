@@ -60,32 +60,25 @@ export default function Player() {
 
   return (
     <div className="w-screen h-screen bg-black overflow-hidden relative">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentItem.id} // Unique key triggers exit/enter animation
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
-          className="absolute inset-0 w-full h-full"
-        >
-          {currentItem.mediaItem.type === 'video' ? (
-             <video 
-               src={currentItem.mediaItem.url} 
-               autoPlay 
-               muted 
-               loop={false} // Let the timer handle transition, or loop if it's the only item
-               className="w-full h-full object-contain"
-             />
-          ) : (
-            <img 
-              src={currentItem.mediaItem.url} 
-              alt={currentItem.mediaItem.title} 
-              className="w-full h-full object-cover"
-            />
-          )}
-        </motion.div>
-      </AnimatePresence>
+      <div className="absolute inset-0 w-full h-full">
+        {currentItem.mediaItem.type === 'video' ? (
+           <video 
+             key={currentItem.id}
+             src={currentItem.mediaItem.url} 
+             autoPlay 
+             muted 
+             loop={false}
+             className="w-full h-full object-contain"
+           />
+        ) : (
+          <img 
+            key={currentItem.id}
+            src={currentItem.mediaItem.url} 
+            alt={currentItem.mediaItem.title} 
+            className="w-full h-full object-cover"
+          />
+        )}
+      </div>
       
       {/* Debug Info Overlay (Hidden in production or toggleable) */}
       <div className="absolute bottom-4 left-4 bg-black/50 text-white/50 text-xs p-2 rounded backdrop-blur-sm pointer-events-none">
