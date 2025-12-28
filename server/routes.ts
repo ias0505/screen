@@ -7,6 +7,45 @@ import { z } from "zod";
 import multer from "multer";
 import path from "path";
 import express from "express";
+import crypto from "crypto";
+
+// Rate limiting for activation attempts (in-memory store)
+const activationAttempts = new Map<string, { count: number; blockedUntil: number }>();
+const MAX_ATTEMPTS = 5;
+const BLOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(ip: string): { allowed: boolean; remainingAttempts?: number; blockedFor?: number } {
+  const now = Date.now();
+  const record = activationAttempts.get(ip);
+  
+  if (record) {
+    if (record.blockedUntil > now) {
+      return { allowed: false, blockedFor: Math.ceil((record.blockedUntil - now) / 1000 / 60) };
+    }
+    if (record.blockedUntil <= now && record.count >= MAX_ATTEMPTS) {
+      // Reset after block expires
+      activationAttempts.delete(ip);
+    }
+  }
+  
+  return { allowed: true, remainingAttempts: MAX_ATTEMPTS - (record?.count || 0) };
+}
+
+function recordFailedAttempt(ip: string): void {
+  const now = Date.now();
+  const record = activationAttempts.get(ip) || { count: 0, blockedUntil: 0 };
+  record.count += 1;
+  
+  if (record.count >= MAX_ATTEMPTS) {
+    record.blockedUntil = now + BLOCK_DURATION_MS;
+  }
+  
+  activationAttempts.set(ip, record);
+}
+
+function clearAttempts(ip: string): void {
+  activationAttempts.delete(ip);
+}
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -409,8 +448,18 @@ export async function registerRoutes(
     res.status(201).json(code);
   });
 
-  // Device Binding - تفعيل جهاز موحد (public endpoint - unified activation)
+  // Device Binding - تفعيل جهاز موحد (public endpoint - unified activation with rate limiting)
   app.post("/api/screens/activate", async (req, res) => {
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    
+    // Check rate limit
+    const rateCheck = checkRateLimit(clientIp);
+    if (!rateCheck.allowed) {
+      return res.status(429).json({ 
+        message: `تم حظرك مؤقتاً بسبب كثرة المحاولات الفاشلة. حاول مجدداً بعد ${rateCheck.blockedFor} دقيقة` 
+      });
+    }
+    
     const { code } = req.body;
     
     if (!code) {
@@ -419,30 +468,46 @@ export async function registerRoutes(
     
     const activation = await storage.getActivationCode(code);
     if (!activation) {
+      recordFailedAttempt(clientIp);
       return res.status(404).json({ message: "رمز التفعيل غير صحيح" });
     }
     
     if (activation.usedAt) {
+      recordFailedAttempt(clientIp);
       return res.status(400).json({ message: "تم استخدام رمز التفعيل مسبقاً" });
     }
     
     if (new Date() > new Date(activation.expiresAt)) {
+      recordFailedAttempt(clientIp);
       return res.status(400).json({ message: "انتهت صلاحية رمز التفعيل" });
     }
     
-    // Generate device token
-    const deviceToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    // Generate cryptographically secure device token
+    const deviceToken = crypto.randomUUID();
     const binding = await storage.useActivationCode(code, deviceToken, req.headers['user-agent'] || '');
     
     if (!binding) {
       return res.status(500).json({ message: "فشل في تفعيل الجهاز" });
     }
     
+    // Clear failed attempts on success
+    clearAttempts(clientIp);
+    
     res.json({ deviceToken, screenId: activation.screenId, bindingId: binding.id });
   });
 
-  // Device Binding - تفعيل جهاز (public endpoint - legacy with screenId)
+  // Device Binding - تفعيل جهاز (public endpoint - legacy with screenId and rate limiting)
   app.post("/api/player/activate", async (req, res) => {
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    
+    // Check rate limit
+    const rateCheck = checkRateLimit(clientIp);
+    if (!rateCheck.allowed) {
+      return res.status(429).json({ 
+        message: `تم حظرك مؤقتاً بسبب كثرة المحاولات الفاشلة. حاول مجدداً بعد ${rateCheck.blockedFor} دقيقة` 
+      });
+    }
+    
     const { code, screenId, deviceInfo } = req.body;
     
     if (!code || !screenId) {
@@ -451,28 +516,35 @@ export async function registerRoutes(
     
     const activation = await storage.getActivationCode(code);
     if (!activation) {
+      recordFailedAttempt(clientIp);
       return res.status(404).json({ message: "رمز التفعيل غير صحيح" });
     }
     
     if (activation.screenId !== Number(screenId)) {
+      recordFailedAttempt(clientIp);
       return res.status(400).json({ message: "رمز التفعيل لا يخص هذه الشاشة" });
     }
     
     if (activation.usedAt) {
+      recordFailedAttempt(clientIp);
       return res.status(400).json({ message: "تم استخدام رمز التفعيل مسبقاً" });
     }
     
     if (new Date() > new Date(activation.expiresAt)) {
+      recordFailedAttempt(clientIp);
       return res.status(400).json({ message: "انتهت صلاحية رمز التفعيل" });
     }
     
-    // Generate device token
-    const deviceToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    // Generate cryptographically secure device token
+    const deviceToken = crypto.randomUUID();
     const binding = await storage.useActivationCode(code, deviceToken, deviceInfo);
     
     if (!binding) {
       return res.status(500).json({ message: "فشل في تفعيل الجهاز" });
     }
+    
+    // Clear failed attempts on success
+    clearAttempts(clientIp);
     
     res.json({ deviceToken, bindingId: binding.id });
   });
