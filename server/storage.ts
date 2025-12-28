@@ -62,6 +62,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteMediaItem(id: number): Promise<void> {
+    await db.delete(schedules).where(eq(schedules.mediaItemId, id));
     await db.delete(mediaItems).where(eq(mediaItems.id, id));
   }
 
