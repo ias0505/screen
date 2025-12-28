@@ -282,7 +282,7 @@ export class DatabaseStorage implements IStorage {
       .from(schedules)
       .innerJoin(mediaItems, eq(schedules.mediaItemId, mediaItems.id))
       .where(eq(schedules.screenId, screenId))
-      .orderBy(schedules.priority);
+      .orderBy(schedules.displayOrder);
     
     return result.map(row => ({ ...row.schedule, mediaItem: row.mediaItem }));
   }
@@ -295,7 +295,7 @@ export class DatabaseStorage implements IStorage {
       .from(schedules)
       .innerJoin(mediaItems, eq(schedules.mediaItemId, mediaItems.id))
       .where(eq(schedules.screenGroupId, groupId))
-      .orderBy(schedules.priority);
+      .orderBy(schedules.displayOrder);
     
     return result.map(row => ({ ...row.schedule, mediaItem: row.mediaItem }));
   }
@@ -303,6 +303,17 @@ export class DatabaseStorage implements IStorage {
   async createSchedule(schedule: InsertSchedule): Promise<Schedule> {
     const [newSchedule] = await db.insert(schedules).values(schedule).returning();
     return newSchedule;
+  }
+
+  async updateSchedule(id: number, data: Partial<Schedule>): Promise<Schedule> {
+    const [updated] = await db.update(schedules).set(data).where(eq(schedules.id, id)).returning();
+    return updated;
+  }
+
+  async updateSchedulesOrder(updates: { id: number; displayOrder: number }[]): Promise<void> {
+    for (const update of updates) {
+      await db.update(schedules).set({ displayOrder: update.displayOrder }).where(eq(schedules.id, update.id));
+    }
   }
 
   async deleteSchedule(id: number): Promise<void> {

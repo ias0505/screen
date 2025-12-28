@@ -179,3 +179,49 @@ export function useDeleteSchedule() {
     },
   });
 }
+
+export function useUpdateSchedule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, duration }: { id: number; duration: number }) => {
+      const res = await fetch(`/api/schedules/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ duration }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error('فشل في تحديث المدة');
+      return res.json();
+    },
+  });
+}
+
+export function useReorderSchedules() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ updates, screenId, groupId }: { 
+      updates: { id: number; displayOrder: number }[]; 
+      screenId?: number;
+      groupId?: number;
+    }) => {
+      const res = await fetch('/api/schedules/reorder', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error('فشل في إعادة الترتيب');
+      return { screenId, groupId };
+    },
+    onSuccess: (data) => {
+      if (data.screenId) {
+        queryClient.invalidateQueries({ queryKey: [api.schedules.list.path, data.screenId] });
+      }
+      if (data.groupId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/group-schedules', data.groupId] });
+      }
+    },
+  });
+}

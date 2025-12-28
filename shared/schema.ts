@@ -86,6 +86,8 @@ export const schedules = pgTable("schedules", {
   mediaGroupId: integer("media_group_id").references(() => mediaGroups.id),
   startTime: timestamp("start_time"),
   endTime: timestamp("end_time"),
+  duration: integer("duration").default(10),
+  displayOrder: integer("display_order").default(0),
   isActive: boolean("is_active").default(true),
   priority: integer("priority").default(1),
   createdAt: timestamp("created_at").defaultNow(),

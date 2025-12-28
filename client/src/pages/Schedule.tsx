@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useScreens, useScreenSchedules, useCreateSchedule, useDeleteSchedule } from "@/hooks/use-screens";
+import { useState, useCallback } from "react";
+import { useScreens, useScreenSchedules, useCreateSchedule, useDeleteSchedule, useUpdateSchedule, useReorderSchedules } from "@/hooks/use-screens";
 import { useScreenGroups, useGroupSchedules, useCreateGroupSchedule, useDeleteGroupSchedule } from "@/hooks/use-groups";
 import { useMedia } from "@/hooks/use-media";
 import Layout from "@/components/Layout";
@@ -11,7 +11,9 @@ import {
   Plus,
   Clock,
   ArrowRight,
-  Layers
+  Layers,
+  GripVertical,
+  Check
 } from "lucide-react";
 import {
   Dialog,
@@ -29,14 +31,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+
+interface ScheduleItem {
+  id: number;
+  duration: number | null;
+  displayOrder: number | null;
+  createdAt: string | null;
+  mediaItem: {
+    id: number;
+    title: string;
+    type: string;
+    url: string;
+    duration: number | null;
+  };
+}
 
 export default function Schedule() {
   const { data: screens = [] } = useScreens();
   const { data: groups = [] } = useScreenGroups();
   const { data: media = [] } = useMedia();
+  const { toast } = useToast();
   
   const [scheduleType, setScheduleType] = useState<"screen" | "group">("screen");
   const [selectedScreenId, setSelectedScreenId] = useState<string>("");
@@ -52,18 +71,26 @@ export default function Schedule() {
   const deleteSchedule = useDeleteSchedule();
   const createGroupSchedule = useCreateGroupSchedule();
   const deleteGroupSchedule = useDeleteGroupSchedule();
+  const updateSchedule = useUpdateSchedule();
+  const reorderSchedules = useReorderSchedules();
   
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedMediaId, setSelectedMediaId] = useState<string>("");
+  const [editingDuration, setEditingDuration] = useState<{ id: number; value: string } | null>(null);
+  const [draggedItem, setDraggedItem] = useState<number | null>(null);
+  const [localSchedules, setLocalSchedules] = useState<ScheduleItem[]>([]);
 
   const ungroupedScreens = screens.filter(s => !s.groupId);
   
-  const schedules = scheduleType === "screen" ? screenSchedules : groupSchedules;
+  const rawSchedules = scheduleType === "screen" ? screenSchedules : groupSchedules;
+  const schedules: ScheduleItem[] = localSchedules.length > 0 ? localSchedules : (rawSchedules as ScheduleItem[]);
   const isLoading = scheduleType === "screen" ? loadingScreenSchedules : loadingGroupSchedules;
   const hasSelection = scheduleType === "screen" ? !!selectedScreenId : !!selectedGroupId;
 
   const handleAddSchedule = async () => {
     if (!selectedMediaId) return;
+    
+    const newOrder = schedules.length;
     
     if (scheduleType === "screen" && selectedScreenId) {
       await createSchedule.mutateAsync({
@@ -83,6 +110,7 @@ export default function Schedule() {
     
     setIsAddOpen(false);
     setSelectedMediaId("");
+    setLocalSchedules([]);
   };
 
   const handleDeleteSchedule = (scheduleId: number) => {
@@ -91,12 +119,78 @@ export default function Schedule() {
     } else {
       deleteGroupSchedule.mutate({ id: scheduleId, groupId: parseInt(selectedGroupId) });
     }
+    setLocalSchedules([]);
   };
 
   const handleTypeChange = (value: string) => {
     setScheduleType(value as "screen" | "group");
     setSelectedScreenId("");
     setSelectedGroupId("");
+    setLocalSchedules([]);
+  };
+
+  const handleDurationEdit = (scheduleId: number, currentDuration: number) => {
+    setEditingDuration({ id: scheduleId, value: currentDuration.toString() });
+  };
+
+  const handleDurationSave = async () => {
+    if (!editingDuration) return;
+    const newDuration = parseInt(editingDuration.value);
+    if (isNaN(newDuration) || newDuration < 1) {
+      toast({ title: "خطأ", description: "المدة يجب أن تكون رقم أكبر من صفر", variant: "destructive" });
+      return;
+    }
+    
+    await updateSchedule.mutateAsync({ id: editingDuration.id, duration: newDuration });
+    setEditingDuration(null);
+    
+    if (scheduleType === "screen" && selectedScreenId) {
+      setLocalSchedules([]);
+    } else if (scheduleType === "group" && selectedGroupId) {
+      setLocalSchedules([]);
+    }
+    
+    toast({ title: "تم الحفظ", description: "تم تحديث المدة الزمنية" });
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedItem(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedItem === null || draggedItem === index) return;
+    
+    const newSchedules = [...schedules];
+    const draggedSchedule = newSchedules[draggedItem];
+    newSchedules.splice(draggedItem, 1);
+    newSchedules.splice(index, 0, draggedSchedule);
+    
+    setLocalSchedules(newSchedules);
+    setDraggedItem(index);
+  };
+
+  const handleDragEnd = async () => {
+    if (localSchedules.length > 0) {
+      const updates = localSchedules.map((schedule, index) => ({
+        id: schedule.id,
+        displayOrder: index
+      }));
+      
+      await reorderSchedules.mutateAsync({
+        updates,
+        screenId: scheduleType === "screen" ? parseInt(selectedScreenId) : undefined,
+        groupId: scheduleType === "group" ? parseInt(selectedGroupId) : undefined,
+      });
+      
+      toast({ title: "تم الحفظ", description: "تم إعادة ترتيب العناصر" });
+    }
+    setDraggedItem(null);
+  };
+
+  const getScheduleDuration = (schedule: ScheduleItem) => {
+    return schedule.duration || schedule.mediaItem.duration || 10;
   };
 
   return (
@@ -123,7 +217,7 @@ export default function Schedule() {
             </Tabs>
             
             {scheduleType === "screen" ? (
-              <Select value={selectedScreenId} onValueChange={setSelectedScreenId}>
+              <Select value={selectedScreenId} onValueChange={(v) => { setSelectedScreenId(v); setLocalSchedules([]); }}>
                 <SelectTrigger className="w-[250px] rounded-xl bg-card" data-testid="select-screen">
                   <SelectValue placeholder="اختر الشاشة..." />
                 </SelectTrigger>
@@ -142,7 +236,7 @@ export default function Schedule() {
                 </SelectContent>
               </Select>
             ) : (
-              <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+              <Select value={selectedGroupId} onValueChange={(v) => { setSelectedGroupId(v); setLocalSchedules([]); }}>
                 <SelectTrigger className="w-[250px] rounded-xl bg-card" data-testid="select-group">
                   <SelectValue placeholder="اختر المجموعة..." />
                 </SelectTrigger>
@@ -256,9 +350,12 @@ export default function Schedule() {
                 <CalendarClock className="w-5 h-5 text-primary" />
                 قائمة التشغيل الحالية
               </h3>
-              <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                {schedules.length} عناصر
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">اسحب العناصر لإعادة الترتيب</span>
+                <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                  {schedules.length} عناصر
+                </span>
+              </div>
             </div>
             
             {isLoading ? (
@@ -267,10 +364,23 @@ export default function Schedule() {
                </div>
             ) : schedules.length > 0 ? (
               <div className="divide-y divide-border/50">
-                {schedules.map((schedule: any, index: number) => (
-                  <div key={schedule.id} className="p-4 flex items-center gap-4 hover:bg-muted/30 transition-colors group">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
-                      {index + 1}
+                {schedules.map((schedule, index) => (
+                  <div 
+                    key={schedule.id} 
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`p-4 flex items-center gap-4 hover:bg-muted/30 transition-colors group cursor-grab active:cursor-grabbing ${
+                      draggedItem === index ? 'bg-primary/10' : ''
+                    }`}
+                    data-testid={`schedule-item-${schedule.id}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="w-5 h-5 text-muted-foreground/50" />
+                      <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                        {index + 1}
+                      </div>
                     </div>
                     <div className="w-24 h-16 rounded-lg bg-muted overflow-hidden border border-border flex-shrink-0">
                       {schedule.mediaItem.type === 'image' ? (
@@ -284,12 +394,39 @@ export default function Schedule() {
                     <div className="flex-1">
                       <h4 className="font-semibold text-foreground">{schedule.mediaItem.title}</h4>
                       <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
-                        <span className="flex items-center gap-1">
-                           <Clock className="w-3 h-3" />
-                           {schedule.mediaItem.duration} ثانية
-                        </span>
+                        {editingDuration?.id === schedule.id ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="1"
+                              value={editingDuration.value}
+                              onChange={(e) => setEditingDuration({ ...editingDuration, value: e.target.value })}
+                              className="w-20 h-7 text-xs"
+                              data-testid={`input-duration-${schedule.id}`}
+                            />
+                            <span>ثانية</span>
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-7 w-7"
+                              onClick={handleDurationSave}
+                              data-testid={`button-save-duration-${schedule.id}`}
+                            >
+                              <Check className="w-4 h-4 text-green-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleDurationEdit(schedule.id, getScheduleDuration(schedule))}
+                            className="flex items-center gap-1 hover:text-primary transition-colors"
+                            data-testid={`button-edit-duration-${schedule.id}`}
+                          >
+                            <Clock className="w-3 h-3" />
+                            {getScheduleDuration(schedule)} ثانية
+                          </button>
+                        )}
                         <span>
-                           أضيف: {format(new Date(schedule.createdAt!), "d MMMM yyyy", { locale: ar })}
+                           أضيف: {schedule.createdAt ? format(new Date(schedule.createdAt), "d MMMM yyyy", { locale: ar }) : '-'}
                         </span>
                       </div>
                     </div>
