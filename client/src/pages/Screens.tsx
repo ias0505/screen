@@ -45,7 +45,7 @@ export default function Screens() {
     await createScreen.mutateAsync({
       name: newScreen.name,
       location: newScreen.location,
-      userId: parseInt(user.id), // Ensure correct type
+      userId: user.id, // ID is string in Replit Auth
     });
     setIsOpen(false);
     setNewScreen({ name: "", location: "" });
