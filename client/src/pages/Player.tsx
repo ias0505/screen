@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRoute } from "wouter";
 import { useScreenSchedules, useScreen } from "@/hooks/use-screens";
 import { useQuery } from "@tanstack/react-query";
@@ -17,19 +17,32 @@ export default function Player() {
   });
   
   const [currentIndex, setCurrentIndex] = useState(0);
+  const preloadedImages = useRef<Set<string>>(new Set());
+
+  // Preload all images on mount
+  useEffect(() => {
+    schedules.forEach((item: any) => {
+      if (item.mediaItem.type === 'image' && !preloadedImages.current.has(item.mediaItem.url)) {
+        const img = new Image();
+        img.src = item.mediaItem.url;
+        preloadedImages.current.add(item.mediaItem.url);
+      }
+    });
+  }, [schedules]);
 
   useEffect(() => {
     if (!schedules.length) return;
 
-    const currentItem = schedules[currentIndex];
-    const duration = (currentItem.mediaItem.duration || 10) * 1000;
+    const currentItem = schedules[currentIndex] as any;
+    // Use schedule's duration, not mediaItem's duration
+    const duration = (currentItem.duration || 10) * 1000;
 
     const timer = setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % schedules.length);
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [currentIndex, schedules.length]);
+  }, [currentIndex, schedules.length, schedules]);
 
   if (isLoading) {
     return (
