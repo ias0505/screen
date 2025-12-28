@@ -146,16 +146,14 @@ export default function Schedule() {
       return;
     }
     
-    await updateSchedule.mutateAsync({ id: editingDuration.id, duration: newDuration });
+    await updateSchedule.mutateAsync({ 
+      id: editingDuration.id, 
+      duration: newDuration,
+      screenId: scheduleType === "screen" ? parseInt(selectedScreenId) : undefined,
+      groupId: scheduleType === "group" ? parseInt(selectedGroupId) : undefined
+    });
     setEditingDuration(null);
-    
-    if (scheduleType === "screen" && selectedScreenId) {
-      setLocalSchedules([]);
-    } else if (scheduleType === "group" && selectedGroupId) {
-      setLocalSchedules([]);
-    }
-    
-    toast({ title: "تم الحفظ", description: "تم تحديث المدة الزمنية" });
+    setLocalSchedules([]);
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {

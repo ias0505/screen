@@ -182,9 +182,10 @@ export function useDeleteSchedule() {
 
 export function useUpdateSchedule() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, duration }: { id: number; duration: number }) => {
+    mutationFn: async ({ id, duration, screenId, groupId }: { id: number; duration: number; screenId?: number; groupId?: number }) => {
       const res = await fetch(`/api/schedules/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -192,7 +193,16 @@ export function useUpdateSchedule() {
         credentials: "include",
       });
       if (!res.ok) throw new Error('فشل في تحديث المدة');
-      return res.json();
+      return { ...(await res.json()), screenId, groupId };
+    },
+    onSuccess: (data) => {
+      if (data.screenId) {
+        queryClient.invalidateQueries({ queryKey: [api.schedules.list.path, data.screenId] });
+      }
+      if (data.groupId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/group-schedules', data.groupId] });
+      }
+      toast({ title: "تم التحديث", description: "تم تحديث مدة العرض بنجاح" });
     },
   });
 }
