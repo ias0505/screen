@@ -1,23 +1,33 @@
 import { db } from "./db";
 import {
-  screens, mediaItems, schedules,
+  screens, mediaItems, schedules, screenGroups, mediaGroups,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
-  type Schedule, type InsertSchedule
+  type Schedule, type InsertSchedule,
+  type ScreenGroup, type InsertScreenGroup,
+  type MediaGroup, type InsertMediaGroup
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
+  // Screen Groups
+  getScreenGroups(userId: string): Promise<ScreenGroup[]>;
+  createScreenGroup(group: InsertScreenGroup & { userId: string }): Promise<ScreenGroup>;
+  
+  // Media Groups
+  getMediaGroups(userId: string): Promise<MediaGroup[]>;
+  createMediaGroup(group: InsertMediaGroup & { userId: string }): Promise<MediaGroup>;
+
   // Screens
   getScreens(userId: string): Promise<Screen[]>;
   getScreen(id: number): Promise<Screen | undefined>;
-  createScreen(screen: InsertScreen): Promise<Screen>;
+  createScreen(screen: InsertScreen & { userId: string }): Promise<Screen>;
   deleteScreen(id: number): Promise<void>;
 
   // Media
   getMediaItems(userId: string): Promise<MediaItem[]>;
   getMediaItem(id: number): Promise<MediaItem | undefined>;
-  createMediaItem(item: InsertMediaItem): Promise<MediaItem>;
+  createMediaItem(item: InsertMediaItem & { userId: string }): Promise<MediaItem>;
   deleteMediaItem(id: number): Promise<void>;
 
   // Schedules
@@ -27,6 +37,26 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Screen Groups
+  async getScreenGroups(userId: string): Promise<ScreenGroup[]> {
+    return await db.select().from(screenGroups).where(eq(screenGroups.userId, userId)).orderBy(desc(screenGroups.createdAt));
+  }
+
+  async createScreenGroup(group: InsertScreenGroup & { userId: string }): Promise<ScreenGroup> {
+    const [newGroup] = await db.insert(screenGroups).values(group).returning();
+    return newGroup;
+  }
+
+  // Media Groups
+  async getMediaGroups(userId: string): Promise<MediaGroup[]> {
+    return await db.select().from(mediaGroups).where(eq(mediaGroups.userId, userId)).orderBy(desc(mediaGroups.createdAt));
+  }
+
+  async createMediaGroup(group: InsertMediaGroup & { userId: string }): Promise<MediaGroup> {
+    const [newGroup] = await db.insert(mediaGroups).values(group).returning();
+    return newGroup;
+  }
+
   // Screens
   async getScreens(userId: string): Promise<Screen[]> {
     return await db.select().from(screens).where(eq(screens.userId, userId)).orderBy(desc(screens.createdAt));
@@ -37,7 +67,7 @@ export class DatabaseStorage implements IStorage {
     return screen;
   }
 
-  async createScreen(screen: InsertScreen): Promise<Screen> {
+  async createScreen(screen: InsertScreen & { userId: string }): Promise<Screen> {
     const [newScreen] = await db.insert(screens).values(screen).returning();
     return newScreen;
   }
@@ -56,7 +86,7 @@ export class DatabaseStorage implements IStorage {
     return item;
   }
 
-  async createMediaItem(item: InsertMediaItem): Promise<MediaItem> {
+  async createMediaItem(item: InsertMediaItem & { userId: string }): Promise<MediaItem> {
     const [newItem] = await db.insert(mediaItems).values(item).returning();
     return newItem;
   }
@@ -68,7 +98,6 @@ export class DatabaseStorage implements IStorage {
 
   // Schedules
   async getSchedules(screenId: number): Promise<(Schedule & { mediaItem: MediaItem })[]> {
-    // Join with media items to get details for the player
     const result = await db.select({
         schedule: schedules,
         mediaItem: mediaItems

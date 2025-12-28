@@ -44,6 +44,54 @@ export async function registerRoutes(
     res.json({ url });
   });
 
+  // Screen Groups
+  app.get(api.screenGroups.list.path, requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const groups = await storage.getScreenGroups(userId);
+    res.json(groups);
+  });
+
+  app.post(api.screenGroups.create.path, requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const input = api.screenGroups.create.input.parse(req.body);
+      const group = await storage.createScreenGroup({ ...input, userId });
+      res.status(201).json(group);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Media Groups
+  app.get(api.mediaGroups.list.path, requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const groups = await storage.getMediaGroups(userId);
+    res.json(groups);
+  });
+
+  app.post(api.mediaGroups.create.path, requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const input = api.mediaGroups.create.input.parse(req.body);
+      const group = await storage.createMediaGroup({ ...input, userId });
+      res.status(201).json(group);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
   // Screens
   app.get(api.screens.list.path, requireAuth, async (req: any, res) => {
     const userId = req.user.claims.sub;
@@ -135,7 +183,10 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const input = api.schedules.create.input.parse(req.body);
-      const screen = await storage.getScreen(input.screenId);
+      const screenId = input.screenId;
+      if (!screenId) return res.status(400).json({ message: "Screen ID is required" });
+      
+      const screen = await storage.getScreen(screenId);
       if (!screen || screen.userId !== userId) {
          return res.status(403).json({ message: "Forbidden" });
       }

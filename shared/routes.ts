@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { insertScreenSchema, insertMediaItemSchema, insertScheduleSchema, screens, mediaItems, schedules } from './schema';
+import { 
+  insertScreenSchema, insertMediaItemSchema, insertScheduleSchema, 
+  insertScreenGroupSchema, insertMediaGroupSchema,
+  screens, mediaItems, schedules, screenGroups, mediaGroups 
+} from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -15,6 +19,42 @@ export const errorSchemas = {
 };
 
 export const api = {
+  screenGroups: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/screen-groups',
+      responses: {
+        200: z.array(z.custom<typeof screenGroups.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/screen-groups',
+      input: insertScreenGroupSchema,
+      responses: {
+        201: z.custom<typeof screenGroups.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+  },
+  mediaGroups: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/media-groups',
+      responses: {
+        200: z.array(z.custom<typeof mediaGroups.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/media-groups',
+      input: insertMediaGroupSchema,
+      responses: {
+        201: z.custom<typeof mediaGroups.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+  },
   screens: {
     list: {
       method: 'GET' as const,
