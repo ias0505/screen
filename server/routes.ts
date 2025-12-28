@@ -121,6 +121,34 @@ export async function registerRoutes(
     res.json(sub);
   });
 
+  // Group Subscriptions
+  app.get("/api/groups/with-subscriptions", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    // تحديث الاشتراكات المنتهية
+    await storage.expireOldSubscriptions();
+    const groups = await storage.getGroupsWithSubscriptions(userId);
+    res.json(groups);
+  });
+
+  app.post("/api/groups/:groupId/subscribe", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const groupId = Number(req.params.groupId);
+    const { maxScreens, durationYears } = req.body;
+    
+    if (!maxScreens || !durationYears) {
+      return res.status(400).json({ message: "يرجى تحديد عدد الشاشات والمدة" });
+    }
+
+    const sub = await storage.createGroupSubscription(groupId, userId, maxScreens, durationYears);
+    res.json(sub);
+  });
+
+  app.get("/api/groups/:groupId/subscription", requireAuth, async (req: any, res) => {
+    const groupId = Number(req.params.groupId);
+    const sub = await storage.getGroupSubscription(groupId);
+    res.json(sub || null);
+  });
+
   // Screens
   app.get(api.screens.list.path, requireAuth, async (req: any, res) => {
     const userId = req.user.claims.sub;
@@ -133,14 +161,34 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const input = api.screens.create.input.parse(req.body);
       
-      // Check subscription limit
-      const screens = await storage.getScreens(userId);
-      const sub = await storage.getUserSubscription(userId);
-      const maxScreens = sub?.maxScreens || 2; // Default free limit
-
-      if (screens.length >= maxScreens) {
-        return res.status(403).json({ 
-          message: `لقد وصلت للحد الأقصى لعدد الشاشات المسموح به في باقتك الحالية (${maxScreens}). يرجى ترقية الاشتراك.` 
+      // التحقق من اشتراك المجموعة
+      if (input.groupId) {
+        const groupSub = await storage.getGroupSubscription(input.groupId);
+        if (!groupSub || groupSub.status !== 'active') {
+          return res.status(403).json({ 
+            message: 'هذه المجموعة ليس لديها اشتراك فعال. يرجى تفعيل اشتراك المجموعة أولاً.' 
+          });
+        }
+        
+        // التحقق من أن تاريخ الانتهاء لم يمر
+        if (new Date(groupSub.endDate) < new Date()) {
+          return res.status(403).json({ 
+            message: 'انتهى اشتراك هذه المجموعة. يرجى تجديد الاشتراك.' 
+          });
+        }
+        
+        // التحقق من عدد الشاشات في المجموعة
+        const allScreens = await storage.getScreens(userId);
+        const groupScreens = allScreens.filter(s => s.groupId === input.groupId);
+        if (groupScreens.length >= groupSub.maxScreens) {
+          return res.status(403).json({ 
+            message: `لقد وصلت للحد الأقصى لعدد الشاشات في هذه المجموعة (${groupSub.maxScreens}). يرجى ترقية اشتراك المجموعة.` 
+          });
+        }
+      } else {
+        // شاشة بدون مجموعة - يجب أن تكون في مجموعة
+        return res.status(400).json({ 
+          message: 'يجب إضافة الشاشة إلى مجموعة لديها اشتراك فعال.' 
         });
       }
 
