@@ -261,9 +261,46 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Screen playable check (for player page - checks group subscription)
+  app.get("/api/screens/:id/playable", async (req, res) => {
+    const screenId = Number(req.params.id);
+    const screen = await storage.getScreen(screenId);
+    
+    if (!screen) {
+      return res.status(404).json({ playable: false, reason: 'not_found' });
+    }
+    
+    if (!screen.groupId) {
+      return res.json({ playable: false, reason: 'no_group' });
+    }
+    
+    await storage.expireOldSubscriptions();
+    const groupSub = await storage.getGroupSubscription(screen.groupId);
+    
+    if (!groupSub) {
+      return res.json({ playable: false, reason: 'no_subscription' });
+    }
+    
+    if (groupSub.status !== 'active' || new Date(groupSub.endDate) <= new Date()) {
+      return res.json({ playable: false, reason: 'subscription_expired' });
+    }
+    
+    return res.json({ playable: true });
+  });
+
   // Schedules
   app.get(api.schedules.list.path, async (req, res) => {
     const screenId = Number(req.params.screenId);
+    
+    // Check if screen is playable
+    const screen = await storage.getScreen(screenId);
+    if (screen?.groupId) {
+      const groupSub = await storage.getGroupSubscription(screen.groupId);
+      if (!groupSub || groupSub.status !== 'active' || new Date(groupSub.endDate) <= new Date()) {
+        return res.json([]); // Return empty schedules for expired groups
+      }
+    }
+    
     const schedules = await storage.getSchedules(screenId);
     res.json(schedules);
   });
