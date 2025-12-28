@@ -71,9 +71,15 @@ export default function Subscription() {
                     className="w-full rounded-xl text-lg h-12"
                     variant={currentPlanId === plan.id ? "outline" : "default"}
                     disabled={currentPlanId === plan.id || subscribe.isPending}
-                    onClick={() => subscribe.mutate(plan.id)}
+                    onClick={() => {
+                      if (plan.price > 0) {
+                        const confirmPay = window.confirm(`هل ترغب في محاكاة عملية الدفع لمبلغ ${(plan.price / 100).toFixed(2)} ر.س؟\n(هذه مجرد تجربة محاكاة)`);
+                        if (!confirmPay) return;
+                      }
+                      subscribe.mutate(plan.id);
+                    }}
                   >
-                    {currentPlanId === plan.id ? 'مشترك بالفعل' : 'اشترك الآن'}
+                    {subscribe.isPending ? 'جاري المعالجة...' : currentPlanId === plan.id ? 'مشترك بالفعل' : 'اشترك الآن'}
                   </Button>
                 </CardFooter>
               </Card>
