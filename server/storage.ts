@@ -143,7 +143,9 @@ export class DatabaseStorage implements IStorage {
     
     const groupsWithSubs = await Promise.all(groups.map(async (group) => {
       const [sub] = await db.select().from(screenGroupSubscriptions)
-        .where(eq(screenGroupSubscriptions.groupId, group.id));
+        .where(eq(screenGroupSubscriptions.groupId, group.id))
+        .orderBy(desc(screenGroupSubscriptions.createdAt))
+        .limit(1);
       return { ...group, subscription: sub || undefined };
     }));
     
