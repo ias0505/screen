@@ -8,7 +8,8 @@ import {
   Plus, 
   Trash2, 
   Film,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Upload
 } from "lucide-react";
 import {
   Dialog,
@@ -34,6 +35,8 @@ export default function Media() {
   const deleteMedia = useDeleteMedia();
   
   const [isOpen, setIsOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const [newMedia, setNewMedia] = useState({ 
     title: "", 
     url: "", 
@@ -41,19 +44,56 @@ export default function Media() {
     duration: 10
   });
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      setNewMedia({ 
+        ...newMedia, 
+        title: selectedFile.name.split('.')[0],
+        type: selectedFile.type.startsWith('video') ? 'video' : 'image'
+      });
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     
-    await createMedia.mutateAsync({
-      title: newMedia.title,
-      url: newMedia.url,
-      type: newMedia.type,
-      duration: newMedia.type === 'video' ? 30 : newMedia.duration,
-      userId: parseInt(user.id),
-    });
-    setIsOpen(false);
-    setNewMedia({ title: "", url: "", type: "image", duration: 10 });
+    setIsUploading(true);
+    try {
+      let finalUrl = newMedia.url;
+      
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) throw new Error('Upload failed');
+        const data = await response.json();
+        finalUrl = data.url;
+      }
+
+      await createMedia.mutateAsync({
+        title: newMedia.title,
+        url: finalUrl,
+        type: newMedia.type,
+        duration: newMedia.type === 'video' ? 30 : newMedia.duration,
+        userId: user.id,
+      });
+      
+      setIsOpen(false);
+      setNewMedia({ title: "", url: "", type: "image", duration: 10 });
+      setFile(null);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -97,7 +137,24 @@ export default function Media() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="url">رابط الملف (URL)</Label>
+                    <Label htmlFor="file">رفع ملف من الجهاز</Label>
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-4 hover:border-primary/50 transition-colors bg-muted/5 relative">
+                      <input
+                        id="file"
+                        type="file"
+                        accept="image/*,video/*"
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        {file ? file.name : "اضغط هنا أو اسحب الملف للرفع"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="url">أو رابط الملف (URL)</Label>
                     <div className="relative">
                       <LinkIcon className="absolute right-3 top-3 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -105,12 +162,10 @@ export default function Media() {
                         value={newMedia.url}
                         onChange={(e) => setNewMedia({ ...newMedia, url: e.target.value })}
                         placeholder={newMedia.type === 'image' ? "https://images.unsplash.com/..." : "https://example.com/video.mp4"}
-                        required
                         className="rounded-xl pr-10"
                         dir="ltr"
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground">للتجربة، استخدم روابط Unsplash للصور.</p>
                   </div>
 
                   {newMedia.type === 'image' && (
@@ -129,8 +184,8 @@ export default function Media() {
 
                   <div className="flex justify-end gap-2 pt-4">
                     <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="rounded-xl">إلغاء</Button>
-                    <Button type="submit" disabled={createMedia.isPending} className="bg-primary hover:bg-primary/90 rounded-xl">
-                      {createMedia.isPending ? "جاري الحفظ..." : "حفظ المحتوى"}
+                    <Button type="submit" disabled={createMedia.isPending || isUploading} className="bg-primary hover:bg-primary/90 rounded-xl">
+                      {isUploading ? "جاري الرفع..." : createMedia.isPending ? "جاري الحفظ..." : "حفظ المحتوى"}
                     </Button>
                   </div>
                 </form>

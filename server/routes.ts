@@ -4,22 +4,45 @@ import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import multer from "multer";
+import path from "path";
+import express from "express";
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: "public/uploads",
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+    },
+  }),
+});
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // CRITICAL: Setup auth first
   await setupAuth(app);
   registerAuthRoutes(app);
 
-  // Middleware to ensure user is authenticated
+  // Serve uploads directory
+  app.use("/uploads", express.static("public/uploads"));
+
   const requireAuth = (req: any, res: any, next: any) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     next();
   };
+
+  // Upload endpoint
+  app.post("/api/upload", requireAuth, upload.single("file"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+    const url = `/uploads/${req.file.filename}`;
+    res.json({ url });
+  });
 
   // Screens
   app.get(api.screens.list.path, requireAuth, async (req, res) => {
