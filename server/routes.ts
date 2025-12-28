@@ -360,7 +360,7 @@ export async function registerRoutes(
   app.post("/api/group-schedules", requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { screenGroupId, mediaItemId, priority, isActive } = req.body;
+      const { screenGroupId, mediaItemId, priority, isActive, duration } = req.body;
       
       const groups = await storage.getScreenGroups(userId);
       const group = groups.find(g => g.id === screenGroupId);
@@ -372,7 +372,8 @@ export async function registerRoutes(
         screenGroupId,
         mediaItemId,
         priority: priority || 1,
-        isActive: isActive !== false
+        isActive: isActive !== false,
+        duration: duration || 10
       });
       res.status(201).json(schedule);
     } catch (err) {

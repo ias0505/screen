@@ -53,7 +53,6 @@ export default function Media() {
     title: "", 
     url: "", 
     type: "image" as "image" | "video",
-    duration: 10,
     groupId: ""
   });
   const [newGroup, setNewGroup] = useState({ name: "", description: "" });
@@ -109,13 +108,13 @@ export default function Media() {
         title: newMedia.title,
         url: finalUrl,
         type: newMedia.type,
-        duration: newMedia.type === 'video' ? 30 : newMedia.duration,
+        duration: 10,
         groupId: newMedia.groupId ? parseInt(newMedia.groupId) : null,
         userId: user.id,
       });
       
       setIsOpen(false);
-      setNewMedia({ title: "", url: "", type: "image", duration: 10, groupId: "" });
+      setNewMedia({ title: "", url: "", type: "image", groupId: "" });
       setFile(null);
     } catch (error) {
       console.error(error);
@@ -251,20 +250,6 @@ export default function Media() {
                         />
                       </div>
                     </div>
-
-                    {newMedia.type === 'image' && (
-                      <div className="space-y-2">
-                        <Label htmlFor="duration">مدة العرض (ثواني)</Label>
-                        <Input
-                          id="duration"
-                          type="number"
-                          min={1}
-                          value={newMedia.duration}
-                          onChange={(e) => setNewMedia({ ...newMedia, duration: parseInt(e.target.value) })}
-                          className="rounded-xl"
-                        />
-                      </div>
-                    )}
 
                     <div className="flex justify-end gap-2 pt-4">
                       <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="rounded-xl">إلغاء</Button>

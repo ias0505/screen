@@ -78,7 +78,7 @@ export function useGroupSchedules(groupId: number) {
 export function useCreateGroupSchedule() {
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (data: { screenGroupId: number; mediaItemId: number; priority?: number; isActive?: boolean }) => {
+    mutationFn: async (data: { screenGroupId: number; mediaItemId: number; priority?: number; isActive?: boolean; duration?: number }) => {
       const response = await apiRequest('POST', '/api/group-schedules', data);
       return response.json();
     },
