@@ -42,17 +42,16 @@ export const userSubscriptions = pgTable("user_subscriptions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// اشتراكات مجموعات الشاشات - كل مجموعة لها اشتراك مستقل
-export const screenGroupSubscriptions = pgTable("screen_group_subscriptions", {
+// اشتراكات مستقلة - كل اشتراك يحدد عدد الشاشات ومدة الاشتراك
+export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
-  groupId: integer("group_id").references(() => screenGroups.id).notNull(),
   userId: varchar("user_id").references(() => users.id).notNull(),
-  maxScreens: integer("max_screens").notNull().default(1),
+  screenCount: integer("screen_count").notNull().default(1),
   durationYears: integer("duration_years").notNull().default(1),
   startDate: timestamp("start_date").defaultNow(),
   endDate: timestamp("end_date").notNull(),
   status: text("status").notNull().default("active"), // active, expired
-  pricePerScreen: integer("price_per_screen").default(50), // السعر لكل شاشة بالريال
+  pricePerScreen: integer("price_per_screen").default(50),
   totalPrice: integer("total_price").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -63,6 +62,7 @@ export const screens = pgTable("screens", {
   location: text("location"),
   status: text("status").default("offline"), // online, offline
   groupId: integer("group_id").references(() => screenGroups.id),
+  subscriptionId: integer("subscription_id").references(() => subscriptions.id),
   userId: varchar("user_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -152,6 +152,9 @@ export const insertScreenSchema = createInsertSchema(screens).omit({ id: true, c
 export const insertMediaItemSchema = createInsertSchema(mediaItems).omit({ id: true, createdAt: true });
 export const insertScheduleSchema = createInsertSchema(schedules).omit({ id: true, createdAt: true });
 
+// Subscription schema
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true, startDate: true, status: true });
+
 // Types
 export type ScreenGroup = typeof screenGroups.$inferSelect;
 export type MediaGroup = typeof mediaGroups.$inferSelect;
@@ -160,10 +163,11 @@ export type MediaItem = typeof mediaItems.$inferSelect;
 export type Schedule = typeof schedules.$inferSelect;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
-export type ScreenGroupSubscription = typeof screenGroupSubscriptions.$inferSelect;
+export type Subscription = typeof subscriptions.$inferSelect;
 
 export type InsertScreenGroup = z.infer<typeof insertScreenGroupSchema>;
 export type InsertMediaGroup = z.infer<typeof insertMediaGroupSchema>;
 export type InsertScreen = z.infer<typeof insertScreenSchema>;
 export type InsertMediaItem = z.infer<typeof insertMediaItemSchema>;
 export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;

@@ -25,7 +25,6 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
-  // Serve uploads directory
   app.use("/uploads", express.static("public/uploads"));
 
   const requireAuth = (req: any, res: any, next: any) => {
@@ -35,13 +34,46 @@ export async function registerRoutes(
     next();
   };
 
-  // Upload endpoint
   app.post("/api/upload", requireAuth, upload.single("file"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
     const url = `/uploads/${req.file.filename}`;
     res.json({ url });
+  });
+
+  // Subscriptions (new independent model)
+  app.get("/api/subscriptions", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    await storage.expireOldSubscriptions();
+    const subs = await storage.getSubscriptions(userId);
+    res.json(subs);
+  });
+
+  app.post("/api/subscriptions", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const { screenCount, durationYears } = req.body;
+    
+    if (!screenCount || !durationYears) {
+      return res.status(400).json({ message: "يرجى تحديد عدد الشاشات ومدة الاشتراك" });
+    }
+    
+    if (screenCount < 1 || screenCount > 100) {
+      return res.status(400).json({ message: "عدد الشاشات يجب أن يكون بين 1 و 100" });
+    }
+    
+    if (durationYears < 1 || durationYears > 3) {
+      return res.status(400).json({ message: "مدة الاشتراك يجب أن تكون من 1 إلى 3 سنوات" });
+    }
+
+    const sub = await storage.createSubscription(userId, screenCount, durationYears);
+    res.status(201).json(sub);
+  });
+
+  app.get("/api/subscriptions/available-slots", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const slots = await storage.getAvailableScreenSlots(userId);
+    res.json({ availableSlots: slots });
   });
 
   // Screen Groups
@@ -68,6 +100,17 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/screen-groups/:id", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const groups = await storage.getScreenGroups(userId);
+    const group = groups.find(g => g.id === Number(req.params.id));
+    if (!group) {
+      return res.status(404).json({ message: "المجموعة غير موجودة" });
+    }
+    await storage.deleteScreenGroup(Number(req.params.id));
+    res.status(204).send();
+  });
+
   // Media Groups
   app.get(api.mediaGroups.list.path, requireAuth, async (req: any, res) => {
     const userId = req.user.claims.sub;
@@ -92,66 +135,10 @@ export async function registerRoutes(
     }
   });
 
-  // Subscriptions
-  app.get("/api/subscription/plans", async (_req, res) => {
-    const plans = await storage.getSubscriptionPlans();
-    res.json(plans);
-  });
-
-  app.get("/api/subscription/status", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
-    const sub = await storage.getUserSubscription(userId);
-    res.json(sub || { status: 'none' });
-  });
-
-  app.post("/api/subscription/subscribe", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
-    const { planId, maxScreens, durationYears, type } = req.body;
-    
-    if (type === 'custom') {
-      if (!maxScreens || !durationYears) {
-        return res.status(400).json({ message: "Screens count and duration are required for custom subscription" });
-      }
-      const sub = await storage.createCustomSubscription(userId, maxScreens, durationYears);
-      return res.json(sub);
-    }
-
-    if (!planId) return res.status(400).json({ message: "Plan ID is required" });
-    const sub = await storage.updateUserSubscription(userId, planId);
-    res.json(sub);
-  });
-
-  // Group Subscriptions
-  app.get("/api/groups/with-subscriptions", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
-    // تحديث الاشتراكات المنتهية
-    await storage.expireOldSubscriptions();
-    const groups = await storage.getGroupsWithSubscriptions(userId);
-    res.json(groups);
-  });
-
-  app.post("/api/groups/:groupId/subscribe", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
-    const groupId = Number(req.params.groupId);
-    const { maxScreens, durationYears } = req.body;
-    
-    if (!maxScreens || !durationYears) {
-      return res.status(400).json({ message: "يرجى تحديد عدد الشاشات والمدة" });
-    }
-
-    const sub = await storage.createGroupSubscription(groupId, userId, maxScreens, durationYears);
-    res.json(sub);
-  });
-
-  app.get("/api/groups/:groupId/subscription", requireAuth, async (req: any, res) => {
-    const groupId = Number(req.params.groupId);
-    const sub = await storage.getGroupSubscription(groupId);
-    res.json(sub || null);
-  });
-
   // Screens
   app.get(api.screens.list.path, requireAuth, async (req: any, res) => {
     const userId = req.user.claims.sub;
+    await storage.expireOldSubscriptions();
     const screens = await storage.getScreens(userId);
     res.json(screens);
   });
@@ -161,34 +148,10 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       const input = api.screens.create.input.parse(req.body);
       
-      // التحقق من اشتراك المجموعة
-      if (input.groupId) {
-        const groupSub = await storage.getGroupSubscription(input.groupId);
-        if (!groupSub || groupSub.status !== 'active') {
-          return res.status(403).json({ 
-            message: 'هذه المجموعة ليس لديها اشتراك فعال. يرجى تفعيل اشتراك المجموعة أولاً.' 
-          });
-        }
-        
-        // التحقق من أن تاريخ الانتهاء لم يمر
-        if (new Date(groupSub.endDate) < new Date()) {
-          return res.status(403).json({ 
-            message: 'انتهى اشتراك هذه المجموعة. يرجى تجديد الاشتراك.' 
-          });
-        }
-        
-        // التحقق من عدد الشاشات في المجموعة
-        const allScreens = await storage.getScreens(userId);
-        const groupScreens = allScreens.filter(s => s.groupId === input.groupId);
-        if (groupScreens.length >= groupSub.maxScreens) {
-          return res.status(403).json({ 
-            message: `لقد وصلت للحد الأقصى لعدد الشاشات في هذه المجموعة (${groupSub.maxScreens}). يرجى ترقية اشتراك المجموعة.` 
-          });
-        }
-      } else {
-        // شاشة بدون مجموعة - يجب أن تكون في مجموعة
-        return res.status(400).json({ 
-          message: 'يجب إضافة الشاشة إلى مجموعة لديها اشتراك فعال.' 
+      const availableSlots = await storage.getAvailableScreenSlots(userId);
+      if (availableSlots <= 0) {
+        return res.status(403).json({ 
+          message: 'لا توجد شاشات متاحة في اشتراكك. يرجى إضافة اشتراك جديد.' 
         });
       }
 
@@ -203,6 +166,16 @@ export async function registerRoutes(
       }
       throw err;
     }
+  });
+
+  app.patch("/api/screens/:id", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const screen = await storage.getScreen(Number(req.params.id));
+    if (!screen || screen.userId !== userId) {
+      return res.status(404).json({ message: 'الشاشة غير موجودة' });
+    }
+    const updated = await storage.updateScreen(Number(req.params.id), req.body);
+    res.json(updated);
   });
 
   app.get(api.screens.get.path, async (req: any, res) => {
@@ -261,33 +234,22 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
-  // Screen playable check (for player page - checks group subscription)
-  // This endpoint is public as it's used by display screens in public locations
+  // Screen playable check (public endpoint for display screens)
   app.get("/api/screens/:id/playable", async (req, res) => {
     const screenId = Number(req.params.id);
-    
-    // First expire old subscriptions globally
     await storage.expireOldSubscriptions();
     
     const screen = await storage.getScreen(screenId);
     
-    // Return generic "not playable" for security - don't reveal if screen exists
     if (!screen) {
       return res.json({ playable: false, reason: 'unavailable' });
     }
     
-    if (!screen.groupId) {
-      return res.json({ playable: false, reason: 'unavailable' });
-    }
-    
-    const groupSub = await storage.getGroupSubscription(screen.groupId);
-    
-    if (!groupSub) {
-      return res.json({ playable: false, reason: 'subscription_expired' });
-    }
-    
-    if (groupSub.status !== 'active' || new Date(groupSub.endDate) <= new Date()) {
-      return res.json({ playable: false, reason: 'subscription_expired' });
+    if (screen.subscriptionId) {
+      const sub = await storage.getSubscription(screen.subscriptionId);
+      if (!sub || sub.status !== 'active' || new Date(sub.endDate) <= new Date()) {
+        return res.json({ playable: false, reason: 'subscription_expired' });
+      }
     }
     
     return res.json({ playable: true });
@@ -296,36 +258,33 @@ export async function registerRoutes(
   // Schedules
   app.get(api.schedules.list.path, async (req, res) => {
     const screenId = Number(req.params.screenId);
-    
-    // First expire old subscriptions
     await storage.expireOldSubscriptions();
     
-    // Check if screen is playable
     const screen = await storage.getScreen(screenId);
-    if (screen?.groupId) {
-      const groupSub = await storage.getGroupSubscription(screen.groupId);
-      if (!groupSub || groupSub.status !== 'active' || new Date(groupSub.endDate) <= new Date()) {
-        return res.json([]); // Return empty schedules for expired groups
-      }
-    } else if (screen && !screen.groupId) {
-      // Screen without a group can't play content
+    if (!screen) {
       return res.json([]);
     }
+
+    let schedulesList = await storage.getSchedules(screenId);
     
-    const schedules = await storage.getSchedules(screenId);
-    res.json(schedules);
+    if (screen.groupId) {
+      const groupSchedules = await storage.getSchedulesByGroup(screen.groupId);
+      schedulesList = [...schedulesList, ...groupSchedules];
+    }
+    
+    res.json(schedulesList);
   });
 
   app.post(api.schedules.create.path, requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const input = api.schedules.create.input.parse(req.body);
-      const screenId = input.screenId;
-      if (!screenId) return res.status(400).json({ message: "Screen ID is required" });
       
-      const screen = await storage.getScreen(screenId);
-      if (!screen || screen.userId !== userId) {
-         return res.status(403).json({ message: "Forbidden" });
+      if (input.screenId) {
+        const screen = await storage.getScreen(input.screenId);
+        if (!screen || screen.userId !== userId) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
       }
 
       const schedule = await storage.createSchedule(input);
@@ -344,6 +303,18 @@ export async function registerRoutes(
   app.delete(api.schedules.delete.path, requireAuth, async (req, res) => {
     await storage.deleteSchedule(Number(req.params.id));
     res.status(204).send();
+  });
+
+  // Legacy subscription endpoints (for backwards compatibility)
+  app.get("/api/subscription/plans", async (_req, res) => {
+    const plans = await storage.getSubscriptionPlans();
+    res.json(plans);
+  });
+
+  app.get("/api/subscription/status", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const sub = await storage.getUserSubscription(userId);
+    res.json(sub || { status: 'none' });
   });
 
   return httpServer;

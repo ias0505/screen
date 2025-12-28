@@ -7,11 +7,12 @@ import { useAuth } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Screens from "@/pages/Screens";
+import Groups from "@/pages/Groups";
 import Media from "@/pages/Media";
 import Schedule from "@/pages/Schedule";
 import Player from "@/pages/Player";
 import Login from "@/pages/Login";
-import Subscription from "@/pages/Subscription";
+import Subscriptions from "@/pages/Subscriptions";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -49,8 +50,11 @@ function Router() {
       <Route path="/schedule">
         <ProtectedRoute component={Schedule} />
       </Route>
-      <Route path="/subscription">
-        <ProtectedRoute component={Subscription} />
+      <Route path="/groups">
+        <ProtectedRoute component={Groups} />
+      </Route>
+      <Route path="/subscriptions">
+        <ProtectedRoute component={Subscriptions} />
       </Route>
 
       <Route component={NotFound} />

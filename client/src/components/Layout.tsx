@@ -7,7 +7,8 @@ import {
   CalendarClock, 
   LogOut,
   UserCircle,
-  CreditCard
+  CreditCard,
+  Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,9 +19,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
     { href: "/screens", label: "الشاشات", icon: Monitor },
-    { href: "/media", label: "مكتبة المحتوى", icon: ImageIcon },
+    { href: "/groups", label: "المجموعات", icon: Layers },
+    { href: "/media", label: "المحتوى", icon: ImageIcon },
     { href: "/schedule", label: "الجدولة", icon: CalendarClock },
-    { href: "/subscription", label: "الاشتراك", icon: CreditCard },
+    { href: "/subscriptions", label: "الاشتراكات", icon: CreditCard },
   ];
 
   return (

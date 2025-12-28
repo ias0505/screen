@@ -1,13 +1,13 @@
 import { db } from "./db";
 import {
   screens, mediaItems, schedules, screenGroups, mediaGroups,
-  subscriptionPlans, userSubscriptions, screenGroupSubscriptions,
+  subscriptionPlans, userSubscriptions, subscriptions,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
   type Schedule, type InsertSchedule,
   type ScreenGroup, type InsertScreenGroup,
   type MediaGroup, type InsertMediaGroup,
-  type SubscriptionPlan, type UserSubscription, type ScreenGroupSubscription
+  type SubscriptionPlan, type UserSubscription, type Subscription
 } from "@shared/schema";
 import { eq, desc, and, gt, lte } from "drizzle-orm";
 
@@ -15,6 +15,7 @@ export interface IStorage {
   // Screen Groups
   getScreenGroups(userId: string): Promise<ScreenGroup[]>;
   createScreenGroup(group: InsertScreenGroup & { userId: string }): Promise<ScreenGroup>;
+  deleteScreenGroup(id: number): Promise<void>;
   
   // Media Groups
   getMediaGroups(userId: string): Promise<MediaGroup[]>;
@@ -24,6 +25,7 @@ export interface IStorage {
   getScreens(userId: string): Promise<Screen[]>;
   getScreen(id: number): Promise<Screen | undefined>;
   createScreen(screen: InsertScreen & { userId: string }): Promise<Screen>;
+  updateScreen(id: number, data: Partial<Screen>): Promise<Screen>;
   deleteScreen(id: number): Promise<void>;
 
   // Media
@@ -34,24 +36,86 @@ export interface IStorage {
 
   // Schedules
   getSchedules(screenId: number): Promise<(Schedule & { mediaItem: MediaItem })[]>;
+  getSchedulesByGroup(groupId: number): Promise<(Schedule & { mediaItem: MediaItem })[]>;
   createSchedule(schedule: InsertSchedule): Promise<Schedule>;
   deleteSchedule(id: number): Promise<void>;
 
-  // Subscriptions
+  // Subscriptions (independent)
+  getSubscriptions(userId: string): Promise<Subscription[]>;
+  getSubscription(id: number): Promise<Subscription | undefined>;
+  createSubscription(userId: string, screenCount: number, durationYears: number): Promise<Subscription>;
+  getAvailableScreenSlots(userId: string): Promise<number>;
+  expireOldSubscriptions(): Promise<void>;
+  
+  // Legacy subscription plans (for reference)
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   getUserSubscription(userId: string): Promise<(UserSubscription & { plan?: SubscriptionPlan }) | undefined>;
   updateUserSubscription(userId: string, planId: number): Promise<UserSubscription>;
-  
-  // Group Subscriptions
-  getGroupSubscription(groupId: number): Promise<ScreenGroupSubscription | undefined>;
-  getGroupsWithSubscriptions(userId: string): Promise<(ScreenGroup & { subscription?: ScreenGroupSubscription })[]>;
-  createGroupSubscription(groupId: number, userId: string, maxScreens: number, durationYears: number): Promise<ScreenGroupSubscription>;
-  getActiveGroupsForUser(userId: string): Promise<ScreenGroup[]>;
-  expireOldSubscriptions(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // Subscriptions
+  // Subscriptions (independent)
+  async getSubscriptions(userId: string): Promise<Subscription[]> {
+    return await db.select().from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .orderBy(desc(subscriptions.createdAt));
+  }
+
+  async getSubscription(id: number): Promise<Subscription | undefined> {
+    const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.id, id));
+    return sub;
+  }
+
+  async createSubscription(userId: string, screenCount: number, durationYears: number): Promise<Subscription> {
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + durationYears);
+    
+    const pricePerScreen = 50;
+    const totalPrice = screenCount * pricePerScreen * durationYears;
+
+    const [sub] = await db.insert(subscriptions).values({
+      userId,
+      screenCount,
+      durationYears,
+      endDate,
+      pricePerScreen,
+      totalPrice,
+      status: 'active'
+    }).returning();
+    
+    return sub;
+  }
+
+  async getAvailableScreenSlots(userId: string): Promise<number> {
+    await this.expireOldSubscriptions();
+    
+    const now = new Date();
+    const activeSubs = await db.select().from(subscriptions)
+      .where(and(
+        eq(subscriptions.userId, userId),
+        eq(subscriptions.status, 'active'),
+        gt(subscriptions.endDate, now)
+      ));
+    
+    const totalSlots = activeSubs.reduce((sum, sub) => sum + sub.screenCount, 0);
+    
+    const userScreens = await db.select().from(screens).where(eq(screens.userId, userId));
+    const usedSlots = userScreens.length;
+    
+    return Math.max(0, totalSlots - usedSlots);
+  }
+
+  async expireOldSubscriptions(): Promise<void> {
+    const now = new Date();
+    await db.update(subscriptions)
+      .set({ status: 'expired' })
+      .where(and(
+        eq(subscriptions.status, 'active'),
+        lte(subscriptions.endDate, now)
+      ));
+  }
+
+  // Legacy subscription plans
   async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     return await db.select().from(subscriptionPlans);
   }
@@ -68,36 +132,6 @@ export class DatabaseStorage implements IStorage {
 
     const first = result[0];
     return first ? { ...first.subscription, plan: first.plan || undefined } : undefined;
-  }
-
-  async createCustomSubscription(userId: string, maxScreens: number, durationYears: number): Promise<UserSubscription> {
-    const [existing] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId));
-    
-    const currentPeriodEnd = new Date();
-    currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + durationYears);
-
-    const data = {
-      userId,
-      maxScreens,
-      durationYears,
-      status: 'active',
-      currentPeriodEnd,
-      subscriptionType: 'custom',
-      planId: null
-    };
-
-    if (existing) {
-      const [updated] = await db.update(userSubscriptions)
-        .set(data)
-        .where(eq(userSubscriptions.id, existing.id))
-        .returning();
-      return updated;
-    } else {
-      const [inserted] = await db.insert(userSubscriptions)
-        .values(data)
-        .returning();
-      return inserted;
-    }
   }
 
   async updateUserSubscription(userId: string, planId: number): Promise<UserSubscription> {
@@ -131,75 +165,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Group Subscriptions
-  async getGroupSubscription(groupId: number): Promise<ScreenGroupSubscription | undefined> {
-    const [sub] = await db.select().from(screenGroupSubscriptions)
-      .where(eq(screenGroupSubscriptions.groupId, groupId));
-    return sub;
-  }
-
-  async getGroupsWithSubscriptions(userId: string): Promise<(ScreenGroup & { subscription?: ScreenGroupSubscription })[]> {
-    const groups = await db.select().from(screenGroups).where(eq(screenGroups.userId, userId)).orderBy(desc(screenGroups.createdAt));
-    
-    const groupsWithSubs = await Promise.all(groups.map(async (group) => {
-      const [sub] = await db.select().from(screenGroupSubscriptions)
-        .where(eq(screenGroupSubscriptions.groupId, group.id))
-        .orderBy(desc(screenGroupSubscriptions.createdAt))
-        .limit(1);
-      return { ...group, subscription: sub || undefined };
-    }));
-    
-    return groupsWithSubs;
-  }
-
-  async createGroupSubscription(groupId: number, userId: string, maxScreens: number, durationYears: number): Promise<ScreenGroupSubscription> {
-    const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + durationYears);
-    
-    const pricePerScreen = 50;
-    const totalPrice = maxScreens * pricePerScreen * durationYears;
-
-    // Delete existing subscription if any
-    await db.delete(screenGroupSubscriptions).where(eq(screenGroupSubscriptions.groupId, groupId));
-    
-    const [sub] = await db.insert(screenGroupSubscriptions).values({
-      groupId,
-      userId,
-      maxScreens,
-      durationYears,
-      endDate,
-      pricePerScreen,
-      totalPrice,
-      status: 'active'
-    }).returning();
-    
-    return sub;
-  }
-
-  async getActiveGroupsForUser(userId: string): Promise<ScreenGroup[]> {
-    const now = new Date();
-    const result = await db.select({ group: screenGroups })
-      .from(screenGroups)
-      .innerJoin(screenGroupSubscriptions, eq(screenGroups.id, screenGroupSubscriptions.groupId))
-      .where(and(
-        eq(screenGroups.userId, userId),
-        eq(screenGroupSubscriptions.status, 'active'),
-        gt(screenGroupSubscriptions.endDate, now)
-      ));
-    
-    return result.map(r => r.group);
-  }
-
-  async expireOldSubscriptions(): Promise<void> {
-    const now = new Date();
-    await db.update(screenGroupSubscriptions)
-      .set({ status: 'expired' })
-      .where(and(
-        eq(screenGroupSubscriptions.status, 'active'),
-        lte(screenGroupSubscriptions.endDate, now)
-      ));
-  }
-
   // Screen Groups
   async getScreenGroups(userId: string): Promise<ScreenGroup[]> {
     return await db.select().from(screenGroups).where(eq(screenGroups.userId, userId)).orderBy(desc(screenGroups.createdAt));
@@ -208,6 +173,12 @@ export class DatabaseStorage implements IStorage {
   async createScreenGroup(group: InsertScreenGroup & { userId: string }): Promise<ScreenGroup> {
     const [newGroup] = await db.insert(screenGroups).values(group).returning();
     return newGroup;
+  }
+
+  async deleteScreenGroup(id: number): Promise<void> {
+    await db.update(screens).set({ groupId: null }).where(eq(screens.groupId, id));
+    await db.delete(schedules).where(eq(schedules.screenGroupId, id));
+    await db.delete(screenGroups).where(eq(screenGroups.id, id));
   }
 
   // Media Groups
@@ -233,6 +204,11 @@ export class DatabaseStorage implements IStorage {
   async createScreen(screen: InsertScreen & { userId: string }): Promise<Screen> {
     const [newScreen] = await db.insert(screens).values(screen).returning();
     return newScreen;
+  }
+
+  async updateScreen(id: number, data: Partial<Screen>): Promise<Screen> {
+    const [updated] = await db.update(screens).set(data).where(eq(screens.id, id)).returning();
+    return updated;
   }
 
   async deleteScreen(id: number): Promise<void> {
@@ -269,6 +245,19 @@ export class DatabaseStorage implements IStorage {
       .from(schedules)
       .innerJoin(mediaItems, eq(schedules.mediaItemId, mediaItems.id))
       .where(eq(schedules.screenId, screenId))
+      .orderBy(schedules.priority);
+    
+    return result.map(row => ({ ...row.schedule, mediaItem: row.mediaItem }));
+  }
+
+  async getSchedulesByGroup(groupId: number): Promise<(Schedule & { mediaItem: MediaItem })[]> {
+    const result = await db.select({
+        schedule: schedules,
+        mediaItem: mediaItems
+      })
+      .from(schedules)
+      .innerJoin(mediaItems, eq(schedules.mediaItemId, mediaItems.id))
+      .where(eq(schedules.screenGroupId, groupId))
       .orderBy(schedules.priority);
     
     return result.map(row => ({ ...row.schedule, mediaItem: row.mediaItem }));

@@ -123,8 +123,9 @@ export function useCreateSchedule() {
       return api.schedules.create.responses[201].parse(await res.json());
     },
     onSuccess: (_, variables) => {
-      const listUrl = buildUrl(api.schedules.list.path, { screenId: variables.screenId });
-      queryClient.invalidateQueries({ queryKey: [api.schedules.list.path, variables.screenId] });
+      if (variables.screenId) {
+        queryClient.invalidateQueries({ queryKey: [api.schedules.list.path, variables.screenId] });
+      }
       toast({
         title: "تمت الجدولة",
         description: "تمت إضافة المحتوى للجدول بنجاح",
