@@ -1,8 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
-import { useScreenSchedules, useScreen } from "@/hooks/use-screens";
 import { useQuery } from "@tanstack/react-query";
 import { WifiOff, AlertCircle, CreditCard } from "lucide-react";
+
+function getDeviceToken(screenId: number): string | null {
+  return localStorage.getItem(`screen_device_token_${screenId}`) || 
+         localStorage.getItem(`device_token_${screenId}`);
+}
 
 export default function Player() {
   const [, params] = useRoute("/player/:id");
@@ -11,11 +15,49 @@ export default function Player() {
   
   const [isVerifying, setIsVerifying] = useState(true);
   const [isDeviceBound, setIsDeviceBound] = useState(false);
+  const [deviceToken, setDeviceToken] = useState<string | null>(null);
   
-  const { data: screen } = useScreen(screenId);
-  const { data: schedules = [], isLoading } = useScreenSchedules(screenId);
+  // Fetch screen with device token header
+  const { data: screen } = useQuery({
+    queryKey: ['/api/screens', screenId, 'screen'],
+    queryFn: async () => {
+      const token = getDeviceToken(screenId);
+      const res = await fetch(`/api/screens/${screenId}`, {
+        headers: token ? { 'X-Device-Token': token } : {},
+        credentials: 'include',
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: screenId > 0 && isDeviceBound,
+  });
+  
+  // Fetch schedules with device token header
+  const { data: schedules = [], isLoading } = useQuery({
+    queryKey: ['/api/schedules', screenId, 'player'],
+    queryFn: async () => {
+      const token = getDeviceToken(screenId);
+      const res = await fetch(`/api/screens/${screenId}/schedules`, {
+        headers: token ? { 'X-Device-Token': token } : {},
+        credentials: 'include',
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: screenId > 0 && isDeviceBound,
+    refetchInterval: 30000,
+  });
+  
+  // Fetch playable status with device token header
   const { data: playableStatus } = useQuery<{ playable: boolean; reason?: string }>({
     queryKey: ['/api/screens', screenId, 'playable'],
+    queryFn: async () => {
+      const token = getDeviceToken(screenId);
+      const res = await fetch(`/api/screens/${screenId}/playable`, {
+        headers: token ? { 'X-Device-Token': token } : {},
+      });
+      return res.json();
+    },
     enabled: screenId > 0 && isDeviceBound,
     refetchInterval: 60000,
   });
@@ -26,11 +68,9 @@ export default function Player() {
   // Check device binding on mount - redirect to /activate if not bound
   useEffect(() => {
     async function verifyDevice() {
-      // Check both old and new token keys for backward compatibility
-      const deviceToken = localStorage.getItem(`screen_device_token_${screenId}`) || 
-                          localStorage.getItem(`device_token_${screenId}`);
+      const token = getDeviceToken(screenId);
       
-      if (!deviceToken) {
+      if (!token) {
         setLocation("/activate");
         return;
       }
@@ -39,12 +79,13 @@ export default function Player() {
         const response = await fetch("/api/player/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deviceToken, screenId }),
+          body: JSON.stringify({ deviceToken: token, screenId }),
         });
         
         const data = await response.json();
         
         if (data.bound) {
+          setDeviceToken(token);
           setIsDeviceBound(true);
           setIsVerifying(false);
         } else {

@@ -228,18 +228,40 @@ export async function registerRoutes(
   });
 
   app.get(api.screens.get.path, async (req: any, res) => {
-    const screen = await storage.getScreen(Number(req.params.id));
+    const screenId = Number(req.params.id);
+    const deviceToken = req.headers['x-device-token'] as string;
+    
+    const screen = await storage.getScreen(screenId);
     if (!screen) {
       return res.status(404).json({ message: 'Screen not found' });
     }
-    // If authenticated, verify ownership; otherwise allow public read for player
-    if (req.isAuthenticated()) {
+    
+    // If authenticated, verify ownership and return full data
+    if (req.isAuthenticated && req.isAuthenticated()) {
       const userId = req.user.claims.sub;
       if (screen.userId !== userId) {
         return res.status(404).json({ message: 'Screen not found' });
       }
+      return res.json(screen);
     }
-    return res.json(screen);
+    
+    // For unauthenticated requests, require device token
+    if (!deviceToken) {
+      return res.status(403).json({ message: 'Device token required' });
+    }
+    
+    const binding = await storage.getDeviceBinding(deviceToken, screenId);
+    if (!binding) {
+      return res.status(403).json({ message: 'Unauthorized device' });
+    }
+    
+    // Return only minimal data for player
+    return res.json({
+      id: screen.id,
+      name: screen.name,
+      status: screen.status,
+      groupId: screen.groupId,
+    });
   });
 
   app.delete(api.screens.delete.path, requireAuth, async (req: any, res) => {
@@ -286,9 +308,22 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
-  // Screen playable check (public endpoint for display screens)
-  app.get("/api/screens/:id/playable", async (req, res) => {
+  // Screen playable check (requires device token for security)
+  app.get("/api/screens/:id/playable", async (req: any, res) => {
     const screenId = Number(req.params.id);
+    const deviceToken = req.headers['x-device-token'] as string;
+    
+    // Require device token for unauthenticated requests
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      if (!deviceToken) {
+        return res.status(403).json({ playable: false, reason: 'device_token_required' });
+      }
+      const binding = await storage.getDeviceBinding(deviceToken, screenId);
+      if (!binding) {
+        return res.status(403).json({ playable: false, reason: 'unauthorized_device' });
+      }
+    }
+    
     await storage.expireOldSubscriptions();
     
     const screen = await storage.getScreen(screenId);
@@ -307,9 +342,22 @@ export async function registerRoutes(
     return res.json({ playable: true });
   });
 
-  // Schedules
-  app.get(api.schedules.list.path, async (req, res) => {
+  // Schedules (requires device token for unauthenticated access)
+  app.get(api.schedules.list.path, async (req: any, res) => {
     const screenId = Number(req.params.screenId);
+    const deviceToken = req.headers['x-device-token'] as string;
+    
+    // Require device token for unauthenticated requests
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      if (!deviceToken) {
+        return res.status(403).json({ message: 'Device token required' });
+      }
+      const binding = await storage.getDeviceBinding(deviceToken, screenId);
+      if (!binding) {
+        return res.status(403).json({ message: 'Unauthorized device' });
+      }
+    }
+    
     await storage.expireOldSubscriptions();
     
     const screen = await storage.getScreen(screenId);
