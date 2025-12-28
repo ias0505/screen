@@ -262,23 +262,28 @@ export async function registerRoutes(
   });
 
   // Screen playable check (for player page - checks group subscription)
+  // This endpoint is public as it's used by display screens in public locations
   app.get("/api/screens/:id/playable", async (req, res) => {
     const screenId = Number(req.params.id);
+    
+    // First expire old subscriptions globally
+    await storage.expireOldSubscriptions();
+    
     const screen = await storage.getScreen(screenId);
     
+    // Return generic "not playable" for security - don't reveal if screen exists
     if (!screen) {
-      return res.status(404).json({ playable: false, reason: 'not_found' });
+      return res.json({ playable: false, reason: 'unavailable' });
     }
     
     if (!screen.groupId) {
-      return res.json({ playable: false, reason: 'no_group' });
+      return res.json({ playable: false, reason: 'unavailable' });
     }
     
-    await storage.expireOldSubscriptions();
     const groupSub = await storage.getGroupSubscription(screen.groupId);
     
     if (!groupSub) {
-      return res.json({ playable: false, reason: 'no_subscription' });
+      return res.json({ playable: false, reason: 'subscription_expired' });
     }
     
     if (groupSub.status !== 'active' || new Date(groupSub.endDate) <= new Date()) {
@@ -292,6 +297,9 @@ export async function registerRoutes(
   app.get(api.schedules.list.path, async (req, res) => {
     const screenId = Number(req.params.screenId);
     
+    // First expire old subscriptions
+    await storage.expireOldSubscriptions();
+    
     // Check if screen is playable
     const screen = await storage.getScreen(screenId);
     if (screen?.groupId) {
@@ -299,6 +307,9 @@ export async function registerRoutes(
       if (!groupSub || groupSub.status !== 'active' || new Date(groupSub.endDate) <= new Date()) {
         return res.json([]); // Return empty schedules for expired groups
       }
+    } else if (screen && !screen.groupId) {
+      // Screen without a group can't play content
+      return res.json([]);
     }
     
     const schedules = await storage.getSchedules(screenId);
