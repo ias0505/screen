@@ -11,6 +11,7 @@ import Media from "@/pages/Media";
 import Schedule from "@/pages/Schedule";
 import Player from "@/pages/Player";
 import Login from "@/pages/Login";
+import Subscription from "@/pages/Subscription";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -47,6 +48,9 @@ function Router() {
       </Route>
       <Route path="/schedule">
         <ProtectedRoute component={Schedule} />
+      </Route>
+      <Route path="/subscription">
+        <ProtectedRoute component={Subscription} />
       </Route>
 
       <Route component={NotFound} />

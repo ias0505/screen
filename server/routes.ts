@@ -92,6 +92,26 @@ export async function registerRoutes(
     }
   });
 
+  // Subscriptions
+  app.get("/api/subscription/plans", async (_req, res) => {
+    const plans = await storage.getSubscriptionPlans();
+    res.json(plans);
+  });
+
+  app.get("/api/subscription/status", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const sub = await storage.getUserSubscription(userId);
+    res.json(sub || { status: 'none' });
+  });
+
+  app.post("/api/subscription/subscribe", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const { planId } = req.body;
+    if (!planId) return res.status(400).json({ message: "Plan ID is required" });
+    const sub = await storage.updateUserSubscription(userId, planId);
+    res.json(sub);
+  });
+
   // Screens
   app.get(api.screens.list.path, requireAuth, async (req: any, res) => {
     const userId = req.user.claims.sub;
@@ -103,6 +123,18 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const input = api.screens.create.input.parse(req.body);
+      
+      // Check subscription limit
+      const screens = await storage.getScreens(userId);
+      const sub = await storage.getUserSubscription(userId);
+      const maxScreens = sub?.plan.maxScreens || 2; // Default free limit
+
+      if (screens.length >= maxScreens) {
+        return res.status(403).json({ 
+          message: `لقد وصلت للحد الأقصى لعدد الشاشات المسموح به في باقتك الحالية (${maxScreens}). يرجى ترقية الاشتراك.` 
+        });
+      }
+
       const screen = await storage.createScreen({ ...input, userId });
       res.status(201).json(screen);
     } catch (err) {

@@ -22,6 +22,23 @@ export const mediaGroups = pgTable("media_groups", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  maxScreens: integer("max_screens").notNull(),
+  price: integer("price").notNull(), // in cents or currency units
+  description: text("description"),
+});
+
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  planId: integer("plan_id").references(() => subscriptionPlans.id).notNull(),
+  status: text("status").notNull(), // active, expired, trialing
+  currentPeriodEnd: timestamp("current_period_end"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const screens = pgTable("screens", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),

@@ -6,7 +6,8 @@ import {
   Image as ImageIcon, 
   CalendarClock, 
   LogOut,
-  UserCircle
+  UserCircle,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/screens", label: "الشاشات", icon: Monitor },
     { href: "/media", label: "مكتبة المحتوى", icon: ImageIcon },
     { href: "/schedule", label: "الجدولة", icon: CalendarClock },
+    { href: "/subscription", label: "الاشتراك", icon: CreditCard },
   ];
 
   return (

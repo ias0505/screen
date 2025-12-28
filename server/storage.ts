@@ -1,13 +1,15 @@
 import { db } from "./db";
 import {
   screens, mediaItems, schedules, screenGroups, mediaGroups,
+  subscriptionPlans, userSubscriptions,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
   type Schedule, type InsertSchedule,
   type ScreenGroup, type InsertScreenGroup,
-  type MediaGroup, type InsertMediaGroup
+  type MediaGroup, type InsertMediaGroup,
+  type SubscriptionPlan, type UserSubscription
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, gt } from "drizzle-orm";
 
 export interface IStorage {
   // Screen Groups
@@ -34,9 +36,58 @@ export interface IStorage {
   getSchedules(screenId: number): Promise<(Schedule & { mediaItem: MediaItem })[]>;
   createSchedule(schedule: InsertSchedule): Promise<Schedule>;
   deleteSchedule(id: number): Promise<void>;
+
+  // Subscriptions
+  getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  getUserSubscription(userId: string): Promise<(UserSubscription & { plan: SubscriptionPlan }) | undefined>;
+  updateUserSubscription(userId: string, planId: number): Promise<UserSubscription>;
 }
 
 export class DatabaseStorage implements IStorage {
+  // Subscriptions
+  async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return await db.select().from(subscriptionPlans);
+  }
+
+  async getUserSubscription(userId: string): Promise<(UserSubscription & { plan: SubscriptionPlan }) | undefined> {
+    const result = await db.select({
+      subscription: userSubscriptions,
+      plan: subscriptionPlans
+    })
+    .from(userSubscriptions)
+    .innerJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
+    .where(eq(userSubscriptions.userId, userId))
+    .limit(1);
+
+    const first = result[0];
+    return first ? { ...first.subscription, plan: first.plan } : undefined;
+  }
+
+  async updateUserSubscription(userId: string, planId: number): Promise<UserSubscription> {
+    const [existing] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId));
+    
+    const currentPeriodEnd = new Date();
+    currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+
+    if (existing) {
+      const [updated] = await db.update(userSubscriptions)
+        .set({ planId, status: 'active', currentPeriodEnd })
+        .where(eq(userSubscriptions.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [inserted] = await db.insert(userSubscriptions)
+        .values({ 
+          userId, 
+          planId, 
+          status: 'active', 
+          currentPeriodEnd
+        })
+        .returning();
+      return inserted;
+    }
+  }
+
   // Screen Groups
   async getScreenGroups(userId: string): Promise<ScreenGroup[]> {
     return await db.select().from(screenGroups).where(eq(screenGroups.userId, userId)).orderBy(desc(screenGroups.createdAt));
