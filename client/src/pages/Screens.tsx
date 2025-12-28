@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useScreens, useCreateScreen, useDeleteScreen } from "@/hooks/use-screens";
 import { useScreenGroups, useCreateScreenGroup } from "@/hooks/use-groups";
+import { useSubscriptionStatus } from "@/hooks/use-subscription";
 import { useAuth } from "@/hooks/use-auth";
 import Layout from "@/components/Layout";
+import { Link as RouterLink } from "wouter";
+import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Monitor, 
@@ -44,6 +47,7 @@ export default function Screens() {
   const { user } = useAuth();
   const { data: screens = [], isLoading } = useScreens();
   const { data: groups = [] } = useScreenGroups();
+  const { data: subscriptionStatus } = useSubscriptionStatus();
   const createScreen = useCreateScreen();
   const deleteScreen = useDeleteScreen();
   const createGroup = useCreateScreenGroup();
@@ -53,6 +57,10 @@ export default function Screens() {
   
   const [newScreen, setNewScreen] = useState({ name: "", location: "", groupId: "" });
   const [newGroup, setNewGroup] = useState({ name: "", description: "" });
+
+  const maxScreens = subscriptionStatus && 'maxScreens' in subscriptionStatus ? subscriptionStatus.maxScreens : 2;
+  const usedScreens = screens.length;
+  const canAddScreen = usedScreens < maxScreens;
 
   const handleCreateScreen = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,10 +92,25 @@ export default function Screens() {
   return (
     <Layout>
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-3xl font-bold text-foreground">إدارة الشاشات</h1>
             <p className="text-muted-foreground mt-2">تحكم في شاشات العرض والمجموعات الخاصة بك</p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="bg-card border border-border/50 rounded-2xl px-5 py-3 text-center">
+              <p className="text-xs text-muted-foreground mb-1">الشاشات المستخدمة</p>
+              <p className="text-2xl font-bold">
+                <span className={usedScreens >= maxScreens ? 'text-destructive' : 'text-primary'}>{usedScreens}</span>
+                <span className="text-muted-foreground text-lg"> / {maxScreens}</span>
+              </p>
+              {!canAddScreen && (
+                <RouterLink href="/subscription" className="text-xs text-primary hover:underline mt-1 block">
+                  ترقية الباقة
+                </RouterLink>
+              )}
+            </div>
           </div>
           
           <div className="flex gap-2">
@@ -131,9 +154,12 @@ export default function Screens() {
 
             <Dialog open={isScreenOpen} onOpenChange={setIsScreenOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 rounded-xl px-6">
+                <Button 
+                  className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 rounded-xl px-6"
+                  disabled={!canAddScreen}
+                >
                   <Plus className="w-5 h-5" />
-                  <span>إضافة شاشة</span>
+                  <span>{canAddScreen ? 'إضافة شاشة' : 'تم الوصول للحد الأقصى'}</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">

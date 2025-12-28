@@ -143,6 +143,8 @@ export type MediaGroup = typeof mediaGroups.$inferSelect;
 export type Screen = typeof screens.$inferSelect;
 export type MediaItem = typeof mediaItems.$inferSelect;
 export type Schedule = typeof schedules.$inferSelect;
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
 
 export type InsertScreenGroup = z.infer<typeof insertScreenGroupSchema>;
 export type InsertMediaGroup = z.infer<typeof insertMediaGroupSchema>;

@@ -136,7 +136,7 @@ export async function registerRoutes(
       // Check subscription limit
       const screens = await storage.getScreens(userId);
       const sub = await storage.getUserSubscription(userId);
-      const maxScreens = sub?.plan.maxScreens || 2; // Default free limit
+      const maxScreens = sub?.maxScreens || 2; // Default free limit
 
       if (screens.length >= maxScreens) {
         return res.status(403).json({ 

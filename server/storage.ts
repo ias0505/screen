@@ -39,7 +39,7 @@ export interface IStorage {
 
   // Subscriptions
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
-  getUserSubscription(userId: string): Promise<(UserSubscription & { plan: SubscriptionPlan }) | undefined>;
+  getUserSubscription(userId: string): Promise<(UserSubscription & { plan?: SubscriptionPlan }) | undefined>;
   updateUserSubscription(userId: string, planId: number): Promise<UserSubscription>;
 }
 
