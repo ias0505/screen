@@ -358,10 +358,10 @@ function MediaCard({ item, onDelete }: { item: any, onDelete: () => void }) {
       </div>
       
       <div className="p-3 bg-card border-t border-border/50">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h3 className="font-semibold truncate text-sm" title={item.title}>{item.title}</h3>
-          <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-            {item.type === 'image' ? `${item.duration}s` : 'فيديو'}
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">
+            {item.type === 'image' ? 'صورة' : 'فيديو'}
           </span>
         </div>
       </div>
