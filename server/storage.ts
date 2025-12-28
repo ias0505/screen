@@ -99,19 +99,22 @@ export class DatabaseStorage implements IStorage {
         gt(subscriptions.endDate, now)
       ));
     
-    let totalAvailable = 0;
-    for (const sub of activeSubs) {
-      const screensInSub = await db.select().from(screens)
-        .where(eq(screens.subscriptionId, sub.id));
-      const available = sub.screenCount - screensInSub.length;
-      totalAvailable += Math.max(0, available);
-    }
+    const totalSubscribedScreens = activeSubs.reduce((sum, sub) => sum + sub.screenCount, 0);
     
-    return totalAvailable;
+    const allUserScreens = await db.select().from(screens)
+      .where(eq(screens.userId, userId));
+    const totalScreens = allUserScreens.length;
+    
+    return Math.max(0, totalSubscribedScreens - totalScreens);
   }
 
   async findSubscriptionWithAvailableSlot(userId: string): Promise<Subscription | null> {
     await this.expireOldSubscriptions();
+    
+    const availableSlots = await this.getAvailableScreenSlots(userId);
+    if (availableSlots <= 0) {
+      return null;
+    }
     
     const now = new Date();
     const activeSubs = await db.select().from(subscriptions)
@@ -130,7 +133,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    return null;
+    return activeSubs[0] || null;
   }
 
   async getScreensCountBySubscription(subscriptionId: number): Promise<number> {
