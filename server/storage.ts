@@ -49,40 +49,76 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(subscriptionPlans);
   }
 
-  async getUserSubscription(userId: string): Promise<(UserSubscription & { plan: SubscriptionPlan }) | undefined> {
+  async getUserSubscription(userId: string): Promise<(UserSubscription & { plan?: SubscriptionPlan }) | undefined> {
     const result = await db.select({
       subscription: userSubscriptions,
       plan: subscriptionPlans
     })
     .from(userSubscriptions)
-    .innerJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
+    .leftJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
     .where(eq(userSubscriptions.userId, userId))
     .limit(1);
 
     const first = result[0];
-    return first ? { ...first.subscription, plan: first.plan } : undefined;
+    return first ? { ...first.subscription, plan: first.plan || undefined } : undefined;
   }
 
-  async updateUserSubscription(userId: string, planId: number): Promise<UserSubscription> {
+  async createCustomSubscription(userId: string, maxScreens: number, durationYears: number): Promise<UserSubscription> {
     const [existing] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId));
     
     const currentPeriodEnd = new Date();
-    currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+    currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + durationYears);
+
+    const data = {
+      userId,
+      maxScreens,
+      durationYears,
+      status: 'active',
+      currentPeriodEnd,
+      subscriptionType: 'custom',
+      planId: null
+    };
 
     if (existing) {
       const [updated] = await db.update(userSubscriptions)
-        .set({ planId, status: 'active', currentPeriodEnd })
+        .set(data)
         .where(eq(userSubscriptions.id, existing.id))
         .returning();
       return updated;
     } else {
       const [inserted] = await db.insert(userSubscriptions)
-        .values({ 
-          userId, 
-          planId, 
-          status: 'active', 
-          currentPeriodEnd
-        })
+        .values(data)
+        .returning();
+      return inserted;
+    }
+  }
+
+  async updateUserSubscription(userId: string, planId: number): Promise<UserSubscription> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, planId)).limit(1);
+    const [existing] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId));
+    
+    const currentPeriodEnd = new Date();
+    currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+
+    const data = { 
+      userId, 
+      planId, 
+      maxScreens: plan.maxScreens,
+      status: 'active', 
+      currentPeriodEnd,
+      subscriptionType: 'plan',
+      durationYears: 0
+    };
+
+    if (existing) {
+      const [updated] = await db.update(userSubscriptions)
+        .set(data)
+        .where(eq(userSubscriptions.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [inserted] = await db.insert(userSubscriptions)
+        .values(data)
         .returning();
       return inserted;
     }

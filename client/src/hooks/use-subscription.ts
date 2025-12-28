@@ -20,11 +20,11 @@ export function useSubscriptionStatus() {
 export function useSubscribe() {
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (planId: number) => {
+    mutationFn: async (data: { planId?: number; maxScreens?: number; durationYears?: number; type: 'plan' | 'custom' }) => {
       const response = await fetch('/api/subscription/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error('Failed to subscribe');
       return response.json();

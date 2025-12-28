@@ -33,9 +33,12 @@ export const subscriptionPlans = pgTable("subscription_plans", {
 export const userSubscriptions = pgTable("user_subscriptions", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id).notNull(),
-  planId: integer("plan_id").references(() => subscriptionPlans.id).notNull(),
+  planId: integer("plan_id").references(() => subscriptionPlans.id), // Nullable for custom plans
+  maxScreens: integer("max_screens").notNull().default(2),
   status: text("status").notNull(), // active, expired, trialing
   currentPeriodEnd: timestamp("current_period_end"),
+  subscriptionType: text("subscription_type").notNull().default("plan"), // plan, custom
+  durationYears: integer("duration_years").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

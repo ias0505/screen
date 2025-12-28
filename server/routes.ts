@@ -106,7 +106,16 @@ export async function registerRoutes(
 
   app.post("/api/subscription/subscribe", requireAuth, async (req: any, res) => {
     const userId = req.user.claims.sub;
-    const { planId } = req.body;
+    const { planId, maxScreens, durationYears, type } = req.body;
+    
+    if (type === 'custom') {
+      if (!maxScreens || !durationYears) {
+        return res.status(400).json({ message: "Screens count and duration are required for custom subscription" });
+      }
+      const sub = await storage.createCustomSubscription(userId, maxScreens, durationYears);
+      return res.json(sub);
+    }
+
     if (!planId) return res.status(400).json({ message: "Plan ID is required" });
     const sub = await storage.updateUserSubscription(userId, planId);
     res.json(sub);
