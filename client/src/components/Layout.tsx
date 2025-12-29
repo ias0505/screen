@@ -11,13 +11,21 @@ import {
   CreditCard,
   Layers,
   Shield,
-  Users
+  Users,
+  Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Onboarding from "./Onboarding";
+import type { User } from "@shared/schema";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  
+  const { data: profile, isLoading: profileLoading } = useQuery<User>({
+    queryKey: ['/api/user/profile'],
+    enabled: !!user,
+  });
   
   const { data: adminCheck } = useQuery<{ isAdmin: boolean }>({
     queryKey: ['/api/admin/check'],
@@ -35,6 +43,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ...(adminCheck?.isAdmin ? [{ href: "/admin", label: "لوحة المدير", icon: Shield }] : []),
   ];
 
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center" dir="rtl">
+        <div className="text-muted-foreground">جاري التحميل...</div>
+      </div>
+    );
+  }
+
+  if (profile && !profile.companyName) {
+    return <Onboarding />;
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row font-sans" dir="rtl">
       {/* Sidebar */}
@@ -42,10 +62,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="p-6 border-b border-border/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Monitor className="w-6 h-6 text-primary" />
+              <Building2 className="w-6 h-6 text-primary" />
             </div>
-            <div>
-              <h1 className="font-bold text-xl text-foreground tracking-tight">منصة العرض</h1>
+            <div className="overflow-hidden">
+              <h1 className="font-bold text-lg text-foreground tracking-tight truncate" data-testid="text-company-name">
+                {profile?.companyName || 'منصة العرض'}
+              </h1>
               <p className="text-xs text-muted-foreground">لوحة التحكم</p>
             </div>
           </div>

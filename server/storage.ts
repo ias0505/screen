@@ -81,6 +81,7 @@ export interface IStorage {
   // Admin: All users management
   getAllUsers(): Promise<User[]>;
   getUserById(userId: string): Promise<User | undefined>;
+  updateUserCompanyName(userId: string, companyName: string): Promise<User>;
   
   // Admin: All subscriptions
   getAllSubscriptions(): Promise<(Subscription & { user: User })[]>;
@@ -519,6 +520,14 @@ export class DatabaseStorage implements IStorage {
   async getUserById(userId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     return user;
+  }
+
+  async updateUserCompanyName(userId: string, companyName: string): Promise<User> {
+    const [updated] = await db.update(users)
+      .set({ companyName, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return updated;
   }
 
   // Admin: All subscriptions

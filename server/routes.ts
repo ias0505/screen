@@ -999,5 +999,27 @@ export async function registerRoutes(
     }
   });
 
+  // ============ User Profile API ============
+  
+  // Get user profile
+  app.get("/api/user/profile", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const user = await storage.getUserById(userId);
+    res.json(user);
+  });
+
+  // Update company name (onboarding)
+  app.patch("/api/user/company", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const { companyName } = req.body;
+    
+    if (!companyName || companyName.trim().length < 2) {
+      return res.status(400).json({ message: "اسم الشركة مطلوب (حرفين على الأقل)" });
+    }
+    
+    const updated = await storage.updateUserCompanyName(userId, companyName.trim());
+    res.json(updated);
+  });
+
   return httpServer;
 }
