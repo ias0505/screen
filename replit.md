@@ -58,16 +58,31 @@ Preferred communication style: Simple, everyday language.
 - **Runtime**: Node.js with Express
 - **Language**: TypeScript with ESM modules
 - **API Design**: RESTful endpoints with typed route definitions in `shared/routes.ts`
-- **Authentication**: Replit Auth integration via OpenID Connect (Passport.js)
+- **Authentication**: Dual authentication system:
+  - **Email/Password**: Local authentication with bcrypt password hashing (portable for any hosting)
+  - **Replit Auth**: OpenID Connect integration (optional, for Replit environment)
 - **Session Management**: PostgreSQL-backed sessions via connect-pg-simple
 - **File Uploads**: Multer with disk storage to `public/uploads`
+
+### Authentication System
+The platform supports two authentication methods:
+
+1. **Local Email/Password Auth** (Primary, works on any hosting):
+   - Registration: `/api/auth/register` - Creates user with hashed password
+   - Login: `/api/auth/login` - Validates credentials and creates session
+   - Logout: `/api/auth/logout` - Destroys session
+   - Password hashing: bcrypt with 10 rounds
+
+2. **Replit Auth** (Secondary, Replit environment only):
+   - Uses OpenID Connect via `/api/login` route
+   - Automatically creates/updates user profile
 
 ### Data Storage
 - **Database**: PostgreSQL with Drizzle ORM
 - **Schema Location**: `shared/schema.ts` for shared types, `shared/models/auth.ts` for auth tables
 - **Key Tables**:
-  - `users` - User accounts (Replit Auth managed)
-  - `sessions` - Session storage (required for Replit Auth)
+  - `users` - User accounts (supports both auth methods, includes password hash for local auth)
+  - `sessions` - Session storage
   - `screens` - Display screen definitions
   - `mediaItems` - Uploaded media content
   - `schedules` - Content-to-screen assignments
