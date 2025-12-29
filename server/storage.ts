@@ -3,7 +3,7 @@ import {
   screens, mediaItems, schedules, screenGroups, mediaGroups,
   subscriptionPlans, userSubscriptions, subscriptions,
   screenActivationCodes, screenDeviceBindings,
-  admins, adminActivityLogs, invoices, users,
+  admins, adminActivityLogs, invoices, users, teamMembers,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
   type Schedule, type InsertSchedule,
@@ -11,7 +11,7 @@ import {
   type MediaGroup, type InsertMediaGroup,
   type SubscriptionPlan, type UserSubscription, type Subscription,
   type ScreenActivationCode, type ScreenDeviceBinding,
-  type Admin, type AdminActivityLog, type Invoice, type User
+  type Admin, type AdminActivityLog, type Invoice, type User, type TeamMember
 } from "@shared/schema";
 import { eq, desc, and, gt, lte, isNull, sql } from "drizzle-orm";
 
@@ -105,6 +105,16 @@ export interface IStorage {
     paidInvoices: number;
     pendingInvoices: number;
   }>;
+  
+  // Team Members
+  getTeamMembers(ownerId: string): Promise<(TeamMember & { member?: User })[]>;
+  inviteTeamMember(ownerId: string, email: string): Promise<TeamMember>;
+  getTeamMemberByEmail(ownerId: string, email: string): Promise<TeamMember | undefined>;
+  acceptTeamInvitation(memberId: string, ownerId: string, userEmail: string): Promise<TeamMember | null>;
+  rejectTeamInvitation(ownerId: string, userEmail: string): Promise<void>;
+  removeTeamMember(ownerId: string, memberIdOrInvitationId: number): Promise<void>;
+  getOwnerForMember(memberId: string): Promise<string | null>;
+  getPendingInvitations(email: string): Promise<(TeamMember & { owner: User })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -625,6 +635,118 @@ export class DatabaseStorage implements IStorage {
       paidInvoices: Number(paidCount?.count) || 0,
       pendingInvoices: Number(pendingCount?.count) || 0
     };
+  }
+
+  // Team Members
+  async getTeamMembers(ownerId: string): Promise<(TeamMember & { member?: User })[]> {
+    const result = await db.select({
+      teamMember: teamMembers,
+      member: users
+    })
+    .from(teamMembers)
+    .leftJoin(users, eq(teamMembers.memberId, users.id))
+    .where(and(
+      eq(teamMembers.ownerId, ownerId),
+      isNull(teamMembers.removedAt)
+    ))
+    .orderBy(desc(teamMembers.invitedAt));
+    
+    return result.map(r => ({ ...r.teamMember, member: r.member || undefined }));
+  }
+
+  async inviteTeamMember(ownerId: string, email: string): Promise<TeamMember> {
+    const [member] = await db.insert(teamMembers).values({
+      ownerId,
+      memberId: null, // null until member accepts
+      invitedEmail: email,
+      status: 'pending',
+      role: 'member'
+    }).returning();
+    return member;
+  }
+
+  async getTeamMemberByEmail(ownerId: string, email: string): Promise<TeamMember | undefined> {
+    const [member] = await db.select()
+      .from(teamMembers)
+      .where(and(
+        eq(teamMembers.ownerId, ownerId),
+        eq(teamMembers.invitedEmail, email),
+        isNull(teamMembers.removedAt)
+      ));
+    return member;
+  }
+
+  async acceptTeamInvitation(memberId: string, ownerId: string, userEmail: string): Promise<TeamMember | null> {
+    // Find pending invitation for this owner with matching email
+    const [invitation] = await db.select()
+      .from(teamMembers)
+      .where(and(
+        eq(teamMembers.ownerId, ownerId),
+        eq(teamMembers.invitedEmail, userEmail), // Must match invited email
+        eq(teamMembers.status, 'pending'),
+        isNull(teamMembers.removedAt)
+      ));
+    
+    if (!invitation) return null;
+    
+    // Update with the actual member ID
+    const [updated] = await db.update(teamMembers)
+      .set({
+        memberId,
+        status: 'active',
+        joinedAt: new Date()
+      })
+      .where(eq(teamMembers.id, invitation.id))
+      .returning();
+    
+    return updated;
+  }
+
+  async removeTeamMember(ownerId: string, invitationId: number): Promise<void> {
+    await db.update(teamMembers)
+      .set({ removedAt: new Date(), status: 'removed' })
+      .where(and(
+        eq(teamMembers.ownerId, ownerId),
+        eq(teamMembers.id, invitationId)
+      ));
+  }
+
+  async rejectTeamInvitation(ownerId: string, userEmail: string): Promise<void> {
+    await db.update(teamMembers)
+      .set({ removedAt: new Date(), status: 'removed' })
+      .where(and(
+        eq(teamMembers.ownerId, ownerId),
+        eq(teamMembers.invitedEmail, userEmail),
+        eq(teamMembers.status, 'pending')
+      ));
+  }
+
+  async getOwnerForMember(memberId: string): Promise<string | null> {
+    const [result] = await db.select()
+      .from(teamMembers)
+      .where(and(
+        eq(teamMembers.memberId, memberId),
+        eq(teamMembers.status, 'active'),
+        isNull(teamMembers.removedAt)
+      ));
+    
+    return result?.ownerId || null;
+  }
+
+  async getPendingInvitations(email: string): Promise<(TeamMember & { owner: User })[]> {
+    const result = await db.select({
+      teamMember: teamMembers,
+      owner: users
+    })
+    .from(teamMembers)
+    .innerJoin(users, eq(teamMembers.ownerId, users.id))
+    .where(and(
+      eq(teamMembers.invitedEmail, email),
+      eq(teamMembers.status, 'pending'),
+      isNull(teamMembers.removedAt)
+    ));
+    
+    return result.map(r => ({ ...r.teamMember, owner: r.owner }));
   }
 }
 

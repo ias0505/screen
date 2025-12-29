@@ -151,6 +151,19 @@ export const invoices = pgTable("invoices", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// أعضاء الفريق - موظفين تحت الشركة
+export const teamMembers = pgTable("team_members", {
+  id: serial("id").primaryKey(),
+  ownerId: varchar("owner_id").references(() => users.id).notNull(), // مالك الشركة
+  memberId: varchar("member_id").references(() => users.id), // الموظف - null أثناء الانتظار
+  role: text("role").notNull().default("member"), // owner, member
+  status: text("status").notNull().default("pending"), // pending, active, removed
+  invitedEmail: text("invited_email").notNull(), // البريد المدعو - مطلوب للتحقق
+  invitedAt: timestamp("invited_at").defaultNow(),
+  joinedAt: timestamp("joined_at"), // تاريخ القبول
+  removedAt: timestamp("removed_at"), // تاريخ الإزالة
+});
+
 // Relations
 export const screenGroupsRelations = relations(screenGroups, ({ many }) => ({
   screens: many(screens),
@@ -224,6 +237,9 @@ export const insertAdminSchema = createInsertSchema(admins).omit({ id: true, cre
 export const insertAdminActivityLogSchema = createInsertSchema(adminActivityLogs).omit({ id: true, createdAt: true });
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true, paidAt: true });
 
+// Team member schema
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({ id: true, invitedAt: true, joinedAt: true, removedAt: true });
+
 // Types
 export type ScreenGroup = typeof screenGroups.$inferSelect;
 export type MediaGroup = typeof mediaGroups.$inferSelect;
@@ -238,6 +254,7 @@ export type ScreenDeviceBinding = typeof screenDeviceBindings.$inferSelect;
 export type Admin = typeof admins.$inferSelect;
 export type AdminActivityLog = typeof adminActivityLogs.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
+export type TeamMember = typeof teamMembers.$inferSelect;
 
 export type InsertScreenGroup = z.infer<typeof insertScreenGroupSchema>;
 export type InsertMediaGroup = z.infer<typeof insertMediaGroupSchema>;
@@ -250,3 +267,4 @@ export type InsertDeviceBinding = z.infer<typeof insertDeviceBindingSchema>;
 export type InsertAdmin = z.infer<typeof insertAdminSchema>;
 export type InsertAdminActivityLog = z.infer<typeof insertAdminActivityLogSchema>;
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;

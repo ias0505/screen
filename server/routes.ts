@@ -73,6 +73,13 @@ export async function registerRoutes(
     next();
   };
 
+  // Helper to get effective user ID (owner ID if team member)
+  const getEffectiveUserId = async (req: any): Promise<string> => {
+    const userId = req.user.claims.sub;
+    const ownerId = await storage.getOwnerForMember(userId);
+    return ownerId || userId;
+  };
+
   app.post("/api/upload", requireAuth, upload.single("file"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -123,7 +130,7 @@ export async function registerRoutes(
 
   // Screen Groups
   app.get(api.screenGroups.list.path, requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = await getEffectiveUserId(req);
     const groups = await storage.getScreenGroups(userId);
     res.json(groups);
   });
@@ -158,7 +165,7 @@ export async function registerRoutes(
 
   // Media Groups
   app.get(api.mediaGroups.list.path, requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = await getEffectiveUserId(req);
     const groups = await storage.getMediaGroups(userId);
     res.json(groups);
   });
@@ -182,7 +189,7 @@ export async function registerRoutes(
 
   // Screens
   app.get(api.screens.list.path, requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = await getEffectiveUserId(req);
     await storage.expireOldSubscriptions();
     const screens = await storage.getScreens(userId);
     res.json(screens);
@@ -276,7 +283,7 @@ export async function registerRoutes(
 
   // Media
   app.get(api.media.list.path, requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = await getEffectiveUserId(req);
     const media = await storage.getMediaItems(userId);
     res.json(media);
   });
@@ -874,6 +881,100 @@ export async function registerRoutes(
     );
     
     res.status(204).send();
+  });
+
+  // ============ Team Members API ============
+  
+  // Get team members for the current user (owner)
+  app.get("/api/team", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const members = await storage.getTeamMembers(userId);
+    res.json(members);
+  });
+
+  // Invite a team member
+  app.post("/api/team/invite", requireAuth, async (req: any, res) => {
+    const ownerId = req.user.claims.sub;
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: "البريد الإلكتروني مطلوب" });
+    }
+    
+    // Check if already invited
+    const existing = await storage.getTeamMemberByEmail(ownerId, email);
+    if (existing) {
+      return res.status(400).json({ message: "تم دعوة هذا البريد مسبقاً" });
+    }
+    
+    const member = await storage.inviteTeamMember(ownerId, email);
+    res.status(201).json(member);
+  });
+
+  // Remove a team member by invitation ID
+  app.delete("/api/team/:invitationId", requireAuth, async (req: any, res) => {
+    const ownerId = req.user.claims.sub;
+    const invitationId = Number(req.params.invitationId);
+    
+    await storage.removeTeamMember(ownerId, invitationId);
+    res.status(204).send();
+  });
+
+  // Get pending invitations for the current user
+  app.get("/api/team/invitations", requireAuth, async (req: any, res) => {
+    const user = await storage.getUserById(req.user.claims.sub);
+    if (!user?.email) {
+      return res.json([]);
+    }
+    
+    const invitations = await storage.getPendingInvitations(user.email);
+    res.json(invitations);
+  });
+
+  // Accept a team invitation
+  app.post("/api/team/invitations/:ownerId/accept", requireAuth, async (req: any, res) => {
+    const memberId = req.user.claims.sub;
+    const ownerId = req.params.ownerId;
+    
+    const user = await storage.getUserById(memberId);
+    if (!user?.email) {
+      return res.status(400).json({ message: "البريد الإلكتروني غير متوفر" });
+    }
+    
+    const result = await storage.acceptTeamInvitation(memberId, ownerId, user.email);
+    if (!result) {
+      return res.status(403).json({ message: "الدعوة غير موجودة أو ليست موجهة لك" });
+    }
+    
+    res.json(result);
+  });
+
+  // Reject a team invitation
+  app.post("/api/team/invitations/:ownerId/reject", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const ownerId = req.params.ownerId;
+    
+    const user = await storage.getUserById(userId);
+    if (!user?.email) {
+      return res.status(400).json({ message: "البريد الإلكتروني غير متوفر" });
+    }
+    
+    await storage.rejectTeamInvitation(ownerId, user.email);
+    res.status(204).send();
+  });
+
+  // Check if user is a team member and get owner context
+  app.get("/api/team/context", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const ownerId = await storage.getOwnerForMember(userId);
+    
+    if (ownerId) {
+      // User is a team member, return owner context
+      res.json({ isTeamMember: true, ownerId });
+    } else {
+      // User is an owner
+      res.json({ isTeamMember: false, ownerId: userId });
+    }
   });
 
   return httpServer;

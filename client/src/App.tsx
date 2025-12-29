@@ -21,6 +21,7 @@ import AdminSubscriptions from "@/pages/admin/AdminSubscriptions";
 import AdminScreens from "@/pages/admin/AdminScreens";
 import AdminActivity from "@/pages/admin/AdminActivity";
 import AdminAdmins from "@/pages/admin/AdminAdmins";
+import Team from "@/pages/Team";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -87,6 +88,9 @@ function Router() {
       </Route>
       <Route path="/subscriptions">
         <ProtectedRoute component={Subscriptions} />
+      </Route>
+      <Route path="/team">
+        <ProtectedRoute component={Team} />
       </Route>
 
       {/* Admin Routes */}

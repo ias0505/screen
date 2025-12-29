@@ -10,7 +10,8 @@ import {
   UserCircle,
   CreditCard,
   Layers,
-  Shield
+  Shield,
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/media", label: "المحتوى", icon: ImageIcon },
     { href: "/schedule", label: "الجدولة", icon: CalendarClock },
     { href: "/subscriptions", label: "الاشتراكات", icon: CreditCard },
+    { href: "/team", label: "الفريق", icon: Users },
     ...(adminCheck?.isAdmin ? [{ href: "/admin", label: "لوحة المدير", icon: Shield }] : []),
   ];
 
