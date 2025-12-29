@@ -23,6 +23,7 @@ import AdminActivity from "@/pages/admin/AdminActivity";
 import AdminAdmins from "@/pages/admin/AdminAdmins";
 import AdminPlans from "@/pages/admin/AdminPlans";
 import AdminDiscountCodes from "@/pages/admin/AdminDiscountCodes";
+import AdminLayout from "@/components/admin/AdminLayout";
 import Team from "@/pages/Team";
 
 // Protected Route Wrapper
@@ -60,7 +61,11 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
     return <Redirect to="/" />;
   }
 
-  return <Component />;
+  return (
+    <AdminLayout>
+      <Component />
+    </AdminLayout>
+  );
 }
 
 function Router() {
