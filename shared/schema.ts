@@ -62,6 +62,7 @@ export const screens = pgTable("screens", {
   location: text("location"),
   status: text("status").default("offline"), // online, offline
   orientation: text("orientation").default("landscape"), // landscape (عرضي), portrait (طولي)
+  lastHeartbeat: timestamp("last_heartbeat"), // آخر نبضة من المشغّل
   groupId: integer("group_id").references(() => screenGroups.id),
   subscriptionId: integer("subscription_id").references(() => subscriptions.id),
   userId: varchar("user_id").references(() => users.id).notNull(),

@@ -252,8 +252,8 @@ export async function registerRoutes(
       }
     }
     
-    // Update screen status to online
-    await storage.updateScreen(screenId, { status: 'online' });
+    // Update screen status to online with heartbeat timestamp
+    await storage.updateScreen(screenId, { status: 'online', lastHeartbeat: new Date() });
     res.json({ success: true });
   });
 

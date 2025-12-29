@@ -294,7 +294,23 @@ export class DatabaseStorage implements IStorage {
 
   // Screens
   async getScreens(userId: string): Promise<Screen[]> {
-    return await db.select().from(screens).where(eq(screens.userId, userId)).orderBy(desc(screens.createdAt));
+    const allScreens = await db.select().from(screens).where(eq(screens.userId, userId)).orderBy(desc(screens.createdAt));
+    
+    // Check for stale heartbeats and mark screens as offline
+    const now = new Date();
+    const staleThreshold = 60000; // 60 seconds
+    
+    for (const screen of allScreens) {
+      if (screen.status === 'online' && screen.lastHeartbeat) {
+        const timeSinceHeartbeat = now.getTime() - new Date(screen.lastHeartbeat).getTime();
+        if (timeSinceHeartbeat > staleThreshold) {
+          await db.update(screens).set({ status: 'offline' }).where(eq(screens.id, screen.id));
+          screen.status = 'offline';
+        }
+      }
+    }
+    
+    return allScreens;
   }
 
   async getScreen(id: number): Promise<Screen | undefined> {
