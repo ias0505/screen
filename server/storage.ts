@@ -3,15 +3,17 @@ import {
   screens, mediaItems, schedules, screenGroups, mediaGroups,
   subscriptionPlans, userSubscriptions, subscriptions,
   screenActivationCodes, screenDeviceBindings,
+  admins, adminActivityLogs, invoices, users,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
   type Schedule, type InsertSchedule,
   type ScreenGroup, type InsertScreenGroup,
   type MediaGroup, type InsertMediaGroup,
   type SubscriptionPlan, type UserSubscription, type Subscription,
-  type ScreenActivationCode, type ScreenDeviceBinding
+  type ScreenActivationCode, type ScreenDeviceBinding,
+  type Admin, type AdminActivityLog, type Invoice, type User
 } from "@shared/schema";
-import { eq, desc, and, gt, lte, isNull } from "drizzle-orm";
+import { eq, desc, and, gt, lte, isNull, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Screen Groups
@@ -64,6 +66,45 @@ export interface IStorage {
   getDeviceBindingsByScreen(screenId: number): Promise<ScreenDeviceBinding[]>;
   revokeDeviceBinding(id: number): Promise<void>;
   updateDeviceLastSeen(id: number): Promise<void>;
+
+  // Admin operations
+  isAdmin(userId: string): Promise<boolean>;
+  getAdmin(userId: string): Promise<Admin | undefined>;
+  createAdmin(userId: string, role?: string, createdBy?: string): Promise<Admin>;
+  removeAdmin(userId: string): Promise<void>;
+  getAllAdmins(): Promise<(Admin & { user: User })[]>;
+  
+  // Admin activity logging
+  logAdminActivity(adminId: string, action: string, targetType?: string, targetId?: string, details?: string, ipAddress?: string): Promise<AdminActivityLog>;
+  getAdminActivityLogs(limit?: number): Promise<AdminActivityLog[]>;
+  
+  // Admin: All users management
+  getAllUsers(): Promise<User[]>;
+  getUserById(userId: string): Promise<User | undefined>;
+  
+  // Admin: All subscriptions
+  getAllSubscriptions(): Promise<(Subscription & { user: User })[]>;
+  
+  // Admin: All screens
+  getAllScreens(): Promise<(Screen & { user: User })[]>;
+  createScreenForUser(userId: string, name: string, location?: string): Promise<Screen>;
+  
+  // Admin: Invoices
+  getInvoices(): Promise<(Invoice & { user: User, subscription: Subscription })[]>;
+  getInvoice(id: number): Promise<Invoice | undefined>;
+  createInvoice(subscriptionId: number, userId: string, amount: number, createdBy: string, notes?: string): Promise<Invoice>;
+  updateInvoiceStatus(id: number, status: string, paymentMethod?: string): Promise<Invoice>;
+  
+  // Admin: Statistics
+  getSystemStats(): Promise<{
+    totalUsers: number;
+    totalScreens: number;
+    totalSubscriptions: number;
+    activeSubscriptions: number;
+    totalRevenue: number;
+    paidInvoices: number;
+    pendingInvoices: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -402,6 +443,188 @@ export class DatabaseStorage implements IStorage {
     await db.update(screenDeviceBindings)
       .set({ lastSeenAt: new Date() })
       .where(eq(screenDeviceBindings.id, id));
+  }
+
+  // Admin operations
+  async isAdmin(userId: string): Promise<boolean> {
+    const [admin] = await db.select().from(admins).where(eq(admins.userId, userId));
+    return !!admin;
+  }
+
+  async getAdmin(userId: string): Promise<Admin | undefined> {
+    const [admin] = await db.select().from(admins).where(eq(admins.userId, userId));
+    return admin;
+  }
+
+  async createAdmin(userId: string, role: string = 'super_admin', createdBy?: string): Promise<Admin> {
+    const [admin] = await db.insert(admins).values({
+      userId,
+      role,
+      createdBy
+    }).returning();
+    return admin;
+  }
+
+  async removeAdmin(userId: string): Promise<void> {
+    await db.delete(admins).where(eq(admins.userId, userId));
+  }
+
+  async getAllAdmins(): Promise<(Admin & { user: User })[]> {
+    const result = await db.select({
+      admin: admins,
+      user: users
+    })
+    .from(admins)
+    .innerJoin(users, eq(admins.userId, users.id))
+    .orderBy(desc(admins.createdAt));
+    
+    return result.map(r => ({ ...r.admin, user: r.user }));
+  }
+
+  // Admin activity logging
+  async logAdminActivity(adminId: string, action: string, targetType?: string, targetId?: string, details?: string, ipAddress?: string): Promise<AdminActivityLog> {
+    const [log] = await db.insert(adminActivityLogs).values({
+      adminId,
+      action,
+      targetType,
+      targetId,
+      details,
+      ipAddress
+    }).returning();
+    return log;
+  }
+
+  async getAdminActivityLogs(limit: number = 100): Promise<AdminActivityLog[]> {
+    return await db.select().from(adminActivityLogs)
+      .orderBy(desc(adminActivityLogs.createdAt))
+      .limit(limit);
+  }
+
+  // Admin: All users management
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async getUserById(userId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    return user;
+  }
+
+  // Admin: All subscriptions
+  async getAllSubscriptions(): Promise<(Subscription & { user: User })[]> {
+    const result = await db.select({
+      subscription: subscriptions,
+      user: users
+    })
+    .from(subscriptions)
+    .innerJoin(users, eq(subscriptions.userId, users.id))
+    .orderBy(desc(subscriptions.createdAt));
+    
+    return result.map(r => ({ ...r.subscription, user: r.user }));
+  }
+
+  // Admin: All screens
+  async getAllScreens(): Promise<(Screen & { user: User })[]> {
+    const result = await db.select({
+      screen: screens,
+      user: users
+    })
+    .from(screens)
+    .innerJoin(users, eq(screens.userId, users.id))
+    .orderBy(desc(screens.createdAt));
+    
+    return result.map(r => ({ ...r.screen, user: r.user }));
+  }
+
+  async createScreenForUser(userId: string, name: string, location?: string): Promise<Screen> {
+    const [screen] = await db.insert(screens).values({
+      userId,
+      name,
+      location,
+      status: 'offline'
+    }).returning();
+    return screen;
+  }
+
+  // Admin: Invoices
+  async getInvoices(): Promise<(Invoice & { user: User, subscription: Subscription })[]> {
+    const result = await db.select({
+      invoice: invoices,
+      user: users,
+      subscription: subscriptions
+    })
+    .from(invoices)
+    .innerJoin(users, eq(invoices.userId, users.id))
+    .innerJoin(subscriptions, eq(invoices.subscriptionId, subscriptions.id))
+    .orderBy(desc(invoices.createdAt));
+    
+    return result.map(r => ({ ...r.invoice, user: r.user, subscription: r.subscription }));
+  }
+
+  async getInvoice(id: number): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
+    return invoice;
+  }
+
+  async createInvoice(subscriptionId: number, userId: string, amount: number, createdBy: string, notes?: string): Promise<Invoice> {
+    const [invoice] = await db.insert(invoices).values({
+      subscriptionId,
+      userId,
+      amount,
+      status: 'pending',
+      createdBy,
+      notes
+    }).returning();
+    return invoice;
+  }
+
+  async updateInvoiceStatus(id: number, status: string, paymentMethod?: string): Promise<Invoice> {
+    const updateData: any = { status };
+    if (paymentMethod) updateData.paymentMethod = paymentMethod;
+    if (status === 'paid') updateData.paidAt = new Date();
+    
+    const [updated] = await db.update(invoices)
+      .set(updateData)
+      .where(eq(invoices.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Admin: Statistics
+  async getSystemStats(): Promise<{
+    totalUsers: number;
+    totalScreens: number;
+    totalSubscriptions: number;
+    activeSubscriptions: number;
+    totalRevenue: number;
+    paidInvoices: number;
+    pendingInvoices: number;
+  }> {
+    const [usersCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
+    const [screensCount] = await db.select({ count: sql<number>`count(*)` }).from(screens);
+    const [subsCount] = await db.select({ count: sql<number>`count(*)` }).from(subscriptions);
+    const [activeSubsCount] = await db.select({ count: sql<number>`count(*)` })
+      .from(subscriptions)
+      .where(eq(subscriptions.status, 'active'));
+    const [revenueResult] = await db.select({ sum: sql<number>`COALESCE(SUM(amount), 0)` })
+      .from(invoices)
+      .where(eq(invoices.status, 'paid'));
+    const [paidCount] = await db.select({ count: sql<number>`count(*)` })
+      .from(invoices)
+      .where(eq(invoices.status, 'paid'));
+    const [pendingCount] = await db.select({ count: sql<number>`count(*)` })
+      .from(invoices)
+      .where(eq(invoices.status, 'pending'));
+
+    return {
+      totalUsers: Number(usersCount?.count) || 0,
+      totalScreens: Number(screensCount?.count) || 0,
+      totalSubscriptions: Number(subsCount?.count) || 0,
+      activeSubscriptions: Number(activeSubsCount?.count) || 0,
+      totalRevenue: Number(revenueResult?.sum) || 0,
+      paidInvoices: Number(paidCount?.count) || 0,
+      pendingInvoices: Number(pendingCount?.count) || 0
+    };
   }
 }
 

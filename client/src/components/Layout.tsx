@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
   Monitor, 
@@ -8,13 +9,19 @@ import {
   LogOut,
   UserCircle,
   CreditCard,
-  Layers
+  Layers,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  
+  const { data: adminCheck } = useQuery<{ isAdmin: boolean }>({
+    queryKey: ['/api/admin/check'],
+    enabled: !!user,
+  });
 
   const navItems = [
     { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
@@ -23,6 +30,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/media", label: "المحتوى", icon: ImageIcon },
     { href: "/schedule", label: "الجدولة", icon: CalendarClock },
     { href: "/subscriptions", label: "الاشتراكات", icon: CreditCard },
+    ...(adminCheck?.isAdmin ? [{ href: "/admin", label: "لوحة المدير", icon: Shield }] : []),
   ];
 
   return (

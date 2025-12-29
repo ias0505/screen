@@ -649,5 +649,232 @@ export async function registerRoutes(
     res.json(sub || { status: 'none' });
   });
 
+  // ==================== Admin Routes ====================
+  
+  // Middleware للتحقق من صلاحيات المدير
+  const requireAdmin = async (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "غير مصرح" });
+    }
+    const userId = req.user.claims.sub;
+    const isAdmin = await storage.isAdmin(userId);
+    if (!isAdmin) {
+      return res.status(403).json({ message: "لا تملك صلاحيات المدير" });
+    }
+    next();
+  };
+
+  // Admin: Check if current user is admin
+  app.get("/api/admin/check", requireAuth, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const admin = await storage.getAdmin(userId);
+    res.json({ isAdmin: !!admin, role: admin?.role });
+  });
+
+  // Admin: Get system statistics
+  app.get("/api/admin/stats", requireAdmin, async (req: any, res) => {
+    const stats = await storage.getSystemStats();
+    res.json(stats);
+  });
+
+  // Admin: Get all users
+  app.get("/api/admin/users", requireAdmin, async (req: any, res) => {
+    const users = await storage.getAllUsers();
+    res.json(users);
+  });
+
+  // Admin: Get user details with subscriptions and screens
+  app.get("/api/admin/users/:id", requireAdmin, async (req: any, res) => {
+    const userId = req.params.id;
+    const user = await storage.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "المستخدم غير موجود" });
+    }
+    const userSubscriptions = await storage.getSubscriptions(userId);
+    const userScreens = await storage.getScreens(userId);
+    res.json({ user, subscriptions: userSubscriptions, screens: userScreens });
+  });
+
+  // Admin: Add screen to user without subscription
+  app.post("/api/admin/users/:id/screens", requireAdmin, async (req: any, res) => {
+    const adminId = req.user.claims.sub;
+    const userId = req.params.id;
+    const { name, location } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ message: "اسم الشاشة مطلوب" });
+    }
+    
+    const user = await storage.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "المستخدم غير موجود" });
+    }
+    
+    const screen = await storage.createScreenForUser(userId, name, location);
+    
+    // Log admin activity
+    await storage.logAdminActivity(
+      adminId, 
+      'screen_added_to_user', 
+      'screen', 
+      String(screen.id),
+      JSON.stringify({ userId, name, location }),
+      req.ip
+    );
+    
+    res.status(201).json(screen);
+  });
+
+  // Admin: Get all subscriptions
+  app.get("/api/admin/subscriptions", requireAdmin, async (req: any, res) => {
+    await storage.expireOldSubscriptions();
+    const subs = await storage.getAllSubscriptions();
+    res.json(subs);
+  });
+
+  // Admin: Create subscription for user
+  app.post("/api/admin/users/:id/subscriptions", requireAdmin, async (req: any, res) => {
+    const adminId = req.user.claims.sub;
+    const userId = req.params.id;
+    const { screenCount, durationYears } = req.body;
+    
+    if (!screenCount || !durationYears) {
+      return res.status(400).json({ message: "يرجى تحديد عدد الشاشات ومدة الاشتراك" });
+    }
+    
+    const user = await storage.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "المستخدم غير موجود" });
+    }
+    
+    const subscription = await storage.createSubscription(userId, screenCount, durationYears);
+    
+    // Create invoice for the subscription
+    const amount = screenCount * 50 * durationYears;
+    await storage.createInvoice(subscription.id, userId, amount, adminId);
+    
+    // Log admin activity
+    await storage.logAdminActivity(
+      adminId,
+      'subscription_created',
+      'subscription',
+      String(subscription.id),
+      JSON.stringify({ userId, screenCount, durationYears, amount }),
+      req.ip
+    );
+    
+    res.status(201).json(subscription);
+  });
+
+  // Admin: Get all screens
+  app.get("/api/admin/screens", requireAdmin, async (req: any, res) => {
+    const screens = await storage.getAllScreens();
+    res.json(screens);
+  });
+
+  // Admin: Get all invoices
+  app.get("/api/admin/invoices", requireAdmin, async (req: any, res) => {
+    const invoices = await storage.getInvoices();
+    res.json(invoices);
+  });
+
+  // Admin: Update invoice status
+  app.patch("/api/admin/invoices/:id", requireAdmin, async (req: any, res) => {
+    const adminId = req.user.claims.sub;
+    const invoiceId = Number(req.params.id);
+    const { status, paymentMethod } = req.body;
+    
+    const invoice = await storage.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({ message: "الفاتورة غير موجودة" });
+    }
+    
+    const updated = await storage.updateInvoiceStatus(invoiceId, status, paymentMethod);
+    
+    // Log admin activity
+    await storage.logAdminActivity(
+      adminId,
+      'invoice_updated',
+      'invoice',
+      String(invoiceId),
+      JSON.stringify({ oldStatus: invoice.status, newStatus: status, paymentMethod }),
+      req.ip
+    );
+    
+    res.json(updated);
+  });
+
+  // Admin: Get activity logs
+  app.get("/api/admin/activity-logs", requireAdmin, async (req: any, res) => {
+    const limit = Number(req.query.limit) || 100;
+    const logs = await storage.getAdminActivityLogs(limit);
+    res.json(logs);
+  });
+
+  // Admin: Get all admins
+  app.get("/api/admin/admins", requireAdmin, async (req: any, res) => {
+    const admins = await storage.getAllAdmins();
+    res.json(admins);
+  });
+
+  // Admin: Make user an admin
+  app.post("/api/admin/admins", requireAdmin, async (req: any, res) => {
+    const creatorId = req.user.claims.sub;
+    const { userId, role } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ message: "معرف المستخدم مطلوب" });
+    }
+    
+    const user = await storage.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "المستخدم غير موجود" });
+    }
+    
+    const existingAdmin = await storage.getAdmin(userId);
+    if (existingAdmin) {
+      return res.status(400).json({ message: "المستخدم مدير بالفعل" });
+    }
+    
+    const admin = await storage.createAdmin(userId, role || 'admin', creatorId);
+    
+    // Log admin activity
+    await storage.logAdminActivity(
+      creatorId,
+      'admin_created',
+      'admin',
+      userId,
+      JSON.stringify({ role: role || 'admin' }),
+      req.ip
+    );
+    
+    res.status(201).json(admin);
+  });
+
+  // Admin: Remove admin
+  app.delete("/api/admin/admins/:userId", requireAdmin, async (req: any, res) => {
+    const creatorId = req.user.claims.sub;
+    const userId = req.params.userId;
+    
+    // Prevent self-removal
+    if (creatorId === userId) {
+      return res.status(400).json({ message: "لا يمكنك إزالة نفسك من المدراء" });
+    }
+    
+    await storage.removeAdmin(userId);
+    
+    // Log admin activity
+    await storage.logAdminActivity(
+      creatorId,
+      'admin_removed',
+      'admin',
+      userId,
+      undefined,
+      req.ip
+    );
+    
+    res.status(204).send();
+  });
+
   return httpServer;
 }

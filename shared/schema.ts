@@ -115,6 +115,42 @@ export const screenDeviceBindings = pgTable("screen_device_bindings", {
   revokedAt: timestamp("revoked_at"), // null = فعال
 });
 
+// المدراء - Super Admin للتحكم الكامل بالنظام
+export const admins = pgTable("admins", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull().unique(),
+  role: text("role").notNull().default("super_admin"), // super_admin, admin
+  permissions: text("permissions").array(), // صلاحيات إضافية
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: varchar("created_by").references(() => users.id),
+});
+
+// سجل نشاطات المدراء
+export const adminActivityLogs = pgTable("admin_activity_logs", {
+  id: serial("id").primaryKey(),
+  adminId: varchar("admin_id").references(() => users.id).notNull(),
+  action: text("action").notNull(), // user_created, subscription_added, screen_added, etc.
+  targetType: text("target_type"), // user, subscription, screen, etc.
+  targetId: text("target_id"), // ID of the target
+  details: text("details"), // JSON string with additional details
+  ipAddress: text("ip_address"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// الفواتير
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  subscriptionId: integer("subscription_id").references(() => subscriptions.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  amount: integer("amount").notNull(), // المبلغ بالريال
+  status: text("status").notNull().default("pending"), // pending, paid, cancelled
+  paymentMethod: text("payment_method"), // cash, bank_transfer, online
+  paidAt: timestamp("paid_at"),
+  notes: text("notes"),
+  createdBy: varchar("created_by").references(() => users.id), // المدير الذي أنشأ الفاتورة
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const screenGroupsRelations = relations(screenGroups, ({ many }) => ({
   screens: many(screens),
@@ -183,6 +219,11 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
 export const insertActivationCodeSchema = createInsertSchema(screenActivationCodes).omit({ id: true, createdAt: true, usedAt: true });
 export const insertDeviceBindingSchema = createInsertSchema(screenDeviceBindings).omit({ id: true, activatedAt: true, lastSeenAt: true, revokedAt: true });
 
+// Admin schemas
+export const insertAdminSchema = createInsertSchema(admins).omit({ id: true, createdAt: true });
+export const insertAdminActivityLogSchema = createInsertSchema(adminActivityLogs).omit({ id: true, createdAt: true });
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true, paidAt: true });
+
 // Types
 export type ScreenGroup = typeof screenGroups.$inferSelect;
 export type MediaGroup = typeof mediaGroups.$inferSelect;
@@ -194,6 +235,9 @@ export type UserSubscription = typeof userSubscriptions.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type ScreenActivationCode = typeof screenActivationCodes.$inferSelect;
 export type ScreenDeviceBinding = typeof screenDeviceBindings.$inferSelect;
+export type Admin = typeof admins.$inferSelect;
+export type AdminActivityLog = typeof adminActivityLogs.$inferSelect;
+export type Invoice = typeof invoices.$inferSelect;
 
 export type InsertScreenGroup = z.infer<typeof insertScreenGroupSchema>;
 export type InsertMediaGroup = z.infer<typeof insertMediaGroupSchema>;
@@ -203,3 +247,6 @@ export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 export type InsertActivationCode = z.infer<typeof insertActivationCodeSchema>;
 export type InsertDeviceBinding = z.infer<typeof insertDeviceBindingSchema>;
+export type InsertAdmin = z.infer<typeof insertAdminSchema>;
+export type InsertAdminActivityLog = z.infer<typeof insertAdminActivityLogSchema>;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
