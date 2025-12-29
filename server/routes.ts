@@ -906,6 +906,149 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // ============ Admin: Subscription Plans Management ============
+  
+  // Get all subscription plans
+  app.get("/api/admin/plans", requireAdmin, async (req: any, res) => {
+    const plans = await storage.getAllSubscriptionPlans();
+    res.json(plans);
+  });
+
+  // Create subscription plan
+  app.post("/api/admin/plans", requireAdmin, async (req: any, res) => {
+    const adminId = req.user.claims.sub;
+    const { name, description, pricePerScreen, minScreens, maxScreens, discountPercentage, features, isActive, isDefault } = req.body;
+    
+    if (!name || !pricePerScreen) {
+      return res.status(400).json({ message: "اسم الخطة وسعر الشاشة مطلوبان" });
+    }
+    
+    const plan = await storage.createSubscriptionPlan({
+      name,
+      description,
+      pricePerScreen,
+      minScreens: minScreens || 1,
+      maxScreens: maxScreens || null,
+      discountPercentage: discountPercentage || 0,
+      features: features ? JSON.stringify(features) : null,
+      isActive: isActive !== false,
+      isDefault: isDefault || false
+    });
+    
+    await storage.logAdminActivity(adminId, 'plan_created', 'plan', String(plan.id), JSON.stringify({ name, pricePerScreen }), req.ip);
+    res.status(201).json(plan);
+  });
+
+  // Update subscription plan
+  app.patch("/api/admin/plans/:id", requireAdmin, async (req: any, res) => {
+    const adminId = req.user.claims.sub;
+    const planId = Number(req.params.id);
+    const updates = req.body;
+    
+    const plan = await storage.getSubscriptionPlan(planId);
+    if (!plan) {
+      return res.status(404).json({ message: "الخطة غير موجودة" });
+    }
+    
+    if (updates.features && typeof updates.features !== 'string') {
+      updates.features = JSON.stringify(updates.features);
+    }
+    
+    const updated = await storage.updateSubscriptionPlan(planId, updates);
+    await storage.logAdminActivity(adminId, 'plan_updated', 'plan', String(planId), JSON.stringify(updates), req.ip);
+    res.json(updated);
+  });
+
+  // Delete subscription plan
+  app.delete("/api/admin/plans/:id", requireAdmin, async (req: any, res) => {
+    const adminId = req.user.claims.sub;
+    const planId = Number(req.params.id);
+    
+    const plan = await storage.getSubscriptionPlan(planId);
+    if (!plan) {
+      return res.status(404).json({ message: "الخطة غير موجودة" });
+    }
+    
+    await storage.deleteSubscriptionPlan(planId);
+    await storage.logAdminActivity(adminId, 'plan_deleted', 'plan', String(planId), JSON.stringify({ name: plan.name }), req.ip);
+    res.status(204).send();
+  });
+
+  // ============ Admin: Discount Codes Management ============
+  
+  // Get all discount codes
+  app.get("/api/admin/discount-codes", requireAdmin, async (req: any, res) => {
+    const codes = await storage.getAllDiscountCodes();
+    res.json(codes);
+  });
+
+  // Create discount code
+  app.post("/api/admin/discount-codes", requireAdmin, async (req: any, res) => {
+    const adminId = req.user.claims.sub;
+    const { code, description, discountType, discountValue, minScreens, maxUses, validFrom, validUntil, isActive } = req.body;
+    
+    if (!code || !discountValue) {
+      return res.status(400).json({ message: "كود الخصم وقيمة الخصم مطلوبان" });
+    }
+    
+    // Check if code already exists
+    const existing = await storage.getDiscountCodeByCode(code);
+    if (existing) {
+      return res.status(400).json({ message: "كود الخصم موجود بالفعل" });
+    }
+    
+    const discountCode = await storage.createDiscountCode({
+      code: code.toUpperCase(),
+      description,
+      discountType: discountType || 'percentage',
+      discountValue,
+      minScreens: minScreens || 1,
+      maxUses: maxUses || null,
+      validFrom: validFrom ? new Date(validFrom) : new Date(),
+      validUntil: validUntil ? new Date(validUntil) : null,
+      isActive: isActive !== false,
+      createdBy: adminId
+    });
+    
+    await storage.logAdminActivity(adminId, 'discount_code_created', 'discount_code', String(discountCode.id), JSON.stringify({ code, discountValue }), req.ip);
+    res.status(201).json(discountCode);
+  });
+
+  // Update discount code
+  app.patch("/api/admin/discount-codes/:id", requireAdmin, async (req: any, res) => {
+    const adminId = req.user.claims.sub;
+    const codeId = Number(req.params.id);
+    const updates = req.body;
+    
+    const discountCode = await storage.getDiscountCode(codeId);
+    if (!discountCode) {
+      return res.status(404).json({ message: "كود الخصم غير موجود" });
+    }
+    
+    if (updates.validFrom) updates.validFrom = new Date(updates.validFrom);
+    if (updates.validUntil) updates.validUntil = new Date(updates.validUntil);
+    if (updates.code) updates.code = updates.code.toUpperCase();
+    
+    const updated = await storage.updateDiscountCode(codeId, updates);
+    await storage.logAdminActivity(adminId, 'discount_code_updated', 'discount_code', String(codeId), JSON.stringify(updates), req.ip);
+    res.json(updated);
+  });
+
+  // Delete discount code
+  app.delete("/api/admin/discount-codes/:id", requireAdmin, async (req: any, res) => {
+    const adminId = req.user.claims.sub;
+    const codeId = Number(req.params.id);
+    
+    const discountCode = await storage.getDiscountCode(codeId);
+    if (!discountCode) {
+      return res.status(404).json({ message: "كود الخصم غير موجود" });
+    }
+    
+    await storage.deleteDiscountCode(codeId);
+    await storage.logAdminActivity(adminId, 'discount_code_deleted', 'discount_code', String(codeId), JSON.stringify({ code: discountCode.code }), req.ip);
+    res.status(204).send();
+  });
+
   // ============ Team Members API ============
   
   // Get team members for the current user (owner)

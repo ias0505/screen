@@ -1,7 +1,7 @@
 import { db } from "./db";
 import {
   screens, mediaItems, schedules, screenGroups, mediaGroups,
-  subscriptionPlans, userSubscriptions, subscriptions,
+  subscriptionPlans, userSubscriptions, subscriptions, discountCodes,
   screenActivationCodes, screenDeviceBindings,
   admins, adminActivityLogs, invoices, users, teamMembers,
   type Screen, type InsertScreen,
@@ -9,9 +9,10 @@ import {
   type Schedule, type InsertSchedule,
   type ScreenGroup, type InsertScreenGroup,
   type MediaGroup, type InsertMediaGroup,
-  type SubscriptionPlan, type UserSubscription, type Subscription,
+  type SubscriptionPlan, type UserSubscription, type Subscription, type DiscountCode,
   type ScreenActivationCode, type ScreenDeviceBinding,
-  type Admin, type AdminActivityLog, type Invoice, type User, type TeamMember
+  type Admin, type AdminActivityLog, type Invoice, type User, type TeamMember,
+  type InsertSubscriptionPlan, type InsertDiscountCode
 } from "@shared/schema";
 import { eq, desc, and, gt, lte, isNull, sql, ne } from "drizzle-orm";
 
@@ -117,6 +118,22 @@ export interface IStorage {
   removeTeamMember(ownerId: string, memberIdOrInvitationId: number): Promise<void>;
   getOwnerForMember(memberId: string): Promise<string | null>;
   getPendingInvitations(email: string): Promise<(TeamMember & { owner: User })[]>;
+  
+  // Admin: Subscription Plans Management
+  getAllSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined>;
+  createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
+  updateSubscriptionPlan(id: number, plan: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan>;
+  deleteSubscriptionPlan(id: number): Promise<void>;
+  
+  // Admin: Discount Codes Management
+  getAllDiscountCodes(): Promise<DiscountCode[]>;
+  getDiscountCode(id: number): Promise<DiscountCode | undefined>;
+  getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined>;
+  createDiscountCode(code: InsertDiscountCode): Promise<DiscountCode>;
+  updateDiscountCode(id: number, code: Partial<InsertDiscountCode>): Promise<DiscountCode>;
+  deleteDiscountCode(id: number): Promise<void>;
+  incrementDiscountCodeUsage(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -787,6 +804,71 @@ export class DatabaseStorage implements IStorage {
     ));
     
     return result.map(r => ({ ...r.teamMember, owner: r.owner }));
+  }
+
+  // Admin: Subscription Plans Management
+  async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return await db.select().from(subscriptionPlans).orderBy(desc(subscriptionPlans.createdAt));
+  }
+
+  async getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    return plan;
+  }
+
+  async createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+    const [created] = await db.insert(subscriptionPlans).values(plan).returning();
+    return created;
+  }
+
+  async updateSubscriptionPlan(id: number, plan: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan> {
+    const [updated] = await db.update(subscriptionPlans)
+      .set(plan)
+      .where(eq(subscriptionPlans.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSubscriptionPlan(id: number): Promise<void> {
+    await db.delete(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+  }
+
+  // Admin: Discount Codes Management
+  async getAllDiscountCodes(): Promise<DiscountCode[]> {
+    return await db.select().from(discountCodes).orderBy(desc(discountCodes.createdAt));
+  }
+
+  async getDiscountCode(id: number): Promise<DiscountCode | undefined> {
+    const [code] = await db.select().from(discountCodes).where(eq(discountCodes.id, id));
+    return code;
+  }
+
+  async getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
+    const [result] = await db.select().from(discountCodes).where(eq(discountCodes.code, code));
+    return result;
+  }
+
+  async createDiscountCode(code: InsertDiscountCode): Promise<DiscountCode> {
+    const [created] = await db.insert(discountCodes).values(code).returning();
+    return created;
+  }
+
+  async updateDiscountCode(id: number, code: Partial<InsertDiscountCode>): Promise<DiscountCode> {
+    const [updated] = await db.update(discountCodes)
+      .set(code)
+      .where(eq(discountCodes.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteDiscountCode(id: number): Promise<void> {
+    await db.delete(discountCodes).where(eq(discountCodes.id, id));
+  }
+
+  async incrementDiscountCodeUsage(id: number): Promise<void> {
+    await db.update(discountCodes)
+      .set({ usedCount: sql`${discountCodes.usedCount} + 1` })
+      .where(eq(discountCodes.id, id));
   }
 }
 
