@@ -25,9 +25,32 @@ export const mediaGroups = pgTable("media_groups", {
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  maxScreens: integer("max_screens").notNull(),
-  price: integer("price").notNull(), // in cents or currency units
   description: text("description"),
+  pricePerScreen: integer("price_per_screen").notNull().default(50), // سعر الشاشة الواحدة بالريال
+  minScreens: integer("min_screens").default(1), // الحد الأدنى للشاشات
+  maxScreens: integer("max_screens"), // الحد الأقصى للشاشات (null = غير محدود)
+  discountPercentage: integer("discount_percentage").default(0), // نسبة الخصم
+  features: text("features"), // المميزات (JSON)
+  isActive: boolean("is_active").default(true), // هل الخطة فعالة؟
+  isDefault: boolean("is_default").default(false), // الخطة الافتراضية
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// أكواد الخصم
+export const discountCodes = pgTable("discount_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(), // كود الخصم
+  description: text("description"), // وصف الخصم
+  discountType: text("discount_type").notNull().default("percentage"), // percentage, fixed
+  discountValue: integer("discount_value").notNull(), // قيمة الخصم (نسبة أو مبلغ ثابت)
+  minScreens: integer("min_screens").default(1), // الحد الأدنى للشاشات للاستفادة
+  maxUses: integer("max_uses"), // الحد الأقصى للاستخدام (null = غير محدود)
+  usedCount: integer("used_count").default(0), // عدد مرات الاستخدام
+  validFrom: timestamp("valid_from").defaultNow(), // تاريخ بداية الصلاحية
+  validUntil: timestamp("valid_until"), // تاريخ انتهاء الصلاحية (null = دائم)
+  isActive: boolean("is_active").default(true), // هل الكود فعال؟
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const userSubscriptions = pgTable("user_subscriptions", {
@@ -241,6 +264,10 @@ export const insertAdminSchema = createInsertSchema(admins).omit({ id: true, cre
 export const insertAdminActivityLogSchema = createInsertSchema(adminActivityLogs).omit({ id: true, createdAt: true });
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true, paidAt: true });
 
+// Subscription plans and discount codes schemas
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true, createdAt: true });
+export const insertDiscountCodeSchema = createInsertSchema(discountCodes).omit({ id: true, createdAt: true, usedCount: true });
+
 // Team member schema
 export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({ id: true, invitedAt: true, joinedAt: true, removedAt: true });
 
@@ -253,6 +280,7 @@ export type Schedule = typeof schedules.$inferSelect;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
+export type DiscountCode = typeof discountCodes.$inferSelect;
 export type ScreenActivationCode = typeof screenActivationCodes.$inferSelect;
 export type ScreenDeviceBinding = typeof screenDeviceBindings.$inferSelect;
 export type Admin = typeof admins.$inferSelect;
@@ -272,3 +300,5 @@ export type InsertAdmin = z.infer<typeof insertAdminSchema>;
 export type InsertAdminActivityLog = z.infer<typeof insertAdminActivityLogSchema>;
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type InsertDiscountCode = z.infer<typeof insertDiscountCodeSchema>;
