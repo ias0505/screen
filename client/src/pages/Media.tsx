@@ -53,9 +53,7 @@ export default function Media() {
     title: "", 
     url: "", 
     type: "image" as "image" | "video",
-    groupId: "",
-    width: "",
-    height: ""
+    groupId: ""
   });
   const [newGroup, setNewGroup] = useState({ name: "", description: "" });
 
@@ -111,14 +109,12 @@ export default function Media() {
         url: finalUrl,
         type: newMedia.type,
         duration: 10,
-        width: newMedia.width ? parseInt(newMedia.width) : null,
-        height: newMedia.height ? parseInt(newMedia.height) : null,
         groupId: newMedia.groupId ? parseInt(newMedia.groupId) : null,
         userId: user.id,
       });
       
       setIsOpen(false);
-      setNewMedia({ title: "", url: "", type: "image", groupId: "", width: "", height: "" });
+      setNewMedia({ title: "", url: "", type: "image", groupId: "" });
       setFile(null);
     } catch (error) {
       console.error(error);
@@ -253,45 +249,6 @@ export default function Media() {
                           dir="ltr"
                         />
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>أبعاد المحتوى (بالبكسل)</Label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label htmlFor="width" className="text-xs text-muted-foreground">العرض</Label>
-                          <Input
-                            id="width"
-                            type="number"
-                            value={newMedia.width}
-                            onChange={(e) => setNewMedia({ ...newMedia, width: e.target.value })}
-                            placeholder="1920"
-                            className="rounded-xl"
-                            data-testid="input-media-width"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="height" className="text-xs text-muted-foreground">الطول</Label>
-                          <Input
-                            id="height"
-                            type="number"
-                            value={newMedia.height}
-                            onChange={(e) => setNewMedia({ ...newMedia, height: e.target.value })}
-                            placeholder="1080"
-                            className="rounded-xl"
-                            data-testid="input-media-height"
-                          />
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {newMedia.width && newMedia.height && (
-                          parseInt(newMedia.width) > parseInt(newMedia.height) 
-                            ? "الاتجاه: عرضي (أفقي)" 
-                            : parseInt(newMedia.width) < parseInt(newMedia.height)
-                              ? "الاتجاه: طولي (رأسي)"
-                              : "الاتجاه: مربع"
-                        )}
-                      </p>
                     </div>
 
                     <div className="flex justify-end gap-2 pt-4">

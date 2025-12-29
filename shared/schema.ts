@@ -75,8 +75,6 @@ export const mediaItems = pgTable("media_items", {
   type: text("type").notNull(), // image, video
   url: text("url").notNull(),
   duration: integer("duration").default(10), // seconds, default for images
-  width: integer("width"), // عرض المحتوى بالبكسل
-  height: integer("height"), // طول المحتوى بالبكسل
   groupId: integer("group_id").references(() => mediaGroups.id),
   userId: varchar("user_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
