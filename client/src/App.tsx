@@ -21,6 +21,8 @@ import AdminSubscriptions from "@/pages/admin/AdminSubscriptions";
 import AdminScreens from "@/pages/admin/AdminScreens";
 import AdminActivity from "@/pages/admin/AdminActivity";
 import AdminAdmins from "@/pages/admin/AdminAdmins";
+import AdminPlans from "@/pages/admin/AdminPlans";
+import AdminDiscountCodes from "@/pages/admin/AdminDiscountCodes";
 import Team from "@/pages/Team";
 
 // Protected Route Wrapper
@@ -114,6 +116,12 @@ function Router() {
       </Route>
       <Route path="/admin/admins">
         <AdminRoute component={AdminAdmins} />
+      </Route>
+      <Route path="/admin/plans">
+        <AdminRoute component={AdminPlans} />
+      </Route>
+      <Route path="/admin/discount-codes">
+        <AdminRoute component={AdminDiscountCodes} />
       </Route>
 
       <Route component={NotFound} />

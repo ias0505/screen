@@ -12,7 +12,9 @@ import {
   Activity, 
   TrendingUp,
   Shield,
-  BarChart3
+  BarChart3,
+  Package,
+  Tag
 } from "lucide-react";
 
 interface SystemStats {
@@ -157,6 +159,18 @@ export default function AdminDashboard() {
               <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-admins">
                 <Shield className="w-4 h-4" />
                 إدارة المدراء
+              </Button>
+            </Link>
+            <Link href="/admin/plans">
+              <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-plans">
+                <Package className="w-4 h-4" />
+                خطط الاشتراك
+              </Button>
+            </Link>
+            <Link href="/admin/discount-codes">
+              <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-discount-codes">
+                <Tag className="w-4 h-4" />
+                أكواد الخصم
               </Button>
             </Link>
           </CardContent>
