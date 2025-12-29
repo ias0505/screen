@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useScreens, useScreenSchedules, useCreateSchedule, useDeleteSchedule, useUpdateSchedule, useReorderSchedules } from "@/hooks/use-screens";
-import { useScreenGroups, useGroupSchedules, useCreateGroupSchedule, useDeleteGroupSchedule } from "@/hooks/use-groups";
+import { useScreenGroups, useGroupSchedules, useCreateGroupSchedule, useDeleteGroupSchedule, useMediaGroups } from "@/hooks/use-groups";
 import { useMedia } from "@/hooks/use-media";
 import Layout from "@/components/Layout";
 import { 
@@ -56,6 +56,7 @@ export default function Schedule() {
   const { data: screens = [] } = useScreens();
   const { data: groups = [] } = useScreenGroups();
   const { data: media = [] } = useMedia();
+  const { data: mediaGroups = [] } = useMediaGroups();
   const { toast } = useToast();
   
   const [scheduleType, setScheduleType] = useState<"screen" | "group">("screen");
@@ -81,6 +82,7 @@ export default function Schedule() {
   const [editingDuration, setEditingDuration] = useState<{ id: number; value: string } | null>(null);
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
   const [localSchedules, setLocalSchedules] = useState<ScheduleItem[]>([]);
+  const [mediaGroupFilter, setMediaGroupFilter] = useState<string>("all");
 
   const ungroupedScreens = screens.filter(s => !s.groupId);
   
@@ -277,8 +279,34 @@ export default function Schedule() {
                     اختر المحتوى الذي تريد إضافته إلى {scheduleType === "screen" ? "الشاشة" : "المجموعة"}
                   </DialogDescription>
                 </DialogHeader>
+                
+                {/* فلترة حسب مجموعة المحتوى */}
+                <div className="flex items-center gap-2 py-2">
+                  <Layers className="w-4 h-4 text-muted-foreground" />
+                  <Select value={mediaGroupFilter} onValueChange={setMediaGroupFilter}>
+                    <SelectTrigger className="flex-1 rounded-xl" data-testid="select-media-group-filter">
+                      <SelectValue placeholder="جميع المجموعات" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع المجموعات</SelectItem>
+                      <SelectItem value="ungrouped">بدون مجموعة</SelectItem>
+                      {mediaGroups.map((group) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <div className="grid grid-cols-2 gap-4 py-4 max-h-[400px] overflow-y-auto">
-                  {media.map((item) => (
+                  {media
+                    .filter((item) => {
+                      if (mediaGroupFilter === "all") return true;
+                      if (mediaGroupFilter === "ungrouped") return !item.groupId;
+                      return item.groupId?.toString() === mediaGroupFilter;
+                    })
+                    .map((item) => (
                     <div 
                       key={item.id}
                       onClick={() => setSelectedMediaId(item.id.toString())}
@@ -307,9 +335,13 @@ export default function Schedule() {
                       <div className="p-2 text-sm font-medium text-center truncate">{item.title}</div>
                     </div>
                   ))}
-                  {media.length === 0 && (
+                  {media.filter((item) => {
+                      if (mediaGroupFilter === "all") return true;
+                      if (mediaGroupFilter === "ungrouped") return !item.groupId;
+                      return item.groupId?.toString() === mediaGroupFilter;
+                    }).length === 0 && (
                      <div className="col-span-2 text-center text-muted-foreground py-8">
-                       لا يوجد محتوى في المكتبة.
+                       {media.length === 0 ? "لا يوجد محتوى في المكتبة." : "لا يوجد محتوى في هذه المجموعة."}
                      </div>
                   )}
                 </div>
