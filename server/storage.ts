@@ -48,7 +48,7 @@ export interface IStorage {
   // Subscriptions (independent)
   getSubscriptions(userId: string): Promise<Subscription[]>;
   getSubscription(id: number): Promise<Subscription | undefined>;
-  createSubscription(userId: string, screenCount: number, durationYears: number): Promise<Subscription>;
+  createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null): Promise<Subscription>;
   getAvailableScreenSlots(userId: string): Promise<number>;
   findSubscriptionWithAvailableSlot(userId: string): Promise<Subscription | null>;
   getScreensCountBySubscription(subscriptionId: number): Promise<number>;
@@ -152,12 +152,22 @@ export class DatabaseStorage implements IStorage {
     return sub;
   }
 
-  async createSubscription(userId: string, screenCount: number, durationYears: number): Promise<Subscription> {
+  async createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null): Promise<Subscription> {
     const endDate = new Date();
     endDate.setFullYear(endDate.getFullYear() + durationYears);
     
     const pricePerScreen = 50;
-    const totalPrice = screenCount * pricePerScreen * durationYears;
+    let totalPrice = screenCount * pricePerScreen * durationYears;
+    
+    // Apply discount if provided
+    if (discountCode) {
+      if (discountCode.discountType === 'percentage') {
+        totalPrice = totalPrice * (1 - discountCode.discountValue / 100);
+      } else if (discountCode.discountType === 'fixed') {
+        totalPrice = totalPrice - discountCode.discountValue;
+      }
+      totalPrice = Math.max(0, Math.round(totalPrice));
+    }
 
     const [sub] = await db.insert(subscriptions).values({
       userId,

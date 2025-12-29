@@ -98,7 +98,7 @@ export async function registerRoutes(
 
   app.post("/api/subscriptions", requireAuth, async (req: any, res) => {
     const userId = req.user.claims.sub;
-    const { screenCount, durationYears } = req.body;
+    const { screenCount, durationYears, discountCode } = req.body;
     
     if (!screenCount || !durationYears) {
       return res.status(400).json({ message: "يرجى تحديد عدد الشاشات ومدة الاشتراك" });
@@ -112,7 +112,31 @@ export async function registerRoutes(
       return res.status(400).json({ message: "مدة الاشتراك يجب أن تكون من 1 إلى 3 سنوات" });
     }
 
-    const sub = await storage.createSubscription(userId, screenCount, durationYears);
+    // Validate and apply discount code if provided
+    let validatedDiscountCode = null;
+    if (discountCode) {
+      const code = await storage.getDiscountCodeByCode(discountCode);
+      if (code && code.isActive) {
+        const now = new Date();
+        const validFrom = code.validFrom ? new Date(code.validFrom) : null;
+        const validUntil = code.validUntil ? new Date(code.validUntil) : null;
+        
+        if ((!validFrom || validFrom <= now) && 
+            (!validUntil || validUntil >= now) &&
+            (!code.maxUses || code.usedCount < code.maxUses) &&
+            (!code.minScreens || screenCount >= code.minScreens)) {
+          validatedDiscountCode = code;
+        }
+      }
+    }
+
+    const sub = await storage.createSubscription(userId, screenCount, durationYears, validatedDiscountCode);
+    
+    // Increment discount code usage if applied
+    if (validatedDiscountCode) {
+      await storage.incrementDiscountCodeUsage(validatedDiscountCode.code);
+    }
+    
     res.status(201).json(sub);
   });
 
