@@ -103,6 +103,31 @@ export default function Player() {
     }
   }, [screenId, setLocation]);
 
+  // Send heartbeat every 30 seconds to update screen status
+  useEffect(() => {
+    if (!isDeviceBound || !screenId) return;
+    
+    const sendHeartbeat = async () => {
+      try {
+        const token = getDeviceToken(screenId);
+        await fetch(`/api/screens/${screenId}/heartbeat`, {
+          method: 'POST',
+          headers: token ? { 'X-Device-Token': token } : {},
+        });
+      } catch (error) {
+        console.error('Heartbeat failed:', error);
+      }
+    };
+    
+    // Send initial heartbeat
+    sendHeartbeat();
+    
+    // Send heartbeat every 30 seconds
+    const interval = setInterval(sendHeartbeat, 30000);
+    
+    return () => clearInterval(interval);
+  }, [isDeviceBound, screenId]);
+
   // Preload all images on mount
   useEffect(() => {
     if (!isDeviceBound) return;

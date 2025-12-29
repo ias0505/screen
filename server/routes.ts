@@ -234,6 +234,29 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  // Heartbeat endpoint for player status updates
+  app.post("/api/screens/:id/heartbeat", async (req: any, res) => {
+    const screenId = Number(req.params.id);
+    const deviceToken = req.headers['x-device-token'] as string;
+    
+    const screen = await storage.getScreen(screenId);
+    if (!screen) {
+      return res.status(404).json({ message: 'الشاشة غير موجودة' });
+    }
+    
+    // Verify device token if provided and update last seen
+    if (deviceToken) {
+      const binding = await storage.getDeviceBinding(deviceToken, screenId);
+      if (binding) {
+        await storage.updateDeviceLastSeen(binding.id);
+      }
+    }
+    
+    // Update screen status to online
+    await storage.updateScreen(screenId, { status: 'online' });
+    res.json({ success: true });
+  });
+
   app.get(api.screens.get.path, async (req: any, res) => {
     const screenId = Number(req.params.id);
     const deviceToken = req.headers['x-device-token'] as string;
