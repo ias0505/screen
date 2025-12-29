@@ -56,8 +56,11 @@ export interface IStorage {
   
   // Legacy subscription plans (for reference)
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  getActiveSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   getUserSubscription(userId: string): Promise<(UserSubscription & { plan?: SubscriptionPlan }) | undefined>;
   updateUserSubscription(userId: string, planId: number): Promise<UserSubscription>;
+  getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined>;
+  incrementDiscountCodeUsage(code: string): Promise<void>;
 
   // Device binding
   createActivationCode(screenId: number, createdBy: string): Promise<ScreenActivationCode>;
@@ -236,6 +239,21 @@ export class DatabaseStorage implements IStorage {
   // Legacy subscription plans
   async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     return await db.select().from(subscriptionPlans);
+  }
+
+  async getActiveSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.isActive, true));
+  }
+
+  async getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
+    const [result] = await db.select().from(discountCodes).where(eq(discountCodes.code, code)).limit(1);
+    return result;
+  }
+
+  async incrementDiscountCodeUsage(code: string): Promise<void> {
+    await db.update(discountCodes)
+      .set({ usedCount: sql`${discountCodes.usedCount} + 1` })
+      .where(eq(discountCodes.code, code));
   }
 
   async getUserSubscription(userId: string): Promise<(UserSubscription & { plan?: SubscriptionPlan }) | undefined> {

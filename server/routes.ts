@@ -669,8 +669,54 @@ export async function registerRoutes(
 
   // Legacy subscription endpoints (for backwards compatibility)
   app.get("/api/subscription/plans", async (_req, res) => {
-    const plans = await storage.getSubscriptionPlans();
+    const plans = await storage.getActiveSubscriptionPlans();
     res.json(plans);
+  });
+
+  // Validate discount code
+  app.post("/api/discount-codes/validate", async (req, res) => {
+    const { code, screenCount } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ valid: false, message: "الكود مطلوب" });
+    }
+    
+    const discountCode = await storage.getDiscountCodeByCode(code);
+    
+    if (!discountCode) {
+      return res.status(404).json({ valid: false, message: "الكود غير موجود" });
+    }
+    
+    if (!discountCode.isActive) {
+      return res.status(400).json({ valid: false, message: "الكود غير نشط" });
+    }
+    
+    const now = new Date();
+    if (discountCode.validFrom && new Date(discountCode.validFrom) > now) {
+      return res.status(400).json({ valid: false, message: "الكود لم يبدأ بعد" });
+    }
+    
+    if (discountCode.validUntil && new Date(discountCode.validUntil) < now) {
+      return res.status(400).json({ valid: false, message: "الكود منتهي الصلاحية" });
+    }
+    
+    if (discountCode.maxUses && discountCode.usedCount >= discountCode.maxUses) {
+      return res.status(400).json({ valid: false, message: "تم استخدام الكود الحد الأقصى من المرات" });
+    }
+    
+    if (discountCode.minScreens && screenCount && screenCount < discountCode.minScreens) {
+      return res.status(400).json({ valid: false, message: `يتطلب هذا الكود ${discountCode.minScreens} شاشة على الأقل` });
+    }
+    
+    res.json({
+      valid: true,
+      discountType: discountCode.discountType,
+      discountValue: discountCode.discountValue,
+      minScreens: discountCode.minScreens,
+      message: discountCode.discountType === 'percentage' 
+        ? `خصم ${discountCode.discountValue}%` 
+        : `خصم ${discountCode.discountValue} ريال`
+    });
   });
 
   app.get("/api/subscription/status", requireAuth, async (req: any, res) => {
