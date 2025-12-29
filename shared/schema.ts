@@ -61,6 +61,7 @@ export const screens = pgTable("screens", {
   name: text("name").notNull(),
   location: text("location"),
   status: text("status").default("offline"), // online, offline
+  orientation: text("orientation").default("landscape"), // landscape (عرضي), portrait (طولي)
   groupId: integer("group_id").references(() => screenGroups.id),
   subscriptionId: integer("subscription_id").references(() => subscriptions.id),
   userId: varchar("user_id").references(() => users.id).notNull(),
@@ -73,6 +74,8 @@ export const mediaItems = pgTable("media_items", {
   type: text("type").notNull(), // image, video
   url: text("url").notNull(),
   duration: integer("duration").default(10), // seconds, default for images
+  width: integer("width"), // عرض المحتوى بالبكسل
+  height: integer("height"), // طول المحتوى بالبكسل
   groupId: integer("group_id").references(() => mediaGroups.id),
   userId: varchar("user_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),

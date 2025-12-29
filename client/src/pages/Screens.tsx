@@ -63,7 +63,7 @@ export default function Screens() {
   const deleteScreen = useDeleteScreen();
   
   const [isOpen, setIsOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", location: "", groupId: "" });
+  const [form, setForm] = useState({ name: "", location: "", groupId: "", orientation: "landscape" });
   const [activationDialogScreen, setActivationDialogScreen] = useState<number | null>(null);
   const [deviceDialogScreen, setDeviceDialogScreen] = useState<number | null>(null);
   const [generatedCode, setGeneratedCode] = useState<{code: string; expiresAt: Date} | null>(null);
@@ -129,11 +129,12 @@ export default function Screens() {
       await createScreen.mutateAsync({
         name: form.name,
         location: form.location,
+        orientation: form.orientation,
         groupId: form.groupId ? parseInt(form.groupId) : undefined,
         userId: user.id,
       });
       setIsOpen(false);
-      setForm({ name: "", location: "", groupId: "" });
+      setForm({ name: "", location: "", groupId: "", orientation: "landscape" });
     } catch (err: any) {
       toast({
         title: "خطأ",
@@ -207,6 +208,31 @@ export default function Screens() {
                       className="rounded-xl"
                       data-testid="input-screen-location"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>اتجاه الشاشة</Label>
+                    <Select 
+                      value={form.orientation} 
+                      onValueChange={(v) => setForm({...form, orientation: v})}
+                    >
+                      <SelectTrigger className="rounded-xl" data-testid="select-screen-orientation">
+                        <SelectValue placeholder="اختر الاتجاه" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="landscape">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-4 border-2 border-current rounded-sm" />
+                            <span>عرضي (أفقي)</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="portrait">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-6 border-2 border-current rounded-sm" />
+                            <span>طولي (رأسي)</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>المجموعة (اختياري)</Label>
