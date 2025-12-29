@@ -895,11 +895,14 @@ export async function registerRoutes(
   // Invite a team member
   app.post("/api/team/invite", requireAuth, async (req: any, res) => {
     const ownerId = req.user.claims.sub;
-    const { email } = req.body;
+    const { email, name, permission } = req.body;
     
-    if (!email) {
-      return res.status(400).json({ message: "البريد الإلكتروني مطلوب" });
+    if (!email || !name) {
+      return res.status(400).json({ message: "البريد الإلكتروني والاسم مطلوبان" });
     }
+    
+    const validPermissions = ['viewer', 'editor', 'manager'];
+    const selectedPermission = validPermissions.includes(permission) ? permission : 'viewer';
     
     // Check if already invited
     const existing = await storage.getTeamMemberByEmail(ownerId, email);
@@ -907,8 +910,27 @@ export async function registerRoutes(
       return res.status(400).json({ message: "تم دعوة هذا البريد مسبقاً" });
     }
     
-    const member = await storage.inviteTeamMember(ownerId, email);
+    const member = await storage.inviteTeamMember(ownerId, email, name, selectedPermission);
     res.status(201).json(member);
+  });
+
+  // Update team member permission
+  app.patch("/api/team/:invitationId/permission", requireAuth, async (req: any, res) => {
+    const ownerId = req.user.claims.sub;
+    const invitationId = Number(req.params.invitationId);
+    const { permission } = req.body;
+    
+    const validPermissions = ['viewer', 'editor', 'manager'];
+    if (!validPermissions.includes(permission)) {
+      return res.status(400).json({ message: "صلاحية غير صالحة" });
+    }
+    
+    const updated = await storage.updateTeamMemberPermission(ownerId, invitationId, permission);
+    if (!updated) {
+      return res.status(404).json({ message: "العضو غير موجود" });
+    }
+    
+    res.json(updated);
   });
 
   // Remove a team member by invitation ID

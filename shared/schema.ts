@@ -159,6 +159,8 @@ export const teamMembers = pgTable("team_members", {
   role: text("role").notNull().default("member"), // owner, member
   status: text("status").notNull().default("pending"), // pending, active, removed
   invitedEmail: text("invited_email").notNull(), // البريد المدعو - مطلوب للتحقق
+  invitedName: text("invited_name").notNull().default(""), // اسم الشخص المدعو
+  permission: text("permission").notNull().default("viewer"), // viewer, editor, manager - صلاحيات العضو
   invitedAt: timestamp("invited_at").defaultNow(),
   joinedAt: timestamp("joined_at"), // تاريخ القبول
   removedAt: timestamp("removed_at"), // تاريخ الإزالة

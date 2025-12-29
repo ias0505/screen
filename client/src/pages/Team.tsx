@@ -4,26 +4,42 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Users, UserPlus, Trash2, Mail, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Users, UserPlus, Trash2, Mail, Clock, CheckCircle, XCircle, Edit2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Layout from "@/components/Layout";
 import type { TeamMember, User } from "@shared/schema";
 
 const inviteSchema = z.object({
+  name: z.string().min(2, "الاسم مطلوب (حرفين على الأقل)"),
   email: z.string().email("البريد الإلكتروني غير صالح"),
+  permission: z.enum(["viewer", "editor", "manager"]),
 });
 
 type InviteForm = z.infer<typeof inviteSchema>;
 
+const permissionLabels: Record<string, string> = {
+  viewer: "مشاهد",
+  editor: "محرر",
+  manager: "مدير",
+};
+
+const permissionDescriptions: Record<string, string> = {
+  viewer: "عرض المحتوى والشاشات فقط",
+  editor: "تعديل المحتوى والجداول",
+  manager: "إدارة كاملة بما في ذلك الفريق",
+};
+
 export default function Team() {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const { toast } = useToast();
 
   const { data: members = [], isLoading } = useQuery<(TeamMember & { member?: User })[]>({
@@ -36,7 +52,7 @@ export default function Team() {
 
   const form = useForm<InviteForm>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { email: "" },
+    defaultValues: { name: "", email: "", permission: "viewer" },
   });
 
   const inviteMutation = useMutation({
@@ -57,6 +73,16 @@ export default function Team() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team'] });
       toast({ title: "تم إزالة العضو" });
+    },
+  });
+
+  const updatePermissionMutation = useMutation({
+    mutationFn: ({ invitationId, permission }: { invitationId: number; permission: string }) => 
+      apiRequest('PATCH', `/api/team/${invitationId}/permission`, { permission }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team'] });
+      setEditingMember(null);
+      toast({ title: "تم تحديث الصلاحية" });
     },
   });
 
@@ -88,6 +114,19 @@ export default function Team() {
     }
   };
 
+  const getPermissionBadge = (permission: string) => {
+    const colors: Record<string, string> = {
+      viewer: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      editor: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      manager: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    };
+    return (
+      <Badge variant="outline" className={colors[permission] || ""}>
+        {permissionLabels[permission] || permission}
+      </Badge>
+    );
+  };
+
   return (
     <Layout>
       <motion.div
@@ -115,6 +154,23 @@ export default function Team() {
                 <form onSubmit={form.handleSubmit((data) => inviteMutation.mutate(data))} className="space-y-4">
                   <FormField
                     control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>اسم الموظف</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            placeholder="أدخل اسم الموظف"
+                            data-testid="input-invite-name"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
@@ -127,6 +183,43 @@ export default function Team() {
                             data-testid="input-invite-email"
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="permission"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>الصلاحية</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-permission">
+                              <SelectValue placeholder="اختر الصلاحية" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="viewer">
+                              <div className="flex flex-col">
+                                <span>مشاهد</span>
+                                <span className="text-xs text-muted-foreground">عرض المحتوى والشاشات فقط</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="editor">
+                              <div className="flex flex-col">
+                                <span>محرر</span>
+                                <span className="text-xs text-muted-foreground">تعديل المحتوى والجداول</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="manager">
+                              <div className="flex flex-col">
+                                <span>مدير</span>
+                                <span className="text-xs text-muted-foreground">إدارة كاملة بما في ذلك الفريق</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -154,7 +247,7 @@ export default function Team() {
                   <div key={inv.id} className="flex items-center justify-between gap-4 p-4 rounded-lg bg-muted/50 flex-wrap">
                     <div>
                       <p className="font-medium">{inv.owner.firstName || inv.owner.email || 'شركة'}</p>
-                      <p className="text-sm text-muted-foreground">يدعوك للانضمام كموظف</p>
+                      <p className="text-sm text-muted-foreground">يدعوك للانضمام كـ {permissionLabels[inv.permission] || inv.permission}</p>
                     </div>
                     <div className="flex gap-2">
                       <Button 
@@ -214,7 +307,7 @@ export default function Team() {
                       </div>
                       <div>
                         <p className="font-medium">
-                          {member.member?.firstName || member.invitedEmail || 'موظف'}
+                          {member.invitedName || member.member?.firstName || member.invitedEmail || 'موظف'}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {member.member?.email || member.invitedEmail}
@@ -223,6 +316,46 @@ export default function Team() {
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
                       {getStatusBadge(member.status)}
+                      {getPermissionBadge(member.permission)}
+                      
+                      <Dialog open={editingMember?.id === member.id} onOpenChange={(open) => !open && setEditingMember(null)}>
+                        <DialogTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setEditingMember(member)}
+                            data-testid={`button-edit-permission-${member.id}`}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>تعديل صلاحية {member.invitedName || member.invitedEmail}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              {['viewer', 'editor', 'manager'].map((perm) => (
+                                <div
+                                  key={perm}
+                                  className={`p-4 rounded-lg border cursor-pointer hover-elevate ${
+                                    member.permission === perm ? 'border-primary bg-primary/5' : ''
+                                  }`}
+                                  onClick={() => updatePermissionMutation.mutate({ 
+                                    invitationId: member.id, 
+                                    permission: perm 
+                                  })}
+                                  data-testid={`permission-option-${perm}`}
+                                >
+                                  <p className="font-medium">{permissionLabels[perm]}</p>
+                                  <p className="text-sm text-muted-foreground">{permissionDescriptions[perm]}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
                       <Button
                         size="icon"
                         variant="ghost"

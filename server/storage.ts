@@ -13,7 +13,7 @@ import {
   type ScreenActivationCode, type ScreenDeviceBinding,
   type Admin, type AdminActivityLog, type Invoice, type User, type TeamMember
 } from "@shared/schema";
-import { eq, desc, and, gt, lte, isNull, sql } from "drizzle-orm";
+import { eq, desc, and, gt, lte, isNull, sql, ne } from "drizzle-orm";
 
 export interface IStorage {
   // Screen Groups
@@ -108,7 +108,8 @@ export interface IStorage {
   
   // Team Members
   getTeamMembers(ownerId: string): Promise<(TeamMember & { member?: User })[]>;
-  inviteTeamMember(ownerId: string, email: string): Promise<TeamMember>;
+  inviteTeamMember(ownerId: string, email: string, name: string, permission: string): Promise<TeamMember>;
+  updateTeamMemberPermission(ownerId: string, invitationId: number, permission: string): Promise<TeamMember | null>;
   getTeamMemberByEmail(ownerId: string, email: string): Promise<TeamMember | undefined>;
   acceptTeamInvitation(memberId: string, ownerId: string, userEmail: string): Promise<TeamMember | null>;
   rejectTeamInvitation(ownerId: string, userEmail: string): Promise<void>;
@@ -654,15 +655,29 @@ export class DatabaseStorage implements IStorage {
     return result.map(r => ({ ...r.teamMember, member: r.member || undefined }));
   }
 
-  async inviteTeamMember(ownerId: string, email: string): Promise<TeamMember> {
+  async inviteTeamMember(ownerId: string, email: string, name: string, permission: string): Promise<TeamMember> {
     const [member] = await db.insert(teamMembers).values({
       ownerId,
       memberId: null, // null until member accepts
       invitedEmail: email,
+      invitedName: name,
+      permission: permission,
       status: 'pending',
       role: 'member'
     }).returning();
     return member;
+  }
+
+  async updateTeamMemberPermission(ownerId: string, invitationId: number, permission: string): Promise<TeamMember | null> {
+    const [updated] = await db.update(teamMembers)
+      .set({ permission })
+      .where(and(
+        eq(teamMembers.ownerId, ownerId),
+        eq(teamMembers.id, invitationId),
+        ne(teamMembers.status, 'removed')
+      ))
+      .returning();
+    return updated || null;
   }
 
   async getTeamMemberByEmail(ownerId: string, email: string): Promise<TeamMember | undefined> {
