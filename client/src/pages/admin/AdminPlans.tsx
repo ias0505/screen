@@ -123,6 +123,19 @@ export default function AdminPlans() {
 
   const openEdit = (plan: SubscriptionPlan) => {
     setEditingPlan(plan);
+    let featuresText = "";
+    if (plan.features) {
+      try {
+        const parsed = JSON.parse(plan.features);
+        if (Array.isArray(parsed)) {
+          featuresText = parsed.join('\n');
+        } else {
+          featuresText = plan.features;
+        }
+      } catch {
+        featuresText = plan.features;
+      }
+    }
     setFormData({
       name: plan.name,
       description: plan.description || "",
@@ -130,7 +143,7 @@ export default function AdminPlans() {
       minScreens: plan.minScreens || 1,
       maxScreens: plan.maxScreens?.toString() || "",
       discountPercentage: plan.discountPercentage || 0,
-      features: plan.features || "",
+      features: featuresText,
       isActive: plan.isActive !== false,
       isDefault: plan.isDefault || false
     });
