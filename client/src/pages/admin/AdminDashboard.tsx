@@ -116,108 +116,112 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              الوصول السريع
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-3">
-            <Link href="/admin/users">
-              <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-users">
-                <Users className="w-4 h-4" />
-                إدارة المستخدمين
-              </Button>
-            </Link>
-            <Link href="/admin/subscriptions">
-              <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-subscriptions">
-                <CreditCard className="w-4 h-4" />
-                الاشتراكات
-              </Button>
-            </Link>
-            <Link href="/admin/invoices">
-              <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-invoices">
-                <FileText className="w-4 h-4" />
-                الفواتير
-              </Button>
-            </Link>
-            <Link href="/admin/screens">
-              <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-screens">
-                <Monitor className="w-4 h-4" />
-                جميع الشاشات
-              </Button>
-            </Link>
-            <Link href="/admin/activity">
-              <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-activity">
-                <Activity className="w-4 h-4" />
-                سجل النشاطات
-              </Button>
-            </Link>
-            <Link href="/admin/admins">
-              <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-admins">
-                <Shield className="w-4 h-4" />
-                إدارة المدراء
-              </Button>
-            </Link>
-            <Link href="/admin/plans">
-              <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-plans">
-                <Package className="w-4 h-4" />
-                خطط الاشتراك
-              </Button>
-            </Link>
-            <Link href="/admin/discount-codes">
-              <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-discount-codes">
-                <Tag className="w-4 h-4" />
-                أكواد الخصم
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                ملخص سريع
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">إجمالي الاشتراكات</span>
+                {isLoading ? (
+                  <Skeleton className="h-5 w-16" />
+                ) : (
+                  <span className="font-semibold">{stats?.totalSubscriptions || 0}</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">الاشتراكات النشطة</span>
+                {isLoading ? (
+                  <Skeleton className="h-5 w-16" />
+                ) : (
+                  <span className="font-semibold text-green-600">{stats?.activeSubscriptions || 0}</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">الفواتير المعلقة</span>
+                {isLoading ? (
+                  <Skeleton className="h-5 w-16" />
+                ) : (
+                  <span className="font-semibold text-orange-600">{stats?.pendingInvoices || 0}</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">إجمالي الإيرادات</span>
+                {isLoading ? (
+                  <Skeleton className="h-5 w-24" />
+                ) : (
+                  <span className="font-semibold text-emerald-600">{stats?.totalRevenue || 0} ريال</span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              ملخص سريع
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">إجمالي الاشتراكات</span>
-              {isLoading ? (
-                <Skeleton className="h-5 w-16" />
-              ) : (
-                <span className="font-semibold">{stats?.totalSubscriptions || 0}</span>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">الاشتراكات النشطة</span>
-              {isLoading ? (
-                <Skeleton className="h-5 w-16" />
-              ) : (
-                <span className="font-semibold text-green-600">{stats?.activeSubscriptions || 0}</span>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">الفواتير المعلقة</span>
-              {isLoading ? (
-                <Skeleton className="h-5 w-16" />
-              ) : (
-                <span className="font-semibold text-orange-600">{stats?.pendingInvoices || 0}</span>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">إجمالي الإيرادات</span>
-              {isLoading ? (
-                <Skeleton className="h-5 w-24" />
-              ) : (
-                <span className="font-semibold text-emerald-600">{stats?.totalRevenue || 0} ريال</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                الوصول السريع
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              <Link href="/admin/users">
+                <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-users">
+                  <Users className="w-4 h-4" />
+                  إدارة المستخدمين
+                </Button>
+              </Link>
+              <Link href="/admin/subscriptions">
+                <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-subscriptions">
+                  <CreditCard className="w-4 h-4" />
+                  الاشتراكات
+                </Button>
+              </Link>
+              <Link href="/admin/invoices">
+                <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-invoices">
+                  <FileText className="w-4 h-4" />
+                  الفواتير
+                </Button>
+              </Link>
+              <Link href="/admin/screens">
+                <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-screens">
+                  <Monitor className="w-4 h-4" />
+                  جميع الشاشات
+                </Button>
+              </Link>
+              <Link href="/admin/activity">
+                <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-activity">
+                  <Activity className="w-4 h-4" />
+                  سجل النشاطات
+                </Button>
+              </Link>
+              <Link href="/admin/admins">
+                <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-admins">
+                  <Shield className="w-4 h-4" />
+                  إدارة المدراء
+                </Button>
+              </Link>
+              <Link href="/admin/plans">
+                <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-plans">
+                  <Package className="w-4 h-4" />
+                  خطط الاشتراك
+                </Button>
+              </Link>
+              <Link href="/admin/discount-codes">
+                <Button variant="outline" className="w-full justify-start gap-2" data-testid="link-admin-discount-codes">
+                  <Tag className="w-4 h-4" />
+                  أكواد الخصم
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
