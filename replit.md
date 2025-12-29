@@ -10,6 +10,33 @@ This is a digital signage management platform built for managing screens, media 
 - Content scheduling (assign media to screens with timing)
 - Public player view for displaying scheduled content on screens
 - Dashboard with analytics overview
+- Subscription system with screen limits and pricing (screens x 50 SAR x years)
+- Screen activation via /activate with 6-character codes
+- **Super Admin Panel** for platform management
+
+## Super Admin Panel
+
+The admin panel (/admin) provides complete platform control for the owner:
+
+### Access
+- Accessed via Shield icon in sidebar (visible only to admins)
+- Protected by `requireAdmin` middleware on backend
+- Admin roles stored in `admins` table with user reference
+
+### Admin Features
+1. **Dashboard** (/admin) - System statistics and overview
+2. **Users Management** (/admin/users) - View all users, add screens WITHOUT subscription (owner override)
+3. **Invoices** (/admin/invoices) - Create/manage invoices, update payment status
+4. **Subscriptions** (/admin/subscriptions) - View/create subscriptions for users
+5. **Screens** (/admin/screens) - View all screens across all users
+6. **Activity Log** (/admin/activity) - Audit trail of all admin actions
+7. **Admins** (/admin/admins) - Manage admin accounts
+
+### Admin Override Feature
+Admin can add screens to users **without a subscription** - these screens:
+- Are intentionally not subject to subscription expiry
+- Bypass normal screen limit restrictions
+- Are for platform owner to manually provision as needed
 
 ## User Preferences
 
