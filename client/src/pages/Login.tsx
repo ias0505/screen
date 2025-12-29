@@ -1,45 +1,207 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
-import { Monitor } from "lucide-react";
+import { Monitor, Mail, Lock, User, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, login, register, isLoggingIn, isRegistering } = useAuth();
+  const { toast } = useToast();
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    companyName: "",
+  });
 
   if (!isLoading && user) {
     return <Redirect to="/" />;
   }
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (isRegisterMode) {
+        await register({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName || undefined,
+          companyName: formData.companyName || undefined,
+        });
+        toast({
+          title: "تم إنشاء الحساب بنجاح",
+          description: "مرحباً بك في منصة إدارة الشاشات",
+        });
+      } else {
+        await login({
+          email: formData.email,
+          password: formData.password,
+        });
+        toast({
+          title: "تم تسجيل الدخول بنجاح",
+          description: "مرحباً بك مرة أخرى",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message || "حدث خطأ أثناء المعالجة",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const isPending = isLoggingIn || isRegistering;
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden" dir="rtl">
-      {/* Background decorations */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
         <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
 
-      <div className="w-full max-w-md bg-card border border-border/50 shadow-2xl rounded-3xl p-8 z-10 text-center">
-        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-primary">
-          <Monitor className="w-8 h-8" />
-        </div>
+      <Card className="w-full max-w-md shadow-2xl z-10">
+        <CardHeader className="text-center pb-2">
+          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
+            <Monitor className="w-8 h-8" />
+          </div>
+          <CardTitle className="text-2xl">
+            {isRegisterMode ? "إنشاء حساب جديد" : "تسجيل الدخول"}
+          </CardTitle>
+          <p className="text-muted-foreground text-sm mt-2">
+            منصة إدارة الشاشات الذكية
+          </p>
+        </CardHeader>
         
-        <h1 className="text-3xl font-bold text-foreground mb-2">مرحباً بك</h1>
-        <p className="text-muted-foreground mb-8">منصة إدارة الشاشات الذكية</p>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegisterMode && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">الاسم الأول *</Label>
+                  <div className="relative">
+                    <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="أدخل اسمك الأول"
+                      className="pr-10"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      required
+                      data-testid="input-firstName"
+                    />
+                  </div>
+                </div>
 
-        <div className="space-y-4">
-          <Button 
-            size="lg"
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl h-12 shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"
-            onClick={() => window.location.href = "/api/login"}
-          >
-            تسجيل الدخول
-          </Button>
-          
-          <p className="text-xs text-muted-foreground mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">الاسم الأخير</Label>
+                  <div className="relative">
+                    <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="أدخل اسمك الأخير (اختياري)"
+                      className="pr-10"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      data-testid="input-lastName"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="companyName">اسم الشركة</Label>
+                  <div className="relative">
+                    <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="companyName"
+                      type="text"
+                      placeholder="اسم شركتك (اختياري)"
+                      className="pr-10"
+                      value={formData.companyName}
+                      onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                      data-testid="input-companyName"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">البريد الإلكتروني *</Label>
+              <div className="relative">
+                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="example@email.com"
+                  className="pr-10"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  data-testid="input-email"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">كلمة المرور *</Label>
+              <div className="relative">
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder={isRegisterMode ? "6 أحرف على الأقل" : "أدخل كلمة المرور"}
+                  className="pr-10"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  minLength={isRegisterMode ? 6 : 1}
+                  data-testid="input-password"
+                />
+              </div>
+            </div>
+
+            <Button 
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={isPending}
+              data-testid="button-submit"
+            >
+              {isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+              {isRegisterMode ? "إنشاء الحساب" : "تسجيل الدخول"}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              {isRegisterMode ? "لديك حساب بالفعل؟" : "ليس لديك حساب؟"}
+              <Button
+                variant="ghost"
+                className="p-0 mr-1 h-auto text-primary"
+                onClick={() => setIsRegisterMode(!isRegisterMode)}
+                data-testid="button-toggle-mode"
+              >
+                {isRegisterMode ? "تسجيل الدخول" : "إنشاء حساب جديد"}
+              </Button>
+            </p>
+          </div>
+
+          <p className="text-xs text-muted-foreground text-center mt-4">
             بالتسجيل، أنت توافق على شروط الخدمة وسياسة الخصوصية
           </p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
