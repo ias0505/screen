@@ -97,7 +97,7 @@ export function useUpdateScreen() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { groupId: number | null } }) => {
+    mutationFn: async ({ id, data }: { id: number; data: { name?: string; location?: string; orientation?: string; groupId?: number | null } }) => {
       const url = buildUrl(api.screens.update.path, { id });
       const res = await fetch(url, {
         method: api.screens.update.method,
@@ -111,6 +111,10 @@ export function useUpdateScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.screens.list.path] });
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث معلومات الشاشة بنجاح",
+      });
     },
   });
 }

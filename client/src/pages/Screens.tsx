@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useScreens, useCreateScreen, useDeleteScreen } from "@/hooks/use-screens";
+import { useScreens, useCreateScreen, useDeleteScreen, useUpdateScreen } from "@/hooks/use-screens";
 import { useScreenGroups } from "@/hooks/use-groups";
 import { useAvailableSlots } from "@/hooks/use-subscriptions";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,7 +20,9 @@ import {
   Smartphone,
   Copy,
   Check,
-  XCircle
+  XCircle,
+  Pencil,
+  MonitorSmartphone
 } from "lucide-react";
 import {
   Dialog,
@@ -61,11 +63,14 @@ export default function Screens() {
   const { data: slotsData } = useAvailableSlots();
   const createScreen = useCreateScreen();
   const deleteScreen = useDeleteScreen();
+  const updateScreen = useUpdateScreen();
   
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ name: "", location: "", groupId: "", orientation: "landscape" });
   const [activationDialogScreen, setActivationDialogScreen] = useState<number | null>(null);
   const [deviceDialogScreen, setDeviceDialogScreen] = useState<number | null>(null);
+  const [editingScreen, setEditingScreen] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", location: "", groupId: "", orientation: "landscape" });
   const [generatedCode, setGeneratedCode] = useState<{code: string; expiresAt: Date} | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
 
@@ -148,6 +153,40 @@ export default function Screens() {
     const confirmed = window.confirm("هل أنت متأكد من حذف هذه الشاشة؟");
     if (confirmed) {
       await deleteScreen.mutateAsync(id);
+    }
+  };
+
+  const openEditDialog = (screen: any) => {
+    setEditingScreen(screen);
+    setEditForm({
+      name: screen.name,
+      location: screen.location || "",
+      groupId: screen.groupId?.toString() || "",
+      orientation: screen.orientation || "landscape"
+    });
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingScreen) return;
+    
+    try {
+      await updateScreen.mutateAsync({
+        id: editingScreen.id,
+        data: {
+          name: editForm.name,
+          location: editForm.location,
+          orientation: editForm.orientation,
+          groupId: editForm.groupId ? parseInt(editForm.groupId) : null,
+        }
+      });
+      setEditingScreen(null);
+    } catch (err: any) {
+      toast({
+        title: "خطأ",
+        description: err.message || "حدث خطأ أثناء تحديث الشاشة",
+        variant: "destructive"
+      });
     }
   };
 
@@ -348,6 +387,13 @@ export default function Screens() {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
+                                onClick={() => openEditDialog(screen)}
+                                data-testid={`button-edit-screen-${screen.id}`}
+                              >
+                                <Pencil className="w-4 h-4 ml-2" />
+                                تعديل الشاشة
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
                                 onClick={() => {
                                   setActivationDialogScreen(screen.id);
                                   setGeneratedCode(null);
@@ -381,6 +427,10 @@ export default function Screens() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant={screen.status === 'online' ? 'default' : 'secondary'}>
                             {screen.status === 'online' ? 'متصل' : 'غير متصل'}
+                          </Badge>
+                          <Badge variant="outline" className="gap-1">
+                            <MonitorSmartphone className="w-3 h-3" />
+                            {screen.orientation === 'portrait' ? 'عمودي' : 'أفقي'}
                           </Badge>
                           {groupName && (
                             <Badge variant="outline" className="gap-1">
@@ -493,6 +543,98 @@ export default function Screens() {
                 </div>
               )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Screen Dialog */}
+        <Dialog open={editingScreen !== null} onOpenChange={(open) => !open && setEditingScreen(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-primary" />
+                تعديل الشاشة
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label>اسم الشاشة</Label>
+                <Input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  placeholder="مثال: شاشة الاستقبال"
+                  required
+                  className="rounded-xl"
+                  data-testid="input-edit-screen-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>الموقع</Label>
+                <Input
+                  value={editForm.location}
+                  onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                  placeholder="مثال: الفرع الرئيسي"
+                  className="rounded-xl"
+                  data-testid="input-edit-screen-location"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>اتجاه الشاشة</Label>
+                <Select 
+                  value={editForm.orientation} 
+                  onValueChange={(v) => setEditForm({...editForm, orientation: v})}
+                >
+                  <SelectTrigger className="rounded-xl" data-testid="select-edit-screen-orientation">
+                    <SelectValue placeholder="اختر الاتجاه" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="landscape">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-4 border-2 border-current rounded-sm" />
+                        <span>عرضي (أفقي)</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="portrait">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-6 border-2 border-current rounded-sm" />
+                        <span>طولي (عمودي)</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>المجموعة (اختياري)</Label>
+                <Select 
+                  value={editForm.groupId} 
+                  onValueChange={(v) => setEditForm({...editForm, groupId: v === "none" ? "" : v})}
+                >
+                  <SelectTrigger className="rounded-xl" data-testid="select-edit-screen-group">
+                    <SelectValue placeholder="بدون مجموعة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">بدون مجموعة</SelectItem>
+                    {groups.map((group) => (
+                      <SelectItem key={group.id} value={group.id.toString()}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setEditingScreen(null)} className="rounded-xl">
+                  إلغاء
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateScreen.isPending} 
+                  className="bg-primary rounded-xl" 
+                  data-testid="button-save-edit-screen"
+                >
+                  {updateScreen.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>

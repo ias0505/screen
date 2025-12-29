@@ -92,7 +92,10 @@ export const api = {
       method: 'PATCH' as const,
       path: '/api/screens/:id',
       input: z.object({
-        groupId: z.number().nullable(),
+        name: z.string().optional(),
+        location: z.string().optional(),
+        orientation: z.string().optional(),
+        groupId: z.number().nullable().optional(),
       }),
       responses: {
         200: z.custom<typeof screens.$inferSelect>(),
