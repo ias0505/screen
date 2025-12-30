@@ -218,6 +218,9 @@ export default function Subscriptions() {
           
           <Dialog open={isOpen} onOpenChange={(open) => {
             setIsOpen(open);
+            if (open && plans.length > 0 && !selectedPlan) {
+              setSelectedPlan(plans[0]);
+            }
             if (!open) {
               setSelectedPlan(null);
               setDiscountCode("");
@@ -225,7 +228,11 @@ export default function Subscriptions() {
             }
           }}>
             <DialogTrigger asChild>
-              <Button className="gap-2 bg-primary rounded-xl px-6" data-testid="button-add-subscription">
+              <Button 
+                onClick={() => { if (plans.length > 0) setSelectedPlan(plans[0]); }}
+                className="gap-2 bg-primary rounded-xl px-6" 
+                data-testid="button-add-subscription"
+              >
                 <Plus className="w-5 h-5" />
                 <span>اشتراك جديد</span>
               </Button>
@@ -431,7 +438,10 @@ export default function Subscriptions() {
             </div>
             <h3 className="text-xl font-bold text-foreground">لا توجد اشتراكات</h3>
             <p className="text-muted-foreground mt-2 mb-6">أنشئ اشتراكًا جديدًا لتتمكن من إضافة شاشات</p>
-            <Button onClick={() => setIsOpen(true)} className="bg-primary rounded-xl" data-testid="button-create-first-subscription">
+            <Button onClick={() => {
+              setIsOpen(true);
+              if (plans.length > 0) setSelectedPlan(plans[0]);
+            }} className="bg-primary rounded-xl" data-testid="button-create-first-subscription">
               إنشاء اشتراك جديد
             </Button>
           </div>
