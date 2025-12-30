@@ -57,6 +57,17 @@ const upload = multer({
   }),
 });
 
+// Check if Replit Auth is disabled
+const isReplitAuthDisabled = process.env.REPLIT_AUTH_DISABLED === "true";
+
+// Helper to get user ID from request (handles both Replit Auth and local auth)
+function getUserId(req: any): string {
+  // Local auth session has both id and claims.sub (for compatibility)
+  // Replit Auth only has claims.sub
+  // Try claims.sub first (works for both), then fall back to id
+  return req.user?.claims?.sub?.toString() || req.user?.id?.toString();
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -67,7 +78,7 @@ export async function registerRoutes(
   app.use("/uploads", express.static("public/uploads"));
 
   const requireAuth = (req: any, res: any, next: any) => {
-    if (!req.isAuthenticated()) {
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     next();
@@ -75,7 +86,7 @@ export async function registerRoutes(
 
   // Helper to get effective user ID (owner ID if team member)
   const getEffectiveUserId = async (req: any): Promise<string> => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const ownerId = await storage.getOwnerForMember(userId);
     return ownerId || userId;
   };
@@ -90,14 +101,14 @@ export async function registerRoutes(
 
   // Subscriptions (new independent model)
   app.get("/api/subscriptions", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     await storage.expireOldSubscriptions();
     const subs = await storage.getSubscriptions(userId);
     res.json(subs);
   });
 
   app.post("/api/subscriptions", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const { screenCount, durationYears, discountCode } = req.body;
     
     if (!screenCount || !durationYears) {
@@ -141,7 +152,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/subscriptions/available-slots", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const slots = await storage.getAvailableScreenSlots(userId);
     res.json({ availableSlots: slots });
   });
@@ -161,7 +172,7 @@ export async function registerRoutes(
 
   app.post(api.screenGroups.create.path, requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const input = api.screenGroups.create.input.parse(req.body);
       const group = await storage.createScreenGroup({ ...input, userId });
       res.status(201).json(group);
@@ -177,7 +188,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/screen-groups/:id", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const groups = await storage.getScreenGroups(userId);
     const group = groups.find(g => g.id === Number(req.params.id));
     if (!group) {
@@ -196,7 +207,7 @@ export async function registerRoutes(
 
   app.post(api.mediaGroups.create.path, requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const input = api.mediaGroups.create.input.parse(req.body);
       const group = await storage.createMediaGroup({ ...input, userId });
       res.status(201).json(group);
@@ -221,7 +232,7 @@ export async function registerRoutes(
 
   app.post(api.screens.create.path, requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const input = api.screens.create.input.parse(req.body);
       
       const subscription = await storage.findSubscriptionWithAvailableSlot(userId);
@@ -249,7 +260,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/screens/:id", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const screen = await storage.getScreen(Number(req.params.id));
     if (!screen || screen.userId !== userId) {
       return res.status(404).json({ message: 'الشاشة غير موجودة' });
@@ -292,7 +303,7 @@ export async function registerRoutes(
     
     // If authenticated, verify ownership and return full data
     if (req.isAuthenticated && req.isAuthenticated()) {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       if (screen.userId !== userId) {
         return res.status(404).json({ message: 'Screen not found' });
       }
@@ -319,7 +330,7 @@ export async function registerRoutes(
   });
 
   app.delete(api.screens.delete.path, requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const screen = await storage.getScreen(Number(req.params.id));
     if (!screen || screen.userId !== userId) {
       return res.status(404).json({ message: 'Screen not found' });
@@ -337,7 +348,7 @@ export async function registerRoutes(
 
   app.post(api.media.create.path, requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const input = api.media.create.input.parse(req.body);
       const media = await storage.createMediaItem({ ...input, userId });
       res.status(201).json(media);
@@ -353,7 +364,7 @@ export async function registerRoutes(
   });
 
   app.delete(api.media.delete.path, requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const media = await storage.getMediaItem(Number(req.params.id));
     if (!media || media.userId !== userId) {
       return res.status(404).json({ message: 'Media not found' });
@@ -431,7 +442,7 @@ export async function registerRoutes(
 
   app.post(api.schedules.create.path, requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const input = api.schedules.create.input.parse(req.body);
       
       if (input.screenId) {
@@ -488,7 +499,7 @@ export async function registerRoutes(
 
   // Group Schedules
   app.get("/api/group-schedules/:groupId", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const groupId = Number(req.params.groupId);
     
     const groups = await storage.getScreenGroups(userId);
@@ -503,7 +514,7 @@ export async function registerRoutes(
 
   app.post("/api/group-schedules", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getUserId(req);
       const { screenGroupId, mediaItemId, priority, isActive, duration } = req.body;
       
       const groups = await storage.getScreenGroups(userId);
@@ -538,7 +549,7 @@ export async function registerRoutes(
 
   // Device Binding - إنشاء رمز تفعيل
   app.post("/api/screens/:id/activation-codes", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const screenId = Number(req.params.id);
     
     const screen = await storage.getScreen(screenId);
@@ -672,7 +683,7 @@ export async function registerRoutes(
 
   // Device Binding - عرض الأجهزة المرتبطة
   app.get("/api/screens/:id/devices", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const screenId = Number(req.params.id);
     
     const screen = await storage.getScreen(screenId);
@@ -744,7 +755,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/subscription/status", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const sub = await storage.getUserSubscription(userId);
     res.json(sub || { status: 'none' });
   });
@@ -756,7 +767,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "غير مصرح" });
     }
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const isAdmin = await storage.isAdmin(userId);
     if (!isAdmin) {
       return res.status(403).json({ message: "لا تملك صلاحيات المدير" });
@@ -766,7 +777,7 @@ export async function registerRoutes(
 
   // Admin: Check if current user is admin
   app.get("/api/admin/check", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const admin = await storage.getAdmin(userId);
     res.json({ isAdmin: !!admin, role: admin?.role });
   });
@@ -797,7 +808,7 @@ export async function registerRoutes(
 
   // Admin: Add screen to user without subscription
   app.post("/api/admin/users/:id/screens", requireAdmin, async (req: any, res) => {
-    const adminId = req.user.claims.sub;
+    const adminId = getUserId(req);
     const userId = req.params.id;
     const { name, location } = req.body;
     
@@ -834,7 +845,7 @@ export async function registerRoutes(
 
   // Admin: Create subscription for user
   app.post("/api/admin/users/:id/subscriptions", requireAdmin, async (req: any, res) => {
-    const adminId = req.user.claims.sub;
+    const adminId = getUserId(req);
     const userId = req.params.id;
     const { screenCount, durationYears } = req.body;
     
@@ -880,7 +891,7 @@ export async function registerRoutes(
 
   // Admin: Update invoice status
   app.patch("/api/admin/invoices/:id", requireAdmin, async (req: any, res) => {
-    const adminId = req.user.claims.sub;
+    const adminId = getUserId(req);
     const invoiceId = Number(req.params.id);
     const { status, paymentMethod } = req.body;
     
@@ -919,7 +930,7 @@ export async function registerRoutes(
 
   // Admin: Make user an admin
   app.post("/api/admin/admins", requireAdmin, async (req: any, res) => {
-    const creatorId = req.user.claims.sub;
+    const creatorId = getUserId(req);
     const { userId, role } = req.body;
     
     if (!userId) {
@@ -953,7 +964,7 @@ export async function registerRoutes(
 
   // Admin: Remove admin
   app.delete("/api/admin/admins/:userId", requireAdmin, async (req: any, res) => {
-    const creatorId = req.user.claims.sub;
+    const creatorId = getUserId(req);
     const userId = req.params.userId;
     
     // Prevent self-removal
@@ -986,7 +997,7 @@ export async function registerRoutes(
 
   // Create subscription plan
   app.post("/api/admin/plans", requireAdmin, async (req: any, res) => {
-    const adminId = req.user.claims.sub;
+    const adminId = getUserId(req);
     const { name, description, pricePerScreen, minScreens, maxScreens, discountPercentage, features, isActive, isDefault } = req.body;
     
     if (!name || !pricePerScreen) {
@@ -1011,7 +1022,7 @@ export async function registerRoutes(
 
   // Update subscription plan
   app.patch("/api/admin/plans/:id", requireAdmin, async (req: any, res) => {
-    const adminId = req.user.claims.sub;
+    const adminId = getUserId(req);
     const planId = Number(req.params.id);
     const updates = req.body;
     
@@ -1031,7 +1042,7 @@ export async function registerRoutes(
 
   // Delete subscription plan
   app.delete("/api/admin/plans/:id", requireAdmin, async (req: any, res) => {
-    const adminId = req.user.claims.sub;
+    const adminId = getUserId(req);
     const planId = Number(req.params.id);
     
     const plan = await storage.getSubscriptionPlan(planId);
@@ -1054,7 +1065,7 @@ export async function registerRoutes(
 
   // Create discount code
   app.post("/api/admin/discount-codes", requireAdmin, async (req: any, res) => {
-    const adminId = req.user.claims.sub;
+    const adminId = getUserId(req);
     const { code, description, discountType, discountValue, minScreens, maxUses, validFrom, validUntil, isActive } = req.body;
     
     if (!code || !discountValue) {
@@ -1086,7 +1097,7 @@ export async function registerRoutes(
 
   // Update discount code
   app.patch("/api/admin/discount-codes/:id", requireAdmin, async (req: any, res) => {
-    const adminId = req.user.claims.sub;
+    const adminId = getUserId(req);
     const codeId = Number(req.params.id);
     const updates = req.body;
     
@@ -1106,7 +1117,7 @@ export async function registerRoutes(
 
   // Delete discount code
   app.delete("/api/admin/discount-codes/:id", requireAdmin, async (req: any, res) => {
-    const adminId = req.user.claims.sub;
+    const adminId = getUserId(req);
     const codeId = Number(req.params.id);
     
     const discountCode = await storage.getDiscountCode(codeId);
@@ -1123,14 +1134,14 @@ export async function registerRoutes(
   
   // Get team members for the current user (owner)
   app.get("/api/team", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const members = await storage.getTeamMembers(userId);
     res.json(members);
   });
 
   // Invite a team member
   app.post("/api/team/invite", requireAuth, async (req: any, res) => {
-    const ownerId = req.user.claims.sub;
+    const ownerId = getUserId(req);
     const { email, name, permission } = req.body;
     
     if (!email || !name) {
@@ -1152,7 +1163,7 @@ export async function registerRoutes(
 
   // Update team member permission
   app.patch("/api/team/:invitationId/permission", requireAuth, async (req: any, res) => {
-    const ownerId = req.user.claims.sub;
+    const ownerId = getUserId(req);
     const invitationId = Number(req.params.invitationId);
     const { permission } = req.body;
     
@@ -1171,7 +1182,7 @@ export async function registerRoutes(
 
   // Remove a team member by invitation ID
   app.delete("/api/team/:invitationId", requireAuth, async (req: any, res) => {
-    const ownerId = req.user.claims.sub;
+    const ownerId = getUserId(req);
     const invitationId = Number(req.params.invitationId);
     
     await storage.removeTeamMember(ownerId, invitationId);
@@ -1180,7 +1191,7 @@ export async function registerRoutes(
 
   // Get pending invitations for the current user
   app.get("/api/team/invitations", requireAuth, async (req: any, res) => {
-    const user = await storage.getUserById(req.user.claims.sub);
+    const user = await storage.getUserById(getUserId(req));
     if (!user?.email) {
       return res.json([]);
     }
@@ -1191,7 +1202,7 @@ export async function registerRoutes(
 
   // Accept a team invitation
   app.post("/api/team/invitations/:ownerId/accept", requireAuth, async (req: any, res) => {
-    const memberId = req.user.claims.sub;
+    const memberId = getUserId(req);
     const ownerId = req.params.ownerId;
     
     const user = await storage.getUserById(memberId);
@@ -1209,7 +1220,7 @@ export async function registerRoutes(
 
   // Reject a team invitation
   app.post("/api/team/invitations/:ownerId/reject", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const ownerId = req.params.ownerId;
     
     const user = await storage.getUserById(userId);
@@ -1223,7 +1234,7 @@ export async function registerRoutes(
 
   // Check if user is a team member and get owner context
   app.get("/api/team/context", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const ownerId = await storage.getOwnerForMember(userId);
     
     if (ownerId) {
@@ -1239,14 +1250,14 @@ export async function registerRoutes(
   
   // Get user profile
   app.get("/api/user/profile", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const user = await storage.getUserById(userId);
     res.json(user);
   });
 
   // Update company name (onboarding)
   app.patch("/api/user/company", requireAuth, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req);
     const { companyName } = req.body;
     
     if (!companyName || companyName.trim().length < 2) {

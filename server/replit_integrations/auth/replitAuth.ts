@@ -8,8 +8,15 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
 
+// Check if Replit Auth is disabled (for external hosting like Contabo)
+const isReplitAuthDisabled = process.env.REPLIT_AUTH_DISABLED === "true";
+
 const getOidcConfig = memoize(
   async () => {
+    // Skip OIDC config when Replit Auth is disabled
+    if (isReplitAuthDisabled) {
+      return null;
+    }
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
       process.env.REPL_ID!
@@ -66,7 +73,38 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // If Replit Auth is disabled, only setup session - skip OpenID Connect
+  if (isReplitAuthDisabled) {
+    console.log("Replit Auth disabled via REPLIT_AUTH_DISABLED=true");
+    
+    // Simple user serialization for local auth
+    passport.serializeUser((user: Express.User, cb) => cb(null, user));
+    passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+    
+    // Provide stub routes that redirect to local login
+    app.get("/api/login", (req, res) => {
+      res.redirect("/login");
+    });
+
+    app.get("/api/callback", (req, res) => {
+      res.redirect("/");
+    });
+
+    app.get("/api/logout", (req, res) => {
+      req.logout(() => {
+        res.redirect("/login");
+      });
+    });
+    
+    return;
+  }
+
   const config = await getOidcConfig();
+  
+  if (!config) {
+    console.log("OIDC config not available, skipping Replit Auth setup");
+    return;
+  }
 
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
@@ -131,9 +169,18 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // For local auth (when Replit Auth is disabled), just check if user is authenticated
+  if (isReplitAuthDisabled) {
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    return next();
+  }
+
+  // Replit Auth flow with token refresh
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user.expires_at) {
+  if (!req.isAuthenticated() || !user?.expires_at) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -150,6 +197,9 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   try {
     const config = await getOidcConfig();
+    if (!config) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
     return next();
