@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
 import { 
   Users, 
@@ -10,7 +11,8 @@ import {
   FileText, 
   Activity, 
   TrendingUp,
-  Shield
+  Shield,
+  HardDrive
 } from "lucide-react";
 
 interface SystemStats {
@@ -23,9 +25,28 @@ interface SystemStats {
   pendingInvoices: number;
 }
 
+interface StorageInfo {
+  total: number;
+  used: number;
+  available: number;
+  usedPercent: number;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery<SystemStats>({
     queryKey: ['/api/admin/stats'],
+  });
+
+  const { data: storageInfo, isLoading: storageLoading } = useQuery<StorageInfo>({
+    queryKey: ['/api/admin/storage'],
   });
 
   const statCards = [
@@ -152,6 +173,58 @@ export default function AdminDashboard() {
               <span className="font-semibold text-emerald-600">{stats?.totalRevenue || 0} ريال</span>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HardDrive className="w-5 h-5" />
+            مساحة التخزين
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {storageLoading ? (
+            <Skeleton className="h-20 w-full" />
+          ) : storageInfo ? (
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">المستخدم</span>
+                  <span className="font-semibold">{formatBytes(storageInfo.used)}</span>
+                </div>
+                <Progress 
+                  value={storageInfo.usedPercent} 
+                  className={`h-3 ${storageInfo.usedPercent > 80 ? '[&>div]:bg-red-500' : storageInfo.usedPercent > 60 ? '[&>div]:bg-yellow-500' : ''}`}
+                />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{storageInfo.usedPercent}% مستخدم</span>
+                  <span>المتاح: {formatBytes(storageInfo.available)}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4 pt-2 border-t">
+                <div className="text-center">
+                  <p className="text-lg font-bold">{formatBytes(storageInfo.total)}</p>
+                  <p className="text-xs text-muted-foreground">الإجمالي</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-blue-600">{formatBytes(storageInfo.used)}</p>
+                  <p className="text-xs text-muted-foreground">المستخدم</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-green-600">{formatBytes(storageInfo.available)}</p>
+                  <p className="text-xs text-muted-foreground">المتاح</p>
+                </div>
+              </div>
+              {storageInfo.usedPercent > 80 && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-600">
+                  تحذير: المساحة المتبقية منخفضة. يرجى تفريغ بعض الملفات لتجنب مشاكل في النظام.
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-muted-foreground">لا توجد بيانات متاحة</p>
+          )}
         </CardContent>
       </Card>
     </div>

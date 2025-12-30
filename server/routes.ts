@@ -794,6 +794,31 @@ export async function registerRoutes(
     res.json(stats);
   });
 
+  // Admin: Get storage/disk usage
+  app.get("/api/admin/storage", requireAdmin, async (req: any, res) => {
+    try {
+      const { execSync } = await import('child_process');
+      const dfOutput = execSync('df -B1 /').toString();
+      const lines = dfOutput.trim().split('\n');
+      if (lines.length >= 2) {
+        const parts = lines[1].split(/\s+/);
+        const total = parseInt(parts[1]) || 0;
+        const used = parseInt(parts[2]) || 0;
+        const available = parseInt(parts[3]) || 0;
+        res.json({
+          total,
+          used,
+          available,
+          usedPercent: total > 0 ? Math.round((used / total) * 100) : 0
+        });
+      } else {
+        res.json({ total: 0, used: 0, available: 0, usedPercent: 0 });
+      }
+    } catch (error) {
+      res.json({ total: 0, used: 0, available: 0, usedPercent: 0 });
+    }
+  });
+
   // Admin: Get all users
   app.get("/api/admin/users", requireAdmin, async (req: any, res) => {
     const users = await storage.getAllUsers();
