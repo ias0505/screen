@@ -43,7 +43,7 @@ export default function Dashboard() {
       icon: MonitorCheck,
       color: "text-purple-500",
       bg: "bg-purple-500/10",
-      href: "/subscriptions"
+      href: "/screens"
     },
   ];
 
