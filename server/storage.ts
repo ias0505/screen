@@ -106,6 +106,7 @@ export interface IStorage {
   // Admin: Invoices
   getInvoices(): Promise<(Invoice & { user: User, subscription: Subscription })[]>;
   getInvoice(id: number): Promise<Invoice | undefined>;
+  getInvoicesBySubscription(subscriptionId: number): Promise<Invoice[]>;
   createInvoice(subscriptionId: number, userId: string, amount: number, createdBy: string, notes?: string): Promise<Invoice>;
   updateInvoiceStatus(id: number, status: string, paymentMethod?: string): Promise<Invoice>;
   
@@ -722,6 +723,12 @@ export class DatabaseStorage implements IStorage {
   async getInvoice(id: number): Promise<Invoice | undefined> {
     const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
     return invoice;
+  }
+
+  async getInvoicesBySubscription(subscriptionId: number): Promise<Invoice[]> {
+    return await db.select().from(invoices)
+      .where(eq(invoices.subscriptionId, subscriptionId))
+      .orderBy(desc(invoices.createdAt));
   }
 
   async createInvoice(subscriptionId: number, userId: string, amount: number, createdBy: string, notes?: string): Promise<Invoice> {

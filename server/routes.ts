@@ -163,6 +163,13 @@ export async function registerRoutes(
     res.json({ count });
   });
 
+  // Get invoices for a subscription
+  app.get("/api/subscriptions/:id/invoices", requireAuth, async (req: any, res) => {
+    const subId = Number(req.params.id);
+    const invoicesList = await storage.getInvoicesBySubscription(subId);
+    res.json(invoicesList);
+  });
+
   // Screen Groups
   app.get(api.screenGroups.list.path, requireAuth, async (req: any, res) => {
     const userId = await getEffectiveUserId(req);

@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Tag,
   Check,
-  Package
+  Package,
+  FileText
 } from "lucide-react";
 import {
   Dialog,
@@ -37,7 +38,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Subscription, SubscriptionPlan } from "@shared/schema";
+import { Link } from "wouter";
+import type { Subscription, SubscriptionPlan, Invoice } from "@shared/schema";
 
 interface DiscountValidation {
   valid: boolean;
@@ -50,6 +52,12 @@ interface DiscountValidation {
 function SubscriptionCard({ sub }: { sub: Subscription }) {
   const { data: screensData } = useSubscriptionScreensCount(sub.id);
   const usedScreens = screensData?.count || 0;
+  
+  const { data: invoicesList = [] } = useQuery<Invoice[]>({
+    queryKey: ['/api/subscriptions', sub.id, 'invoices'],
+  });
+  
+  const latestInvoice = invoicesList[0];
 
   return (
     <Card data-testid={`card-subscription-${sub.id}`}>
@@ -76,6 +84,14 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
             <CreditCard className="w-4 h-4" />
             <span>{sub.totalPrice} ريال ({sub.durationYears} سنة)</span>
           </div>
+          {latestInvoice && (
+            <Link href={`/invoice/${latestInvoice.id}`}>
+              <Button variant="outline" size="sm" className="w-full mt-2" data-testid={`button-view-invoice-${sub.id}`}>
+                <FileText className="w-4 h-4 ml-2" />
+                عرض الفاتورة
+              </Button>
+            </Link>
+          )}
         </div>
       </CardContent>
     </Card>
