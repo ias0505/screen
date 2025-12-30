@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { Monitor, Mail, Lock, User, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,7 +154,16 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">كلمة المرور *</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="password">كلمة المرور *</Label>
+                {!isRegisterMode && (
+                  <Link href="/forgot-password">
+                    <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground" data-testid="link-forgot-password">
+                      نسيت كلمة المرور؟
+                    </Button>
+                  </Link>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input

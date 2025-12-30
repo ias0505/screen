@@ -26,6 +26,8 @@ import AdminDiscountCodes from "@/pages/admin/AdminDiscountCodes";
 import AdminLayout from "@/components/admin/AdminLayout";
 import Team from "@/pages/Team";
 import Settings from "@/pages/Settings";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -73,6 +75,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       
       {/* Public Routes */}
       <Route path="/player/:id" component={Player} />

@@ -1,8 +1,14 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resendApiKey = process.env.RESEND_API_KEY;
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 export async function sendPasswordResetEmail(email: string, resetToken: string, appUrl: string): Promise<boolean> {
+  if (!resend) {
+    console.warn('Resend API key not configured (RESEND_API_KEY). Password reset email not sent.');
+    return false;
+  }
+
   const resetLink = `${appUrl}/reset-password?token=${resetToken}`;
   
   try {

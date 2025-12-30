@@ -3,6 +3,7 @@ import { authStorage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
 import bcrypt from "bcrypt";
 import { registerSchema, loginSchema } from "@shared/schema";
+import { sendPasswordResetEmail } from "../../email";
 
 // Register auth-specific routes
 export function registerAuthRoutes(app: Express): void {
@@ -139,6 +140,81 @@ export function registerAuthRoutes(app: Express): void {
       }
       res.json({ message: "تم تسجيل الخروج بنجاح" });
     });
+  });
+
+  // Forgot password - request reset link
+  app.post("/api/auth/forgot-password", async (req: any, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "البريد الإلكتروني مطلوب" });
+      }
+
+      const user = await authStorage.getUserByEmail(email);
+      
+      // Always return success to prevent email enumeration
+      if (!user) {
+        return res.json({ message: "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط إعادة التعيين" });
+      }
+
+      // Invalidate any existing tokens for this user
+      await authStorage.invalidateUserPasswordResetTokens(user.id);
+
+      // Create new reset token
+      const token = await authStorage.createPasswordResetToken(user.id);
+
+      // Get app URL from request or environment
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      const appUrl = process.env.APP_URL || `${protocol}://${host}`;
+
+      // Send email
+      const emailSent = await sendPasswordResetEmail(email, token, appUrl);
+      
+      if (!emailSent) {
+        console.error('Failed to send password reset email');
+      }
+
+      res.json({ message: "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط إعادة التعيين" });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "حدث خطأ، يرجى المحاولة مرة أخرى" });
+    }
+  });
+
+  // Reset password - set new password with token
+  app.post("/api/auth/reset-password", async (req: any, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "الرمز وكلمة المرور الجديدة مطلوبان" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
+      }
+
+      // Find valid token
+      const resetToken = await authStorage.getValidPasswordResetToken(token);
+      
+      if (!resetToken) {
+        return res.status(400).json({ message: "رابط إعادة التعيين غير صالح أو منتهي الصلاحية" });
+      }
+
+      // Hash new password and update user
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await authStorage.updateUserPassword(resetToken.userId, hashedPassword);
+
+      // Mark token as used
+      await authStorage.markPasswordResetTokenUsed(resetToken.id);
+
+      res.json({ message: "تم تغيير كلمة المرور بنجاح" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "حدث خطأ أثناء إعادة تعيين كلمة المرور" });
+    }
   });
 
   // Change password
