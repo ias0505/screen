@@ -486,6 +486,14 @@ export class DatabaseStorage implements IStorage {
     if (activation.usedAt) return null;
     if (new Date() > new Date(activation.expiresAt)) return null;
 
+    // Revoke all existing bindings for this screen (one device per screen policy)
+    await db.update(screenDeviceBindings)
+      .set({ revokedAt: new Date() })
+      .where(and(
+        eq(screenDeviceBindings.screenId, activation.screenId),
+        isNull(screenDeviceBindings.revokedAt)
+      ));
+
     await db.update(screenActivationCodes)
       .set({ usedAt: new Date() })
       .where(eq(screenActivationCodes.id, activation.id));
@@ -574,6 +582,14 @@ export class DatabaseStorage implements IStorage {
     await db.update(pendingDeviceBindings)
       .set({ claimedAt: new Date() })
       .where(eq(pendingDeviceBindings.deviceId, deviceId));
+    
+    // Revoke all existing bindings for this screen (one device per screen policy)
+    await db.update(screenDeviceBindings)
+      .set({ revokedAt: new Date() })
+      .where(and(
+        eq(screenDeviceBindings.screenId, pending.screenId),
+        isNull(screenDeviceBindings.revokedAt)
+      ));
     
     // Create the actual device binding
     await db.insert(screenDeviceBindings).values({
