@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Onboarding from "./Onboarding";
+import { WorkContextSwitcher } from "./WorkContextSwitcher";
 import type { User } from "@shared/schema";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -62,7 +63,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className="w-full md:w-64 bg-card border-l border-border/50 shadow-xl z-20 flex-shrink-0">
         <div className="p-6 border-b border-border/50">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary" />
             </div>
@@ -73,6 +74,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <p className="text-xs text-muted-foreground">لوحة التحكم</p>
             </div>
           </div>
+          <WorkContextSwitcher />
         </div>
 
         <nav className="p-4 space-y-2 flex-1">

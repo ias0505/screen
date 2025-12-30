@@ -84,11 +84,24 @@ export async function registerRoutes(
     next();
   };
 
-  // Helper to get effective user ID (owner ID if team member)
+  // Helper to get effective user ID based on work context
+  // If X-Work-Context header is set, use the specified owner ID (if user is a valid team member)
+  // Otherwise, use the user's own ID (personal context)
   const getEffectiveUserId = async (req: any): Promise<string> => {
     const userId = getUserId(req);
-    const ownerId = await storage.getOwnerForMember(userId);
-    return ownerId || userId;
+    const workContext = req.headers['x-work-context'];
+    
+    // If work context header is set, verify user is a team member of that owner
+    if (workContext && typeof workContext === 'string') {
+      const memberships = await storage.getAcceptedTeamMemberships(userId);
+      const validMembership = memberships.find(m => m.ownerId === workContext);
+      if (validMembership) {
+        return workContext;
+      }
+    }
+    
+    // Default to personal context (user's own ID)
+    return userId;
   };
 
   app.post("/api/upload", requireAuth, upload.single("file"), (req, res) => {
@@ -182,7 +195,7 @@ export async function registerRoutes(
 
   app.post(api.screenGroups.create.path, requireAuth, async (req: any, res) => {
     try {
-      const userId = getUserId(req);
+      const userId = await getEffectiveUserId(req);
       const input = api.screenGroups.create.input.parse(req.body);
       const group = await storage.createScreenGroup({ ...input, userId });
       res.status(201).json(group);
@@ -198,7 +211,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/screen-groups/:id", requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const groups = await storage.getScreenGroups(userId);
     const group = groups.find(g => g.id === Number(req.params.id));
     if (!group) {
@@ -217,7 +230,7 @@ export async function registerRoutes(
 
   app.post(api.mediaGroups.create.path, requireAuth, async (req: any, res) => {
     try {
-      const userId = getUserId(req);
+      const userId = await getEffectiveUserId(req);
       const input = api.mediaGroups.create.input.parse(req.body);
       const group = await storage.createMediaGroup({ ...input, userId });
       res.status(201).json(group);
@@ -242,7 +255,7 @@ export async function registerRoutes(
 
   app.post(api.screens.create.path, requireAuth, async (req: any, res) => {
     try {
-      const userId = getUserId(req);
+      const userId = await getEffectiveUserId(req);
       const input = api.screens.create.input.parse(req.body);
       
       const subscription = await storage.findSubscriptionWithAvailableSlot(userId);
@@ -270,7 +283,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/screens/:id", requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const screen = await storage.getScreen(Number(req.params.id));
     if (!screen || screen.userId !== userId) {
       return res.status(404).json({ message: 'الشاشة غير موجودة' });
@@ -313,7 +326,7 @@ export async function registerRoutes(
     
     // If authenticated, verify ownership and return full data
     if (req.isAuthenticated && req.isAuthenticated()) {
-      const userId = getUserId(req);
+      const userId = await getEffectiveUserId(req);
       if (screen.userId !== userId) {
         return res.status(404).json({ message: 'Screen not found' });
       }
@@ -340,7 +353,7 @@ export async function registerRoutes(
   });
 
   app.delete(api.screens.delete.path, requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const screen = await storage.getScreen(Number(req.params.id));
     if (!screen || screen.userId !== userId) {
       return res.status(404).json({ message: 'Screen not found' });
@@ -358,7 +371,7 @@ export async function registerRoutes(
 
   app.post(api.media.create.path, requireAuth, async (req: any, res) => {
     try {
-      const userId = getUserId(req);
+      const userId = await getEffectiveUserId(req);
       const input = api.media.create.input.parse(req.body);
       const media = await storage.createMediaItem({ ...input, userId });
       res.status(201).json(media);
@@ -374,7 +387,7 @@ export async function registerRoutes(
   });
 
   app.delete(api.media.delete.path, requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const media = await storage.getMediaItem(Number(req.params.id));
     if (!media || media.userId !== userId) {
       return res.status(404).json({ message: 'Media not found' });
@@ -452,7 +465,7 @@ export async function registerRoutes(
 
   app.post(api.schedules.create.path, requireAuth, async (req: any, res) => {
     try {
-      const userId = getUserId(req);
+      const userId = await getEffectiveUserId(req);
       const input = api.schedules.create.input.parse(req.body);
       
       if (input.screenId) {
@@ -509,7 +522,7 @@ export async function registerRoutes(
 
   // Group Schedules
   app.get("/api/group-schedules/:groupId", requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const groupId = Number(req.params.groupId);
     
     const groups = await storage.getScreenGroups(userId);
@@ -524,7 +537,7 @@ export async function registerRoutes(
 
   app.post("/api/group-schedules", requireAuth, async (req: any, res) => {
     try {
-      const userId = getUserId(req);
+      const userId = await getEffectiveUserId(req);
       const { screenGroupId, mediaItemId, priority, isActive, duration } = req.body;
       
       const groups = await storage.getScreenGroups(userId);
@@ -559,7 +572,7 @@ export async function registerRoutes(
 
   // Device Binding - إنشاء رمز تفعيل (للمدير)
   app.post("/api/screens/:id/activation-codes", requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const screenId = Number(req.params.id);
     
     const screen = await storage.getScreen(screenId);
@@ -675,12 +688,12 @@ export async function registerRoutes(
   });
 
   // Admin scan activation - authenticated endpoint for admin scanning QR codes
-  app.post("/api/admin/screens/activate-by-scan", async (req, res) => {
+  app.post("/api/admin/screens/activate-by-scan", async (req: any, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "يرجى تسجيل الدخول" });
     }
     
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const { code, screenId } = req.body;
     
     if (!code) {
@@ -797,7 +810,7 @@ export async function registerRoutes(
 
   // Device-centric binding: Admin binds a device to a screen by scanning device QR
   app.post("/api/screens/:screenId/bind-device", requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const screenId = Number(req.params.screenId);
     const { deviceId } = req.body;
     
@@ -851,7 +864,7 @@ export async function registerRoutes(
 
   // Device Binding - عرض الأجهزة المرتبطة
   app.get("/api/screens/:id/devices", requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const screenId = Number(req.params.id);
     
     const screen = await storage.getScreen(screenId);
@@ -1432,6 +1445,13 @@ export async function registerRoutes(
     
     const invitations = await storage.getPendingInvitations(user.email);
     res.json(invitations);
+  });
+
+  // Get accepted team memberships for the current user
+  app.get("/api/team/accepted", requireAuth, async (req: any, res) => {
+    const memberId = getUserId(req);
+    const memberships = await storage.getAcceptedTeamMemberships(memberId);
+    res.json(memberships);
   });
 
   // Accept a team invitation

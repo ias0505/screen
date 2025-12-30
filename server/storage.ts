@@ -131,6 +131,7 @@ export interface IStorage {
   removeTeamMember(ownerId: string, memberIdOrInvitationId: number): Promise<void>;
   getOwnerForMember(memberId: string): Promise<string | null>;
   getPendingInvitations(email: string): Promise<(TeamMember & { owner: User })[]>;
+  getAcceptedTeamMemberships(memberId: string): Promise<(TeamMember & { owner: User })[]>;
   
   // Admin: Subscription Plans Management
   getAllSubscriptionPlans(): Promise<SubscriptionPlan[]>;
@@ -928,6 +929,22 @@ export class DatabaseStorage implements IStorage {
     .where(and(
       eq(teamMembers.invitedEmail, email),
       eq(teamMembers.status, 'pending'),
+      isNull(teamMembers.removedAt)
+    ));
+    
+    return result.map(r => ({ ...r.teamMember, owner: r.owner }));
+  }
+
+  async getAcceptedTeamMemberships(memberId: string): Promise<(TeamMember & { owner: User })[]> {
+    const result = await db.select({
+      teamMember: teamMembers,
+      owner: users
+    })
+    .from(teamMembers)
+    .innerJoin(users, eq(teamMembers.ownerId, users.id))
+    .where(and(
+      eq(teamMembers.memberId, memberId),
+      eq(teamMembers.status, 'active'),
       isNull(teamMembers.removedAt)
     ));
     

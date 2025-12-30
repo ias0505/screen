@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Layout from "@/components/Layout";
+import { ContextChoiceDialog } from "@/components/WorkContextSwitcher";
 import type { TeamMember, User } from "@shared/schema";
 
 const inviteSchema = z.object({
@@ -40,6 +41,8 @@ const permissionDescriptions: Record<string, string> = {
 export default function Team() {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [contextDialogOpen, setContextDialogOpen] = useState(false);
+  const [acceptedCompany, setAcceptedCompany] = useState<{ ownerId: string; companyName: string } | null>(null);
   const { toast } = useToast();
 
   const { data: members = [], isLoading } = useQuery<(TeamMember & { member?: User })[]>({
@@ -87,10 +90,17 @@ export default function Team() {
   });
 
   const acceptMutation = useMutation({
-    mutationFn: (ownerId: string) => apiRequest('POST', `/api/team/invitations/${ownerId}/accept`),
-    onSuccess: () => {
+    mutationFn: (invitation: TeamMember & { owner: User }) => 
+      apiRequest('POST', `/api/team/invitations/${invitation.ownerId}/accept`).then(() => invitation),
+    onSuccess: (invitation: TeamMember & { owner: User }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/team/invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/team/accepted'] });
       queryClient.invalidateQueries({ queryKey: ['/api/team/context'] });
+      const companyName = invitation.owner?.companyName || 
+        `${invitation.owner?.firstName || ''} ${invitation.owner?.lastName || ''}`.trim() || 
+        'الشركة';
+      setAcceptedCompany({ ownerId: invitation.ownerId, companyName });
+      setContextDialogOpen(true);
       toast({ title: "تم قبول الدعوة بنجاح" });
     },
   });
@@ -252,7 +262,7 @@ export default function Team() {
                     <div className="flex gap-2">
                       <Button 
                         size="sm" 
-                        onClick={() => acceptMutation.mutate(inv.ownerId)}
+                        onClick={() => acceptMutation.mutate(inv)}
                         disabled={acceptMutation.isPending}
                         data-testid={`button-accept-invitation-${inv.id}`}
                       >
@@ -373,6 +383,15 @@ export default function Team() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {acceptedCompany && (
+        <ContextChoiceDialog
+          open={contextDialogOpen}
+          onOpenChange={setContextDialogOpen}
+          companyName={acceptedCompany.companyName}
+          ownerId={acceptedCompany.ownerId}
+        />
+      )}
     </Layout>
   );
 }
