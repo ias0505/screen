@@ -718,9 +718,50 @@ export async function registerRoutes(
     });
   });
 
-  // Legacy activation endpoints removed for security
-  // Use /api/admin/screens/activate-by-scan (authenticated) for admin QR scanning
-  // Use /api/player/:id/check-activation for player to fetch device token after activation
+  // Manual code activation endpoint (for device to enter 6-character code)
+  app.post("/api/activate", async (req, res) => {
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ message: "يرجى إدخال رمز التفعيل" });
+    }
+    
+    const activation = await storage.getActivationCode(code);
+    if (!activation) {
+      return res.status(404).json({ message: "رمز التفعيل غير صحيح" });
+    }
+    
+    if (activation.usedAt) {
+      return res.status(400).json({ message: "تم استخدام رمز التفعيل مسبقاً" });
+    }
+    
+    if (new Date() > new Date(activation.expiresAt)) {
+      return res.status(400).json({ message: "انتهت صلاحية رمز التفعيل" });
+    }
+    
+    // Get screen name for response
+    const screen = await storage.getScreen(activation.screenId);
+    if (!screen) {
+      return res.status(404).json({ message: "الشاشة غير موجودة" });
+    }
+    
+    // Generate device token and create binding
+    const deviceToken = crypto.randomUUID();
+    const binding = await storage.useActivationCode(code, deviceToken, 'manual-code');
+    
+    if (!binding) {
+      return res.status(500).json({ message: "فشل في تفعيل الجهاز" });
+    }
+    
+    // Return device token for manual activation
+    res.json({ 
+      success: true, 
+      screenId: activation.screenId,
+      screenName: screen.name,
+      deviceToken: deviceToken,
+      message: "تم تفعيل الشاشة بنجاح" 
+    });
+  });
 
   // Device-centric binding: Device checks if it has been bound to a screen
   app.get("/api/device/:deviceId/check-binding", async (req, res) => {
