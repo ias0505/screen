@@ -23,7 +23,8 @@ import {
   XCircle,
   Pencil,
   MonitorSmartphone,
-  Camera
+  Camera,
+  Search
 } from "lucide-react";
 import {
   Dialog,
@@ -80,6 +81,7 @@ export default function Screens() {
   const [selectedScreenForDevice, setSelectedScreenForDevice] = useState<string>("");
   const [preselectedScreenId, setPreselectedScreenId] = useState<number | null>(null);
   const [preselectedScreenName, setPreselectedScreenName] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const availableSlots = slotsData?.availableSlots || 0;
 
@@ -329,6 +331,17 @@ export default function Screens() {
     return group?.name;
   };
 
+  // Filter screens based on search query
+  const filteredScreens = screens.filter((screen: any) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      screen.name?.toLowerCase().includes(query) ||
+      screen.location?.toLowerCase().includes(query) ||
+      getGroupName(screen.groupId)?.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <Layout>
       <div className="space-y-8">
@@ -339,6 +352,17 @@ export default function Screens() {
           </div>
           
           <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="بحث عن شاشة..."
+                className="pr-10 w-56 rounded-xl"
+                data-testid="input-search-screens"
+              />
+            </div>
+            
             <Badge variant="outline" className="gap-1 py-1.5 px-3">
               <Monitor className="w-4 h-4" />
               متاح: {availableSlots} شاشة
@@ -476,10 +500,16 @@ export default function Screens() {
               </Button>
             )}
           </div>
+        ) : filteredScreens.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 bg-muted/10 border-2 border-dashed border-border rounded-3xl">
+            <Search className="w-10 h-10 text-muted-foreground mb-3" />
+            <h3 className="text-lg font-bold text-foreground">لا توجد نتائج</h3>
+            <p className="text-muted-foreground mt-1">لم يتم العثور على شاشات تطابق "{searchQuery}"</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <AnimatePresence>
-              {screens.map((screen) => {
+              {filteredScreens.map((screen) => {
                 const groupName = getGroupName(screen.groupId);
                 return (
                   <motion.div
