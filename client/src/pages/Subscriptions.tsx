@@ -221,17 +221,9 @@ export default function Subscriptions() {
   const handleScreenCountChange = (newCount: number) => {
     setForm({ ...form, screenCount: newCount });
     
-    if (selectedPlan) {
-      const minOk = !selectedPlan.minScreens || newCount >= selectedPlan.minScreens;
-      const maxOk = !selectedPlan.maxScreens || newCount <= selectedPlan.maxScreens;
-      
-      if (!minOk || !maxOk) {
-        const betterPlan = findBestPlanForScreenCount(newCount);
-        if (betterPlan) {
-          setSelectedPlan(betterPlan);
-        }
-      }
-    }
+    // Always find the best matching plan for the new screen count
+    const bestPlan = findBestPlanForScreenCount(newCount);
+    setSelectedPlan(bestPlan); // Will be null if no plan matches, which uses default price
   };
 
   return (
