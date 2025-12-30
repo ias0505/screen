@@ -7,6 +7,7 @@ import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { QRCodeSVG } from "qrcode.react";
 import { 
   Monitor, 
   Plus, 
@@ -464,8 +465,20 @@ export default function Screens() {
               
               {generatedCode ? (
                 <div className="space-y-4">
-                  <div className="bg-muted p-6 rounded-xl text-center">
-                    <p className="text-4xl font-mono font-bold tracking-widest">
+                  <div className="bg-white p-4 rounded-xl flex justify-center">
+                    <QRCodeSVG 
+                      value={`${window.location.origin}/activate?code=${generatedCode.code}`}
+                      size={180}
+                      level="H"
+                      includeMargin
+                    />
+                  </div>
+                  <p className="text-center text-sm text-muted-foreground">
+                    امسح الرمز بالجهاز للتفعيل مباشرة
+                  </p>
+                  <div className="bg-muted p-4 rounded-xl text-center">
+                    <p className="text-xs text-muted-foreground mb-1">أو أدخل الرمز يدوياً</p>
+                    <p className="text-3xl font-mono font-bold tracking-widest">
                       {generatedCode.code}
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">

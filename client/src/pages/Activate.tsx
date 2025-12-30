@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
-import { Monitor, Key, Loader2 } from "lucide-react";
+import { Monitor, Key, Loader2, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ export default function Activate() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [code, setCode] = useState("");
+  const [autoActivating, setAutoActivating] = useState(false);
 
   const activateMutation = useMutation({
     mutationFn: async (activationCode: string) => {
@@ -46,6 +47,16 @@ export default function Activate() {
     },
   });
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('code');
+    if (codeFromUrl && codeFromUrl.length === 6) {
+      setCode(codeFromUrl.toUpperCase());
+      setAutoActivating(true);
+      activateMutation.mutate(codeFromUrl.toUpperCase());
+    }
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (code.trim().length === 6) {
@@ -61,11 +72,19 @@ export default function Activate() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit">
-            <Monitor className="w-12 h-12 text-primary" />
+            {autoActivating ? (
+              <QrCode className="w-12 h-12 text-primary" />
+            ) : (
+              <Monitor className="w-12 h-12 text-primary" />
+            )}
           </div>
-          <CardTitle className="text-2xl">تفعيل الشاشة</CardTitle>
+          <CardTitle className="text-2xl">
+            {autoActivating ? 'جاري التفعيل...' : 'تفعيل الشاشة'}
+          </CardTitle>
           <p className="text-muted-foreground">
-            أدخل رمز التفعيل المكون من 6 أحرف لربط هذا الجهاز بالشاشة
+            {autoActivating 
+              ? 'تم مسح رمز QR، جاري ربط الجهاز بالشاشة...'
+              : 'أدخل رمز التفعيل المكون من 6 أحرف لربط هذا الجهاز بالشاشة'}
           </p>
         </CardHeader>
         <CardContent>
