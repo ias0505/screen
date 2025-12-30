@@ -48,7 +48,7 @@ export interface IStorage {
   // Subscriptions (independent)
   getSubscriptions(userId: string): Promise<Subscription[]>;
   getSubscription(id: number): Promise<Subscription | undefined>;
-  createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null): Promise<Subscription>;
+  createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, pricePerScreen?: number): Promise<Subscription>;
   getAvailableScreenSlots(userId: string): Promise<number>;
   findSubscriptionWithAvailableSlot(userId: string): Promise<Subscription | null>;
   getScreensCountBySubscription(subscriptionId: number): Promise<number>;
@@ -159,13 +159,18 @@ export class DatabaseStorage implements IStorage {
     return sub;
   }
 
-  async createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null): Promise<Subscription> {
+  async createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, customPricePerScreen?: number): Promise<Subscription> {
     const endDate = new Date();
     endDate.setFullYear(endDate.getFullYear() + durationYears);
     
-    // Get price from system settings or use default
-    const priceFromSettings = await this.getSystemSetting('price_per_screen');
-    const pricePerScreen = priceFromSettings ? parseInt(priceFromSettings, 10) : 50;
+    // Use custom price from selected plan, or get price from system settings, or use default
+    let pricePerScreen: number;
+    if (customPricePerScreen && customPricePerScreen > 0) {
+      pricePerScreen = customPricePerScreen;
+    } else {
+      const priceFromSettings = await this.getSystemSetting('price_per_screen');
+      pricePerScreen = priceFromSettings ? parseInt(priceFromSettings, 10) : 50;
+    }
     let totalPrice = screenCount * pricePerScreen * durationYears;
     
     // Apply discount if provided

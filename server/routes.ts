@@ -109,7 +109,7 @@ export async function registerRoutes(
 
   app.post("/api/subscriptions", requireAuth, async (req: any, res) => {
     const userId = getUserId(req);
-    const { screenCount, durationYears, discountCode } = req.body;
+    const { screenCount, durationYears, discountCode, pricePerScreen } = req.body;
     
     if (!screenCount || !durationYears) {
       return res.status(400).json({ message: "يرجى تحديد عدد الشاشات ومدة الاشتراك" });
@@ -141,7 +141,7 @@ export async function registerRoutes(
       }
     }
 
-    const sub = await storage.createSubscription(userId, screenCount, durationYears, validatedDiscountCode);
+    const sub = await storage.createSubscription(userId, screenCount, durationYears, validatedDiscountCode, pricePerScreen);
     
     // Increment discount code usage if applied
     if (validatedDiscountCode) {

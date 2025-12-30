@@ -16,8 +16,8 @@ export function useAvailableSlots() {
 
 export function useCreateSubscription() {
   return useMutation({
-    mutationFn: async ({ screenCount, durationYears, discountCode }: { screenCount: number; durationYears: number; discountCode?: string }) => {
-      const res = await apiRequest('POST', '/api/subscriptions', { screenCount, durationYears, discountCode });
+    mutationFn: async ({ screenCount, durationYears, discountCode, pricePerScreen }: { screenCount: number; durationYears: number; discountCode?: string; pricePerScreen?: number }) => {
+      const res = await apiRequest('POST', '/api/subscriptions', { screenCount, durationYears, discountCode, pricePerScreen });
       return res.json();
     },
     onSuccess: () => {

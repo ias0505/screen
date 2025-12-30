@@ -188,7 +188,8 @@ export default function Subscriptions() {
     if (confirmed) {
       await createSubscription.mutateAsync({
         ...form,
-        discountCode: discountResult?.valid ? discountCode : undefined
+        discountCode: discountResult?.valid ? discountCode : undefined,
+        pricePerScreen: getPricePerScreen()
       });
       setIsOpen(false);
       setForm({ screenCount: 5, durationYears: 1 });
