@@ -100,6 +100,11 @@ export default function Subscriptions() {
   const { data: plans = [] } = useQuery<SubscriptionPlan[]>({
     queryKey: ['/api/subscription/plans'],
   });
+
+  const { data: priceSettings } = useQuery<{ pricePerScreen: number }>({
+    queryKey: ['/api/settings/price'],
+  });
+  const defaultPrice = priceSettings?.pricePerScreen || 50;
   
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
@@ -119,7 +124,7 @@ export default function Subscriptions() {
     if (selectedPlan) {
       return selectedPlan.pricePerScreen;
     }
-    return 50;
+    return defaultPrice;
   };
 
   const calculateBasePrice = () => {

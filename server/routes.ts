@@ -708,6 +708,12 @@ export async function registerRoutes(
     res.json(plans);
   });
 
+  // Public: Get default screen price from system settings
+  app.get("/api/settings/price", async (_req, res) => {
+    const price = await storage.getSystemSetting('price_per_screen');
+    res.json({ pricePerScreen: price ? parseInt(price, 10) : 50 });
+  });
+
   // Validate discount code
   app.post("/api/discount-codes/validate", async (req, res) => {
     const { code, screenCount } = req.body;
