@@ -70,6 +70,8 @@ export interface IStorage {
   getDeviceBindingsByScreen(screenId: number): Promise<ScreenDeviceBinding[]>;
   revokeDeviceBinding(id: number): Promise<void>;
   updateDeviceLastSeen(id: number): Promise<void>;
+  setActivationPollingToken(activationId: number, pollingToken: string): Promise<void>;
+  clearActivationPollingToken(activationId: number): Promise<void>;
 
   // Admin operations
   isAdmin(userId: string): Promise<boolean>;
@@ -530,6 +532,18 @@ export class DatabaseStorage implements IStorage {
     await db.update(screenDeviceBindings)
       .set({ lastSeenAt: new Date() })
       .where(eq(screenDeviceBindings.id, id));
+  }
+
+  async setActivationPollingToken(activationId: number, pollingToken: string): Promise<void> {
+    await db.update(screenActivationCodes)
+      .set({ pollingToken })
+      .where(eq(screenActivationCodes.id, activationId));
+  }
+
+  async clearActivationPollingToken(activationId: number): Promise<void> {
+    await db.update(screenActivationCodes)
+      .set({ pollingToken: null })
+      .where(eq(screenActivationCodes.id, activationId));
   }
 
   // Admin operations

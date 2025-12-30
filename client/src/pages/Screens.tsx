@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useScreens, useCreateScreen, useDeleteScreen, useUpdateScreen } from "@/hooks/use-screens";
 import { useScreenGroups } from "@/hooks/use-groups";
 import { useAvailableSlots } from "@/hooks/use-subscriptions";
@@ -23,7 +23,9 @@ import {
   Check,
   XCircle,
   Pencil,
-  MonitorSmartphone
+  MonitorSmartphone,
+  ScanLine,
+  Camera
 } from "lucide-react";
 import {
   Dialog,
@@ -74,6 +76,8 @@ export default function Screens() {
   const [editForm, setEditForm] = useState({ name: "", location: "", groupId: "", orientation: "landscape" });
   const [generatedCode, setGeneratedCode] = useState<{code: string; expiresAt: Date} | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   const availableSlots = slotsData?.availableSlots || 0;
 
@@ -118,6 +122,54 @@ export default function Screens() {
       });
     }
   });
+
+  // Scan QR and activate mutation (uses authenticated admin endpoint)
+  const scanActivateMutation = useMutation({
+    mutationFn: async ({ code, screenId }: { code: string; screenId: number }) => {
+      const response = await apiRequest("POST", "/api/admin/screens/activate-by-scan", { code, screenId });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "فشل التفعيل");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "تم التفعيل بنجاح",
+        description: `تم تفعيل الشاشة: ${data.screenName}`,
+      });
+      setScannerOpen(false);
+      setScanning(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/screens'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ في التفعيل",
+        description: error.message,
+        variant: "destructive",
+      });
+      setScanning(false);
+    },
+  });
+
+  const handleScanResult = (decodedText: string) => {
+    if (scanning) return;
+    
+    // Parse QR code format: SCREEN:screenId:code
+    const match = decodedText.match(/SCREEN:(\d+):([A-Z0-9]{6})/);
+    if (match) {
+      setScanning(true);
+      const screenId = parseInt(match[1]);
+      const code = match[2];
+      scanActivateMutation.mutate({ code, screenId });
+    } else {
+      toast({
+        title: "رمز غير صالح",
+        description: "يرجى مسح رمز QR صحيح من الشاشة",
+        variant: "destructive",
+      });
+    }
+  };
 
   const copyCode = () => {
     if (generatedCode) {
@@ -206,11 +258,21 @@ export default function Screens() {
             <p className="text-muted-foreground mt-1">إدارة شاشات العرض</p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Badge variant="outline" className="gap-1 py-1.5 px-3">
               <Monitor className="w-4 h-4" />
               متاح: {availableSlots} شاشة
             </Badge>
+            
+            <Button 
+              variant="outline"
+              className="gap-2 rounded-xl"
+              onClick={() => setScannerOpen(true)}
+              data-testid="button-scan-qr"
+            >
+              <ScanLine className="w-5 h-5" />
+              <span>مسح QR</span>
+            </Button>
             
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
               <DialogTrigger asChild>
@@ -650,7 +712,99 @@ export default function Screens() {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* QR Scanner Dialog */}
+        <Dialog open={scannerOpen} onOpenChange={(open) => {
+          if (!open) {
+            setScannerOpen(false);
+            setScanning(false);
+          }
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Camera className="w-5 h-5 text-primary" />
+                مسح رمز QR
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <p className="text-sm text-muted-foreground text-center">
+                وجه الكاميرا نحو رمز QR الظاهر على الشاشة لتفعيلها
+              </p>
+              
+              {scannerOpen && (
+                <QRScanner 
+                  onScan={handleScanResult}
+                  onError={(error) => {
+                    console.error("Scanner error:", error);
+                  }}
+                />
+              )}
+              
+              {scanning && (
+                <div className="flex items-center justify-center gap-2 py-4">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-primary"></div>
+                  <span className="text-muted-foreground">جاري التفعيل...</span>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
+  );
+}
+
+// QR Scanner Component using html5-qrcode
+function QRScanner({ onScan, onError }: { onScan: (text: string) => void; onError?: (error: string) => void }) {
+  const scannerRef = useRef<HTMLDivElement>(null);
+  const html5QrCodeRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!scannerRef.current) return;
+
+    const loadScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCodeRef.current = html5QrCode;
+
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          (decodedText) => {
+            onScan(decodedText);
+          },
+          () => {}
+        );
+      } catch (err: any) {
+        console.error("Failed to start scanner:", err);
+        onError?.(err.message || "فشل في بدء الكاميرا");
+      }
+    };
+
+    loadScanner();
+
+    return () => {
+      if (html5QrCodeRef.current) {
+        html5QrCodeRef.current.stop().catch(() => {});
+      }
+    };
+  }, [onScan, onError]);
+
+  return (
+    <div className="relative">
+      <div 
+        id="qr-reader" 
+        ref={scannerRef}
+        className="rounded-xl overflow-hidden"
+      />
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+        <div className="w-64 h-64 border-2 border-primary/50 rounded-lg" />
+      </div>
+    </div>
   );
 }

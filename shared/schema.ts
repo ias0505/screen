@@ -127,6 +127,7 @@ export const screenActivationCodes = pgTable("screen_activation_codes", {
   usedAt: timestamp("used_at"), // null إذا لم يُستخدم بعد
   createdBy: varchar("created_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  pollingToken: text("polling_token"), // UUID for secure device token retrieval
 });
 
 // ربط الأجهزة بالشاشات - كل جهاز مرتبط بشاشة واحدة

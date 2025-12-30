@@ -1,11 +1,23 @@
 import { useEffect, useState, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { WifiOff, AlertCircle, CreditCard } from "lucide-react";
+import { WifiOff, AlertCircle, CreditCard, Monitor, Key } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 function getDeviceToken(screenId: number): string | null {
   return localStorage.getItem(`screen_device_token_${screenId}`) || 
          localStorage.getItem(`device_token_${screenId}`);
+}
+
+function saveDeviceToken(screenId: number, token: string): void {
+  localStorage.setItem(`screen_device_token_${screenId}`, token);
+}
+
+interface ActivationCodeData {
+  code: string;
+  expiresAt: string;
+  screenId: number;
+  pollingToken: string;
 }
 
 export default function Player() {
@@ -16,6 +28,7 @@ export default function Player() {
   const [isVerifying, setIsVerifying] = useState(true);
   const [isDeviceBound, setIsDeviceBound] = useState(false);
   const [deviceToken, setDeviceToken] = useState<string | null>(null);
+  const [showActivation, setShowActivation] = useState(false);
   
   // Fetch screen with device token header
   const { data: screen } = useQuery({
@@ -65,13 +78,26 @@ export default function Player() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const preloadedImages = useRef<Set<string>>(new Set());
 
-  // Check device binding on mount - redirect to /activate if not bound
+  // Fetch activation code for unbound screens
+  const { data: activationData, refetch: refetchActivation } = useQuery<ActivationCodeData>({
+    queryKey: ['/api/player', screenId, 'activation-code'],
+    queryFn: async () => {
+      const res = await fetch(`/api/player/${screenId}/activation-code`);
+      if (!res.ok) throw new Error('Failed to fetch activation code');
+      return res.json();
+    },
+    enabled: screenId > 0 && showActivation,
+    refetchInterval: 55000, // Refresh before expiry
+  });
+
+  // Check device binding on mount - show activation screen if not bound
   useEffect(() => {
     async function verifyDevice() {
       const token = getDeviceToken(screenId);
       
       if (!token) {
-        setLocation("/activate");
+        setShowActivation(true);
+        setIsVerifying(false);
         return;
       }
       
@@ -87,21 +113,51 @@ export default function Player() {
         if (data.bound) {
           setDeviceToken(token);
           setIsDeviceBound(true);
+          setShowActivation(false);
           setIsVerifying(false);
         } else {
           localStorage.removeItem(`screen_device_token_${screenId}`);
           localStorage.removeItem(`device_token_${screenId}`);
-          setLocation("/activate");
+          setShowActivation(true);
+          setIsVerifying(false);
         }
       } catch (error) {
-        setLocation("/activate");
+        setShowActivation(true);
+        setIsVerifying(false);
       }
     }
     
     if (screenId > 0) {
       verifyDevice();
     }
-  }, [screenId, setLocation]);
+  }, [screenId]);
+
+  // Poll for activation status when showing activation screen
+  useEffect(() => {
+    if (!showActivation || !activationData?.code || !activationData?.pollingToken) return;
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(
+          `/api/player/${screenId}/check-activation?code=${activationData.code}&pollingToken=${activationData.pollingToken}`
+        );
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        if (data.activated && data.deviceToken) {
+          // Store the device token and mark as bound
+          saveDeviceToken(screenId, data.deviceToken);
+          setDeviceToken(data.deviceToken);
+          setIsDeviceBound(true);
+          setShowActivation(false);
+        }
+      } catch (error) {
+        console.error('Activation poll error:', error);
+      }
+    }, 3000);
+    
+    return () => clearInterval(pollInterval);
+  }, [showActivation, activationData, screenId]);
 
   // Send heartbeat every 30 seconds to update screen status
   useEffect(() => {
@@ -154,7 +210,59 @@ export default function Player() {
   }, [currentIndex, schedules.length, schedules, isDeviceBound]);
 
   // Loading state while verifying device
-  if (isVerifying || !isDeviceBound) {
+  if (isVerifying) {
+    return (
+      <div className="w-screen h-screen bg-black flex items-center justify-center text-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-white"></div>
+      </div>
+    );
+  }
+
+  // Show activation screen with QR code
+  if (showActivation) {
+    return (
+      <div className="w-screen h-screen bg-zinc-900 flex flex-col items-center justify-center text-white" dir="rtl">
+        <div className="text-center max-w-lg px-4">
+          <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
+            <Monitor className="w-12 h-12 text-primary" />
+          </div>
+          <h1 className="text-4xl font-bold mb-2">تفعيل الشاشة</h1>
+          <p className="text-zinc-400 text-lg mb-8">امسح الرمز من لوحة التحكم لربط هذا الجهاز</p>
+          
+          {activationData ? (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-2xl inline-block">
+                <QRCodeSVG 
+                  value={`SCREEN:${screenId}:${activationData.code}`}
+                  size={220}
+                  level="H"
+                  includeMargin
+                />
+              </div>
+              
+              <div className="bg-zinc-800 p-6 rounded-xl">
+                <p className="text-sm text-zinc-400 mb-2">أو أدخل الرمز يدوياً</p>
+                <p className="text-5xl font-mono font-bold tracking-[0.3em] text-white">
+                  {activationData.code}
+                </p>
+              </div>
+              
+              <p className="text-zinc-500 text-sm flex items-center justify-center gap-2">
+                <Key className="w-4 h-4" />
+                رقم الشاشة: {screenId}
+              </p>
+            </div>
+          ) : (
+            <div className="animate-pulse">
+              <div className="bg-zinc-800 w-64 h-64 rounded-2xl mx-auto"></div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!isDeviceBound) {
     return (
       <div className="w-screen h-screen bg-black flex items-center justify-center text-white">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-white"></div>

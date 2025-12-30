@@ -547,7 +547,7 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
-  // Device Binding - إنشاء رمز تفعيل
+  // Device Binding - إنشاء رمز تفعيل (للمدير)
   app.post("/api/screens/:id/activation-codes", requireAuth, async (req: any, res) => {
     const userId = getUserId(req);
     const screenId = Number(req.params.id);
@@ -561,19 +561,117 @@ export async function registerRoutes(
     res.status(201).json(code);
   });
 
-  // Device Binding - تفعيل جهاز موحد (public endpoint - unified activation with rate limiting)
-  app.post("/api/screens/activate", async (req, res) => {
+  // Device Binding - الحصول على رمز التفعيل للشاشة (public - للعرض على الشاشة)
+  // Generates a polling token that must be provided to retrieve device token
+  app.get("/api/player/:id/activation-code", async (req, res) => {
+    const screenId = Number(req.params.id);
+    
+    const screen = await storage.getScreen(screenId);
+    if (!screen) {
+      return res.status(404).json({ message: "الشاشة غير موجودة" });
+    }
+    
+    const code = await storage.createActivationCode(screenId, screen.userId);
+    
+    // Generate a unique polling token for this activation request
+    // This token must be provided when checking activation status
+    const pollingToken = crypto.randomUUID();
+    
+    // Store the polling token with the activation code
+    await storage.setActivationPollingToken(code.id, pollingToken);
+    
+    res.json({ 
+      code: code.code, 
+      expiresAt: code.expiresAt, 
+      screenId,
+      pollingToken 
+    });
+  });
+
+  // Device Binding - التحقق من حالة التفعيل وجلب التوكن (public - للشاشة فقط)
+  // Rate limited to prevent brute-force attempts
+  // Requires polling token to retrieve device token (prevents code harvesting attacks)
+  app.get("/api/player/:id/check-activation", async (req, res) => {
     const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
     
-    // Check rate limit
+    // Apply rate limiting
     const rateCheck = checkRateLimit(clientIp);
     if (!rateCheck.allowed) {
       return res.status(429).json({ 
-        message: `تم حظرك مؤقتاً بسبب كثرة المحاولات الفاشلة. حاول مجدداً بعد ${rateCheck.blockedFor} دقيقة` 
+        activated: false,
+        message: `تم حظرك مؤقتاً. حاول مجدداً بعد ${rateCheck.blockedFor} دقيقة` 
       });
     }
     
-    const { code } = req.body;
+    const screenId = Number(req.params.id);
+    const code = req.query.code as string;
+    const pollingToken = req.query.pollingToken as string;
+    
+    if (!code || !pollingToken) {
+      return res.status(400).json({ activated: false, message: "الرمز ورمز الاستعلام مطلوبان" });
+    }
+    
+    const screen = await storage.getScreen(screenId);
+    if (!screen) {
+      recordFailedAttempt(clientIp);
+      return res.status(404).json({ activated: false, message: "الشاشة غير موجودة" });
+    }
+    
+    // Check if this code exists and belongs to this screen
+    const activation = await storage.getActivationCode(code);
+    if (!activation) {
+      recordFailedAttempt(clientIp);
+      return res.json({ activated: false });
+    }
+    
+    // Verify the code belongs to this screen
+    if (activation.screenId !== screenId) {
+      recordFailedAttempt(clientIp);
+      return res.json({ activated: false });
+    }
+    
+    // Verify the polling token matches (prevents code harvesting)
+    // Only the device that originally requested this specific code knows its polling token
+    if (!activation.pollingToken || activation.pollingToken !== pollingToken) {
+      recordFailedAttempt(clientIp);
+      return res.json({ activated: false });
+    }
+    
+    if (!activation.usedAt) {
+      return res.json({ activated: false });
+    }
+    
+    // Get the device binding created by this activation
+    const bindings = await storage.getDeviceBindings(screenId);
+    const latestBinding = bindings.sort((a, b) => 
+      new Date(b.activatedAt).getTime() - new Date(a.activatedAt).getTime()
+    )[0];
+    
+    if (latestBinding) {
+      // Clear rate limit on successful activation check
+      clearAttempts(clientIp);
+      
+      // Clear the polling token after successful device token retrieval (one-time use)
+      await storage.clearActivationPollingToken(activation.id);
+      
+      res.json({ 
+        activated: true, 
+        deviceToken: latestBinding.deviceToken,
+        bindingId: latestBinding.id 
+      });
+    } else {
+      res.json({ activated: false });
+    }
+  });
+
+  // Admin scan activation - authenticated endpoint for admin scanning QR codes
+  app.post("/api/admin/screens/activate-by-scan", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "يرجى تسجيل الدخول" });
+    }
+    
+    const userId = getUserId(req);
+    const { code, screenId } = req.body;
     
     if (!code) {
       return res.status(400).json({ message: "يرجى إدخال رمز التفعيل" });
@@ -581,86 +679,48 @@ export async function registerRoutes(
     
     const activation = await storage.getActivationCode(code);
     if (!activation) {
-      recordFailedAttempt(clientIp);
       return res.status(404).json({ message: "رمز التفعيل غير صحيح" });
     }
     
     if (activation.usedAt) {
-      recordFailedAttempt(clientIp);
       return res.status(400).json({ message: "تم استخدام رمز التفعيل مسبقاً" });
     }
     
     if (new Date() > new Date(activation.expiresAt)) {
-      recordFailedAttempt(clientIp);
       return res.status(400).json({ message: "انتهت صلاحية رمز التفعيل" });
     }
     
-    // Generate cryptographically secure device token
+    // Verify the screen belongs to this user (or user is admin)
+    const screen = await storage.getScreen(activation.screenId);
+    if (!screen) {
+      return res.status(404).json({ message: "الشاشة غير موجودة" });
+    }
+    
+    const isAdmin = await storage.isAdmin(parseInt(userId));
+    if (screen.userId !== parseInt(userId) && !isAdmin) {
+      return res.status(403).json({ message: "ليس لديك صلاحية تفعيل هذه الشاشة" });
+    }
+    
+    // Generate device token and create binding
     const deviceToken = crypto.randomUUID();
-    const binding = await storage.useActivationCode(code, deviceToken, req.headers['user-agent'] || '');
+    const binding = await storage.useActivationCode(code, deviceToken, 'admin-scan');
     
     if (!binding) {
       return res.status(500).json({ message: "فشل في تفعيل الجهاز" });
     }
     
-    // Clear failed attempts on success
-    clearAttempts(clientIp);
-    
-    res.json({ deviceToken, screenId: activation.screenId, bindingId: binding.id });
+    // Return success but NOT the device token (player will poll for it)
+    res.json({ 
+      success: true, 
+      screenId: activation.screenId,
+      screenName: screen.name,
+      message: "تم تفعيل الشاشة بنجاح" 
+    });
   });
 
-  // Device Binding - تفعيل جهاز (public endpoint - legacy with screenId and rate limiting)
-  app.post("/api/player/activate", async (req, res) => {
-    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-    
-    // Check rate limit
-    const rateCheck = checkRateLimit(clientIp);
-    if (!rateCheck.allowed) {
-      return res.status(429).json({ 
-        message: `تم حظرك مؤقتاً بسبب كثرة المحاولات الفاشلة. حاول مجدداً بعد ${rateCheck.blockedFor} دقيقة` 
-      });
-    }
-    
-    const { code, screenId, deviceInfo } = req.body;
-    
-    if (!code || !screenId) {
-      return res.status(400).json({ message: "يرجى إدخال رمز التفعيل" });
-    }
-    
-    const activation = await storage.getActivationCode(code);
-    if (!activation) {
-      recordFailedAttempt(clientIp);
-      return res.status(404).json({ message: "رمز التفعيل غير صحيح" });
-    }
-    
-    if (activation.screenId !== Number(screenId)) {
-      recordFailedAttempt(clientIp);
-      return res.status(400).json({ message: "رمز التفعيل لا يخص هذه الشاشة" });
-    }
-    
-    if (activation.usedAt) {
-      recordFailedAttempt(clientIp);
-      return res.status(400).json({ message: "تم استخدام رمز التفعيل مسبقاً" });
-    }
-    
-    if (new Date() > new Date(activation.expiresAt)) {
-      recordFailedAttempt(clientIp);
-      return res.status(400).json({ message: "انتهت صلاحية رمز التفعيل" });
-    }
-    
-    // Generate cryptographically secure device token
-    const deviceToken = crypto.randomUUID();
-    const binding = await storage.useActivationCode(code, deviceToken, deviceInfo);
-    
-    if (!binding) {
-      return res.status(500).json({ message: "فشل في تفعيل الجهاز" });
-    }
-    
-    // Clear failed attempts on success
-    clearAttempts(clientIp);
-    
-    res.json({ deviceToken, bindingId: binding.id });
-  });
+  // Legacy activation endpoints removed for security
+  // Use /api/admin/screens/activate-by-scan (authenticated) for admin QR scanning
+  // Use /api/player/:id/check-activation for player to fetch device token after activation
 
   // Device Binding - التحقق من ربط الجهاز (public endpoint)
   app.post("/api/player/verify", async (req, res) => {
