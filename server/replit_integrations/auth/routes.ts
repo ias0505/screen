@@ -140,4 +140,44 @@ export function registerAuthRoutes(app: Express): void {
       res.json({ message: "تم تسجيل الخروج بنجاح" });
     });
   });
+
+  // Change password
+  app.post("/api/auth/change-password", async (req: any, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userId = req.user.claims?.sub || req.user.id;
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "يرجى إدخال كلمة المرور الحالية والجديدة" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل" });
+      }
+
+      const user = await authStorage.getUser(userId);
+      if (!user || !user.password) {
+        return res.status(404).json({ message: "المستخدم غير موجود" });
+      }
+
+      // Verify current password
+      const validPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ message: "كلمة المرور الحالية غير صحيحة" });
+      }
+
+      // Hash new password and update
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await authStorage.updateUserPassword(userId, hashedPassword);
+
+      res.json({ message: "تم تغيير كلمة المرور بنجاح" });
+    } catch (error) {
+      console.error("Change password error:", error);
+      res.status(500).json({ message: "حدث خطأ أثناء تغيير كلمة المرور" });
+    }
+  });
 }

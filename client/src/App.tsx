@@ -25,6 +25,7 @@ import AdminPlans from "@/pages/admin/AdminPlans";
 import AdminDiscountCodes from "@/pages/admin/AdminDiscountCodes";
 import AdminLayout from "@/components/admin/AdminLayout";
 import Team from "@/pages/Team";
+import Settings from "@/pages/Settings";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -98,6 +99,9 @@ function Router() {
       </Route>
       <Route path="/team">
         <ProtectedRoute component={Team} />
+      </Route>
+      <Route path="/settings">
+        <ProtectedRoute component={Settings} />
       </Route>
 
       {/* Admin Routes */}

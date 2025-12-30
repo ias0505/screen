@@ -12,7 +12,8 @@ import {
   Layers,
   Shield,
   Users,
-  Building2
+  Building2,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Onboarding from "./Onboarding";
@@ -40,6 +41,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/schedule", label: "الجدولة", icon: CalendarClock },
     { href: "/subscriptions", label: "الاشتراكات", icon: CreditCard },
     { href: "/team", label: "الفريق", icon: Users },
+    { href: "/settings", label: "الإعدادات", icon: Settings },
     ...(adminCheck?.isAdmin ? [{ href: "/admin", label: "لوحة المدير", icon: Shield }] : []),
   ];
 
