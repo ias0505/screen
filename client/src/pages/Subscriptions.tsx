@@ -108,7 +108,7 @@ export default function Subscriptions() {
   
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
-  const [form, setForm] = useState({ screenCount: 5, durationYears: 1 });
+  const [form, setForm] = useState({ screenCount: 1, durationYears: 1 });
   const [discountCode, setDiscountCode] = useState("");
   const [discountResult, setDiscountResult] = useState<DiscountValidation | null>(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -197,7 +197,7 @@ export default function Subscriptions() {
         pricePerScreen: getPricePerScreen()
       });
       setIsOpen(false);
-      setForm({ screenCount: 5, durationYears: 1 });
+      setForm({ screenCount: 1, durationYears: 1 });
       setSelectedPlan(null);
       setDiscountCode("");
       setDiscountResult(null);
@@ -210,6 +210,29 @@ export default function Subscriptions() {
       setForm({ ...form, screenCount: Math.max(form.screenCount, plan.minScreens) });
     }
     setDiscountResult(null);
+  };
+
+  const findBestPlanForScreenCount = (count: number): SubscriptionPlan | null => {
+    const sortedPlans = [...plans].sort((a, b) => (a.maxScreens || 999) - (b.maxScreens || 999));
+    return sortedPlans.find(p => 
+      (p.minScreens || 1) <= count && (p.maxScreens || 999) >= count
+    ) || null;
+  };
+
+  const handleScreenCountChange = (newCount: number) => {
+    setForm({ ...form, screenCount: newCount });
+    
+    if (selectedPlan) {
+      const minOk = !selectedPlan.minScreens || newCount >= selectedPlan.minScreens;
+      const maxOk = !selectedPlan.maxScreens || newCount <= selectedPlan.maxScreens;
+      
+      if (!minOk || !maxOk) {
+        const betterPlan = findBestPlanForScreenCount(newCount);
+        if (betterPlan) {
+          setSelectedPlan(betterPlan);
+        }
+      }
+    }
   };
 
   return (
@@ -311,10 +334,9 @@ export default function Subscriptions() {
                     <Label>عدد الشاشات</Label>
                     <Input 
                       type="number"
-                      min={selectedPlan?.minScreens || 1}
-                      max={selectedPlan?.maxScreens || 100}
+                      min={1}
                       value={form.screenCount} 
-                      onChange={(e) => setForm({...form, screenCount: parseInt(e.target.value) || 1})}
+                      onChange={(e) => handleScreenCountChange(parseInt(e.target.value) || 1)}
                       className="rounded-xl"
                       data-testid="input-screen-count"
                     />
