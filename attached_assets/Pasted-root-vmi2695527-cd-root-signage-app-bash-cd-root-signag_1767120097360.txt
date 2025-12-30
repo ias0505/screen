@@ -1,0 +1,86 @@
+root@vmi2695527:~# cd /root/signage-app
+-bash: cd: /root/signage-app: No such file or directory
+root@vmi2695527:~# git pull
+There is no tracking information for the current branch.
+Please specify which branch you want to merge with.
+See git-pull(1) for details.
+
+    git pull <remote> <branch>
+
+If you wish to set tracking information for this branch you can do so with:
+
+    git branch --set-upstream-to=gitsafe-backup/<branch> main
+
+root@vmi2695527:~# npm install
+
+added 511 packages, and audited 512 packages in 11s
+
+71 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+root@vmi2695527:~# npm install
+
+up to date, audited 512 packages in 2s
+
+71 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+root@vmi2695527:~# npm run build
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+✓ 3039 modules transformed.
+../dist/public/index.html                   2.01 kB │ gzip:   0.77 kB
+../dist/public/assets/index-Ddq999eq.css   74.80 kB │ gzip:  12.59 kB
+../dist/public/assets/index-gMDUlQT8.js   778.91 kB │ gzip: 224.87 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 11.23s
+building server...
+▲ [WARNING] Duplicate member "getDiscountCodeByCode" in class body [duplicate-class-member]
+
+    server/storage.ts:874:8:
+      874 │   async getDiscountCodeByCode(code: string): Promise<DiscountCode...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "getDiscountCodeByCode" is here:
+
+    server/storage.ts:258:8:
+      258 │   async getDiscountCodeByCode(code: string): Promise<DiscountCode...
+          ╵         ~~~~~~~~~~~~~~~~~~~~~
+
+▲ [WARNING] Duplicate member "incrementDiscountCodeUsage" in class body [duplicate-class-member]
+
+    server/storage.ts:896:8:
+      896 │   async incrementDiscountCodeUsage(id: number): Promise<void> {
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  The original member "incrementDiscountCodeUsage" is here:
+
+    server/storage.ts:263:8:
+      263 │   async incrementDiscountCodeUsage(code: string): Promise<void> {
+          ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+2 warnings
+
+  dist/index.cjs  1.2mb ⚠️
+
+⚡ Done in 164ms
+root@vmi2695527:~# pm2 restart all
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [all](ids: [ 0 ])
+[PM2] [signage](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ signage            │ fork     │ 16   │ online    │ 0%       │ 16.6mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@vmi2695527:~# pm2 restart all
