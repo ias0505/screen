@@ -206,9 +206,17 @@ export default function Subscriptions() {
 
   const selectPlan = (plan: SubscriptionPlan) => {
     setSelectedPlan(plan);
-    if (plan.minScreens) {
-      setForm({ ...form, screenCount: Math.max(form.screenCount, plan.minScreens) });
+    const minScreens = plan.minScreens || 1;
+    const maxScreens = plan.maxScreens || 999;
+    let newCount = form.screenCount;
+    
+    if (newCount < minScreens) {
+      newCount = minScreens;
+    } else if (newCount > maxScreens) {
+      newCount = minScreens;
     }
+    
+    setForm({ ...form, screenCount: newCount });
     setDiscountResult(null);
   };
 
