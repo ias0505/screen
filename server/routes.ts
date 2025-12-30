@@ -104,7 +104,48 @@ export async function registerRoutes(
     return userId;
   };
 
-  app.post("/api/upload", requireAuth, upload.single("file"), (req, res) => {
+  // Helper to get current user's permission in work context
+  // Returns 'owner' for personal context, or the team member permission level
+  const getUserPermission = async (req: any): Promise<'owner' | 'viewer' | 'editor' | 'manager'> => {
+    const userId = getUserId(req);
+    const workContext = req.headers['x-work-context'];
+    
+    // If no work context or working in personal context
+    if (!workContext || workContext === userId) {
+      return 'owner';
+    }
+    
+    // Check if user is a team member of the specified owner
+    const memberships = await storage.getAcceptedTeamMemberships(userId);
+    const membership = memberships.find(m => m.ownerId === workContext);
+    
+    if (membership) {
+      return membership.permission as 'viewer' | 'editor' | 'manager';
+    }
+    
+    // Default to viewer (most restrictive) if context is invalid
+    return 'viewer';
+  };
+
+  // Middleware to require at least editor permission for mutating operations
+  const requireEditor = async (req: any, res: any, next: any) => {
+    const permission = await getUserPermission(req);
+    if (permission === 'viewer') {
+      return res.status(403).json({ message: "ليس لديك صلاحية لتنفيذ هذا الإجراء" });
+    }
+    next();
+  };
+
+  // Middleware to require manager permission for administrative operations
+  const requireManager = async (req: any, res: any, next: any) => {
+    const permission = await getUserPermission(req);
+    if (permission !== 'owner' && permission !== 'manager') {
+      return res.status(403).json({ message: "ليس لديك صلاحية لتنفيذ هذا الإجراء" });
+    }
+    next();
+  };
+
+  app.post("/api/upload", requireAuth, requireEditor, upload.single("file"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
@@ -193,7 +234,7 @@ export async function registerRoutes(
     res.json(groups);
   });
 
-  app.post(api.screenGroups.create.path, requireAuth, async (req: any, res) => {
+  app.post(api.screenGroups.create.path, requireAuth, requireEditor, async (req: any, res) => {
     try {
       const userId = await getEffectiveUserId(req);
       const input = api.screenGroups.create.input.parse(req.body);
@@ -210,7 +251,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/screen-groups/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/screen-groups/:id", requireAuth, requireEditor, async (req: any, res) => {
     const userId = await getEffectiveUserId(req);
     const groups = await storage.getScreenGroups(userId);
     const group = groups.find(g => g.id === Number(req.params.id));
@@ -228,7 +269,7 @@ export async function registerRoutes(
     res.json(groups);
   });
 
-  app.post(api.mediaGroups.create.path, requireAuth, async (req: any, res) => {
+  app.post(api.mediaGroups.create.path, requireAuth, requireEditor, async (req: any, res) => {
     try {
       const userId = await getEffectiveUserId(req);
       const input = api.mediaGroups.create.input.parse(req.body);
@@ -253,7 +294,7 @@ export async function registerRoutes(
     res.json(screens);
   });
 
-  app.post(api.screens.create.path, requireAuth, async (req: any, res) => {
+  app.post(api.screens.create.path, requireAuth, requireEditor, async (req: any, res) => {
     try {
       const userId = await getEffectiveUserId(req);
       const input = api.screens.create.input.parse(req.body);
@@ -282,7 +323,7 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/screens/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/screens/:id", requireAuth, requireEditor, async (req: any, res) => {
     const userId = await getEffectiveUserId(req);
     const screen = await storage.getScreen(Number(req.params.id));
     if (!screen || screen.userId !== userId) {
@@ -352,7 +393,7 @@ export async function registerRoutes(
     });
   });
 
-  app.delete(api.screens.delete.path, requireAuth, async (req: any, res) => {
+  app.delete(api.screens.delete.path, requireAuth, requireEditor, async (req: any, res) => {
     const userId = await getEffectiveUserId(req);
     const screen = await storage.getScreen(Number(req.params.id));
     if (!screen || screen.userId !== userId) {
@@ -397,7 +438,7 @@ export async function registerRoutes(
     });
   });
 
-  app.post(api.media.create.path, requireAuth, async (req: any, res) => {
+  app.post(api.media.create.path, requireAuth, requireEditor, async (req: any, res) => {
     try {
       const userId = await getEffectiveUserId(req);
       const input = api.media.create.input.parse(req.body);
@@ -414,7 +455,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.media.delete.path, requireAuth, async (req: any, res) => {
+  app.delete(api.media.delete.path, requireAuth, requireEditor, async (req: any, res) => {
     const userId = await getEffectiveUserId(req);
     const media = await storage.getMediaItem(Number(req.params.id));
     if (!media || media.userId !== userId) {
@@ -491,7 +532,7 @@ export async function registerRoutes(
     res.json(schedulesList);
   });
 
-  app.post(api.schedules.create.path, requireAuth, async (req: any, res) => {
+  app.post(api.schedules.create.path, requireAuth, requireEditor, async (req: any, res) => {
     try {
       const userId = await getEffectiveUserId(req);
       const input = api.schedules.create.input.parse(req.body);
@@ -516,7 +557,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.schedules.delete.path, requireAuth, async (req, res) => {
+  app.delete(api.schedules.delete.path, requireAuth, requireEditor, async (req, res) => {
     await storage.deleteSchedule(Number(req.params.id));
     res.status(204).send();
   });
@@ -543,7 +584,7 @@ export async function registerRoutes(
     res.json(allSchedules);
   });
 
-  app.patch("/api/schedules/reorder", requireAuth, async (req: any, res) => {
+  app.patch("/api/schedules/reorder", requireAuth, requireEditor, async (req: any, res) => {
     try {
       const { updates } = req.body;
       await storage.updateSchedulesOrder(updates);
@@ -554,7 +595,7 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/schedules/:id", requireAuth, async (req: any, res) => {
+  app.patch("/api/schedules/:id", requireAuth, requireEditor, async (req: any, res) => {
     try {
       const id = Number(req.params.id);
       const { duration, displayOrder } = req.body;
@@ -585,7 +626,7 @@ export async function registerRoutes(
     res.json(schedules);
   });
 
-  app.post("/api/group-schedules", requireAuth, async (req: any, res) => {
+  app.post("/api/group-schedules", requireAuth, requireEditor, async (req: any, res) => {
     try {
       const userId = await getEffectiveUserId(req);
       const { screenGroupId, mediaItemId, priority, isActive, duration } = req.body;
@@ -615,13 +656,13 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/group-schedules/:id", requireAuth, async (req, res) => {
+  app.delete("/api/group-schedules/:id", requireAuth, requireEditor, async (req, res) => {
     await storage.deleteSchedule(Number(req.params.id));
     res.status(204).send();
   });
 
   // Device Binding - إنشاء رمز تفعيل (للمدير)
-  app.post("/api/screens/:id/activation-codes", requireAuth, async (req: any, res) => {
+  app.post("/api/screens/:id/activation-codes", requireAuth, requireEditor, async (req: any, res) => {
     const userId = await getEffectiveUserId(req);
     const screenId = Number(req.params.id);
     
@@ -859,7 +900,7 @@ export async function registerRoutes(
   });
 
   // Device-centric binding: Admin binds a device to a screen by scanning device QR
-  app.post("/api/screens/:screenId/bind-device", requireAuth, async (req: any, res) => {
+  app.post("/api/screens/:screenId/bind-device", requireAuth, requireEditor, async (req: any, res) => {
     const userId = await getEffectiveUserId(req);
     const screenId = Number(req.params.screenId);
     const { deviceId } = req.body;
@@ -927,7 +968,7 @@ export async function registerRoutes(
   });
 
   // Device Binding - إلغاء ربط جهاز
-  app.delete("/api/device-bindings/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/device-bindings/:id", requireAuth, requireEditor, async (req: any, res) => {
     const bindingId = Number(req.params.id);
     await storage.revokeDeviceBinding(bindingId);
     res.status(204).send();

@@ -3,6 +3,7 @@ import { useScreens, useCreateScreen, useDeleteScreen, useUpdateScreen } from "@
 import { useScreenGroups } from "@/hooks/use-groups";
 import { useAvailableSlots } from "@/hooks/use-subscriptions";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -62,6 +63,7 @@ import { ar } from "date-fns/locale";
 export default function Screens() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { canAdd, canEdit, canDelete } = usePermissions();
   const { data: screens = [], isLoading } = useScreens();
   const { data: groups = [] } = useScreenGroups();
   const { data: slotsData } = useAvailableSlots();
@@ -392,17 +394,18 @@ export default function Screens() {
               متاح: {availableSlots} شاشة
             </Badge>
             
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  className="gap-2 bg-primary rounded-xl px-6"
-                  disabled={availableSlots <= 0}
-                  data-testid="button-add-screen"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>إضافة شاشة</span>
-                </Button>
-              </DialogTrigger>
+            {canAdd && (
+              <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="gap-2 bg-primary rounded-xl px-6"
+                    disabled={availableSlots <= 0}
+                    data-testid="button-add-screen"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>إضافة شاشة</span>
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>إضافة شاشة جديدة</DialogTitle>
@@ -488,7 +491,8 @@ export default function Screens() {
                   </div>
                 </form>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            )}
           </div>
         </div>
 
@@ -655,31 +659,35 @@ export default function Screens() {
                                   فتح العرض
                                 </Link>
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => openEditDialog(screen)}
-                                data-testid={`button-edit-screen-${screen.id}`}
-                              >
-                                <Pencil className="w-4 h-4 ml-2" />
-                                تعديل الشاشة
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setActivationDialogScreen(screen.id);
-                                  setGeneratedCode(null);
-                                }}
-                                data-testid={`button-generate-code-${screen.id}`}
-                              >
-                                <Key className="w-4 h-4 ml-2" />
-                                إنشاء رمز تفعيل
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => openScannerForScreen(screen)}
-                                data-testid={`button-scan-qr-${screen.id}`}
-                              >
-                                <Camera className="w-4 h-4 ml-2" />
-                                مسح QR جهاز
-                              </DropdownMenuItem>
+                              {canEdit && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    onClick={() => openEditDialog(screen)}
+                                    data-testid={`button-edit-screen-${screen.id}`}
+                                  >
+                                    <Pencil className="w-4 h-4 ml-2" />
+                                    تعديل الشاشة
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setActivationDialogScreen(screen.id);
+                                      setGeneratedCode(null);
+                                    }}
+                                    data-testid={`button-generate-code-${screen.id}`}
+                                  >
+                                    <Key className="w-4 h-4 ml-2" />
+                                    إنشاء رمز تفعيل
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => openScannerForScreen(screen)}
+                                    data-testid={`button-scan-qr-${screen.id}`}
+                                  >
+                                    <Camera className="w-4 h-4 ml-2" />
+                                    مسح QR جهاز
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                               <DropdownMenuItem 
                                 onClick={() => setDeviceDialogScreen(screen.id)}
                                 data-testid={`button-view-devices-${screen.id}`}
@@ -687,15 +695,19 @@ export default function Screens() {
                                 <Smartphone className="w-4 h-4 ml-2" />
                                 الأجهزة المرتبطة
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => handleDelete(screen.id)}
-                                className="text-destructive"
-                                data-testid={`button-delete-screen-${screen.id}`}
-                              >
-                                <Trash2 className="w-4 h-4 ml-2" />
-                                حذف الشاشة
-                              </DropdownMenuItem>
+                              {canDelete && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDelete(screen.id)}
+                                    className="text-destructive"
+                                    data-testid={`button-delete-screen-${screen.id}`}
+                                  >
+                                    <Trash2 className="w-4 h-4 ml-2" />
+                                    حذف الشاشة
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

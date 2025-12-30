@@ -18,11 +18,13 @@ import {
 import { cn } from "@/lib/utils";
 import Onboarding from "./Onboarding";
 import { WorkContextSwitcher } from "./WorkContextSwitcher";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { User } from "@shared/schema";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const { visibleMenus, permission } = usePermissions();
   
   const { data: profile, isLoading: profileLoading } = useQuery<User>({
     queryKey: ['/api/user/profile'],
@@ -34,7 +36,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     enabled: !!user,
   });
 
-  const navItems = [
+  const allNavItems = [
     { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
     { href: "/screens", label: "الشاشات", icon: Monitor },
     { href: "/groups", label: "المجموعات", icon: Layers },
@@ -45,6 +47,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/settings", label: "الإعدادات", icon: Settings },
     ...(adminCheck?.isAdmin ? [{ href: "/admin", label: "لوحة المدير", icon: Shield }] : []),
   ];
+
+  const navItems = allNavItems.filter(item => visibleMenus.includes(item.href));
 
   if (profileLoading) {
     return (

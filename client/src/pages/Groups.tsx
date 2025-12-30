@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useScreenGroups, useCreateScreenGroup, useDeleteScreenGroup } from "@/hooks/use-groups";
 import { useScreens, useUpdateScreen } from "@/hooks/use-screens";
+import { usePermissions } from "@/hooks/use-permissions";
 import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -35,6 +36,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Groups() {
+  const { canAdd, canEdit, canDelete } = usePermissions();
   const { data: groups = [], isLoading } = useScreenGroups();
   const { data: screens = [] } = useScreens();
   const createGroup = useCreateScreenGroup();
@@ -80,14 +82,15 @@ export default function Groups() {
             <p className="text-muted-foreground mt-1">تنظيم الشاشات في مجموعات لتسهيل جدولة المحتوى</p>
           </div>
           
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2 bg-primary rounded-xl px-6" data-testid="button-add-group">
-                <Plus className="w-5 h-5" />
-                <span>مجموعة جديدة</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
+          {canAdd && (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 bg-primary rounded-xl px-6" data-testid="button-add-group">
+                  <Plus className="w-5 h-5" />
+                  <span>مجموعة جديدة</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
               <DialogHeader>
                 <DialogTitle>إنشاء مجموعة جديدة</DialogTitle>
                 <DialogDescription>أدخل اسم ووصف المجموعة</DialogDescription>
@@ -119,7 +122,8 @@ export default function Groups() {
                 </Button>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          )}
         </div>
 
         {isLoading ? (
@@ -172,21 +176,25 @@ export default function Groups() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem 
-                                onClick={() => setManageGroupId(group.id)}
-                                data-testid={`button-manage-screens-${group.id}`}
-                              >
-                                <Monitor className="w-4 h-4 ml-2" />
-                                إدارة الشاشات
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDelete(group.id)}
-                                className="text-destructive"
-                                data-testid={`button-delete-group-${group.id}`}
-                              >
-                                <Trash2 className="w-4 h-4 ml-2" />
-                                حذف المجموعة
-                              </DropdownMenuItem>
+                              {canEdit && (
+                                <DropdownMenuItem 
+                                  onClick={() => setManageGroupId(group.id)}
+                                  data-testid={`button-manage-screens-${group.id}`}
+                                >
+                                  <Monitor className="w-4 h-4 ml-2" />
+                                  إدارة الشاشات
+                                </DropdownMenuItem>
+                              )}
+                              {canDelete && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleDelete(group.id)}
+                                  className="text-destructive"
+                                  data-testid={`button-delete-group-${group.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4 ml-2" />
+                                  حذف المجموعة
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -207,27 +215,31 @@ export default function Groups() {
                               >
                                 <Monitor className="w-3 h-3" />
                                 <span>{screen.name}</span>
-                                <button
-                                  onClick={() => handleToggleScreen(screen.id, screen.groupId, group.id)}
-                                  className="mr-1 text-muted-foreground hover:text-destructive"
-                                  data-testid={`button-remove-screen-${screen.id}-from-group-${group.id}`}
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
+                                {canEdit && (
+                                  <button
+                                    onClick={() => handleToggleScreen(screen.id, screen.groupId, group.id)}
+                                    className="mr-1 text-muted-foreground hover:text-destructive"
+                                    data-testid={`button-remove-screen-${screen.id}-from-group-${group.id}`}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
                               </div>
                             ))}
                           </div>
                         )}
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full gap-2"
-                          onClick={() => setManageGroupId(group.id)}
-                          data-testid={`button-add-screens-to-group-${group.id}`}
-                        >
-                          <Plus className="w-4 h-4" />
-                          إضافة شاشات
-                        </Button>
+                        {canEdit && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full gap-2"
+                            onClick={() => setManageGroupId(group.id)}
+                            data-testid={`button-add-screens-to-group-${group.id}`}
+                          >
+                            <Plus className="w-4 h-4" />
+                            إضافة شاشات
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   </motion.div>

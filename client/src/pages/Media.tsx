@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMedia, useCreateMedia, useDeleteMedia } from "@/hooks/use-media";
 import { useMediaGroups, useCreateMediaGroup } from "@/hooks/use-groups";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -39,6 +40,7 @@ import {
 
 export default function Media() {
   const { user } = useAuth();
+  const { canAdd, canDelete } = usePermissions();
   const { data: media = [], isLoading } = useMedia();
   const { data: groups = [] } = useMediaGroups();
   const createMedia = useCreateMedia();
@@ -133,13 +135,14 @@ export default function Media() {
           </div>
           
           <div className="flex gap-2">
-            <Dialog open={isGroupOpen} onOpenChange={setIsGroupOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2 rounded-xl">
-                  <Layers className="w-5 h-5" />
-                  <span>مجموعة جديدة</span>
-                </Button>
-              </DialogTrigger>
+            {canAdd && (
+              <Dialog open={isGroupOpen} onOpenChange={setIsGroupOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="gap-2 rounded-xl">
+                    <Layers className="w-5 h-5" />
+                    <span>مجموعة جديدة</span>
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>إنشاء مجموعة وسائط</DialogTitle>
@@ -169,15 +172,17 @@ export default function Media() {
                   </Button>
                 </form>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            )}
 
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 rounded-xl px-6">
-                  <Plus className="w-5 h-5" />
-                  <span>رفع محتوى</span>
-                </Button>
-              </DialogTrigger>
+            {canAdd && (
+              <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 rounded-xl px-6">
+                    <Plus className="w-5 h-5" />
+                    <span>رفع محتوى</span>
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>إضافة محتوى جديد</DialogTitle>
@@ -260,7 +265,8 @@ export default function Media() {
                   </form>
                 </Tabs>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            )}
           </div>
         </div>
 
@@ -285,7 +291,7 @@ export default function Media() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 <AnimatePresence>
                   {media.map((item) => (
-                    <MediaCard key={item.id} item={item} onDelete={() => deleteMedia.mutate(item.id)} />
+                    <MediaCard key={item.id} item={item} onDelete={() => deleteMedia.mutate(item.id)} canDelete={canDelete} />
                   ))}
                 </AnimatePresence>
               </div>
@@ -295,7 +301,7 @@ export default function Media() {
               <TabsContent key={group.id} value={`group-${group.id}`}>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {media.filter(m => m.groupId === group.id).map((item) => (
-                    <MediaCard key={item.id} item={item} onDelete={() => deleteMedia.mutate(item.id)} />
+                    <MediaCard key={item.id} item={item} onDelete={() => deleteMedia.mutate(item.id)} canDelete={canDelete} />
                   ))}
                   {media.filter(m => m.groupId === group.id).length === 0 && (
                     <div className="col-span-full py-10 text-center text-muted-foreground">
@@ -319,7 +325,7 @@ export default function Media() {
   );
 }
 
-function MediaCard({ item, onDelete }: { item: any, onDelete: () => void }) {
+function MediaCard({ item, onDelete, canDelete }: { item: any, onDelete: () => void, canDelete: boolean }) {
   return (
     <motion.div
       layout
@@ -345,16 +351,18 @@ function MediaCard({ item, onDelete }: { item: any, onDelete: () => void }) {
         )}
         
         {/* Overlay Actions */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            onClick={onDelete}
-            className="rounded-full shadow-lg"
-          >
-            <Trash2 className="w-5 h-5" />
-          </Button>
-        </div>
+        {canDelete && (
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
+            <Button 
+              variant="destructive" 
+              size="icon" 
+              onClick={onDelete}
+              className="rounded-full shadow-lg"
+            >
+              <Trash2 className="w-5 h-5" />
+            </Button>
+          </div>
+        )}
       </div>
       
       <div className="p-3 bg-card border-t border-border/50">

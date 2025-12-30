@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useScreens, useScreenSchedules, useCreateSchedule, useDeleteSchedule, useUpdateSchedule, useReorderSchedules } from "@/hooks/use-screens";
 import { useScreenGroups, useGroupSchedules, useCreateGroupSchedule, useDeleteGroupSchedule, useMediaGroups } from "@/hooks/use-groups";
 import { useMedia } from "@/hooks/use-media";
+import { usePermissions } from "@/hooks/use-permissions";
 import Layout from "@/components/Layout";
 import { 
   CalendarClock, 
@@ -53,6 +54,7 @@ interface ScheduleItem {
 }
 
 export default function Schedule() {
+  const { canAdd, canEdit, canDelete } = usePermissions();
   const { data: screens = [] } = useScreens();
   const { data: groups = [] } = useScreenGroups();
   const { data: media = [] } = useMedia();
@@ -261,17 +263,18 @@ export default function Schedule() {
               </Select>
             )}
             
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  disabled={!hasSelection}
-                  className="gap-2 bg-primary hover:bg-primary/90 rounded-xl shadow-lg shadow-primary/25"
-                  data-testid="button-add-schedule"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>إضافة للجدول</span>
-                </Button>
-              </DialogTrigger>
+            {canAdd && (
+              <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    disabled={!hasSelection}
+                    className="gap-2 bg-primary hover:bg-primary/90 rounded-xl shadow-lg shadow-primary/25"
+                    data-testid="button-add-schedule"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>إضافة للجدول</span>
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>اختر محتوى للإضافة</DialogTitle>
@@ -372,7 +375,8 @@ export default function Schedule() {
                   </Button>
                 </div>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            )}
           </div>
         </div>
 
@@ -469,15 +473,17 @@ export default function Schedule() {
                           <div className="flex items-center gap-2 bg-muted/50 px-2 py-1 rounded-lg">
                             <Clock className="w-3 h-3" />
                             <span className="font-medium">{getScheduleDuration(schedule)} ثانية</span>
-                            <Button 
-                              size="icon" 
-                              variant="ghost" 
-                              className="h-6 w-6"
-                              onClick={() => handleDurationEdit(schedule.id, getScheduleDuration(schedule))}
-                              data-testid={`button-edit-duration-${schedule.id}`}
-                            >
-                              <Pencil className="w-3 h-3 text-primary" />
-                            </Button>
+                            {canEdit && (
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="h-6 w-6"
+                                onClick={() => handleDurationEdit(schedule.id, getScheduleDuration(schedule))}
+                                data-testid={`button-edit-duration-${schedule.id}`}
+                              >
+                                <Pencil className="w-3 h-3 text-primary" />
+                              </Button>
+                            )}
                           </div>
                         )}
                         <span>
@@ -485,29 +491,33 @@ export default function Schedule() {
                         </span>
                       </div>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => handleDeleteSchedule(schedule.id)}
-                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
-                      data-testid={`button-delete-schedule-${schedule.id}`}
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </Button>
+                    {canDelete && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleDeleteSchedule(schedule.id)}
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+                        data-testid={`button-delete-schedule-${schedule.id}`}
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
             ) : (
               <div className="p-12 text-center text-muted-foreground">
                 <p>الجدول فارغ {scheduleType === "screen" ? "لهذه الشاشة" : "لهذه المجموعة"}</p>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setIsAddOpen(true)}
-                  className="mt-2 text-primary"
-                  data-testid="button-add-first-content"
-                >
-                  إضافة محتوى الآن <ArrowRight className="w-4 h-4 mr-1" />
-                </Button>
+                {canAdd && (
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setIsAddOpen(true)}
+                    className="mt-2 text-primary"
+                    data-testid="button-add-first-content"
+                  >
+                    إضافة محتوى الآن <ArrowRight className="w-4 h-4 mr-1" />
+                  </Button>
+                )}
               </div>
             )}
           </div>

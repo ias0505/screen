@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { Building2, User, ChevronDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { queryClient } from "@/lib/queryClient";
@@ -26,7 +27,7 @@ interface AcceptedTeam {
 }
 
 export function WorkContextSwitcher() {
-  const { context, switchToPersonal, switchToCompany } = useWorkContext();
+  const { context, switchToPersonal, switchToCompany, setAvailableCompanies } = useWorkContext();
 
   const { data: acceptedTeams = [] } = useQuery<(TeamMember & { owner: UserType })[]>({
     queryKey: ['/api/team/accepted'],
@@ -52,6 +53,15 @@ export function WorkContextSwitcher() {
       permission: t.permission,
     };
   });
+
+  const prevCompaniesRef = useRef<string>("");
+  useEffect(() => {
+    const companiesKey = companies.map(c => `${c.ownerId}:${c.permission}`).join(',');
+    if (companies.length > 0 && companiesKey !== prevCompaniesRef.current) {
+      prevCompaniesRef.current = companiesKey;
+      setAvailableCompanies(companies);
+    }
+  }, [companies, setAvailableCompanies]);
 
   if (companies.length === 0) {
     return null;
