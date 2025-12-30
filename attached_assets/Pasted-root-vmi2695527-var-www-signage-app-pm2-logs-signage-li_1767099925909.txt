@@ -1,0 +1,72 @@
+root@vmi2695527:/var/www/signage-app# pm2 logs signage --lines 30
+[TAILING] Tailing last 30 lines for [signage] process (change the value with --lines option)
+/root/.pm2/logs/signage-error.log last 30 lines:
+0|signage  |   dataType: undefined,
+0|signage  |   constraint: undefined,
+0|signage  |   file: 'parse_relation.c',
+0|signage  |   line: '1381',
+0|signage  |   routine: 'parserOpenTable'
+0|signage  | }
+0|signage  | Login error: error: relation "users" does not exist
+0|signage  |     at /var/www/signage-app/dist/index.cjs:70:13326
+0|signage  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|signage  |     at async /var/www/signage-app/dist/index.cjs:78:94646
+0|signage  |     at async Hh.getUserByEmail (/var/www/signage-app/dist/index.cjs:78:109919)
+0|signage  |     at async /var/www/signage-app/dist/index.cjs:78:114543 {
+0|signage  |   length: 105,
+0|signage  |   severity: 'ERROR',
+0|signage  |   code: '42P01',
+0|signage  |   detail: undefined,
+0|signage  |   hint: undefined,
+0|signage  |   position: '148',
+0|signage  |   internalPosition: undefined,
+0|signage  |   internalQuery: undefined,
+0|signage  |   where: undefined,
+0|signage  |   schema: undefined,
+0|signage  |   table: undefined,
+0|signage  |   column: undefined,
+0|signage  |   dataType: undefined,
+0|signage  |   constraint: undefined,
+0|signage  |   file: 'parse_relation.c',
+0|signage  |   line: '1381',
+0|signage  |   routine: 'parserOpenTable'
+0|signage  | }
+
+/root/.pm2/logs/signage-out.log last 30 lines:
+0|signage  | 1:56:54 PM [express] POST /api/auth/login 401 in 69ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 1:57:00 PM [express] POST /api/auth/login 401 in 6ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 1:57:01 PM [express] POST /api/auth/login 401 in 6ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 1:57:02 PM [express] POST /api/auth/login 401 in 4ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 1:57:03 PM [express] POST /api/auth/login 401 in 7ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 1:57:09 PM [express] POST /api/auth/login 401 in 4ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 1:58:09 PM [express] POST /api/auth/login 401 in 25ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 1:58:24 PM [express] POST /api/auth/login 401 in 25ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 1:58:30 PM [express] GET /api/auth/user 401 in 3ms :: {"message":"Unauthorized"}
+0|signage  | 1:58:38 PM [express] POST /api/auth/login 401 in 33ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 1:58:40 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+0|signage  | 1:58:44 PM [express] POST /api/auth/login 401 in 5ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 1:58:45 PM [express] POST /api/auth/login 401 in 4ms :: {"message":"البريد الإلكتروني أو كلمة المرور غير صحيحة"}
+0|signage  | 2:01:23 PM [express] POST /api/auth/login 200 in 150ms :: {"message":"تم تسجيل الدخول بنجاح","user":{"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","firstName":"Admin"}}
+0|signage  | 2:01:23 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+0|signage  | 2:01:31 PM [express] POST /api/auth/login 200 in 125ms :: {"message":"تم تسجيل الدخول بنجاح","user":{"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","firstName":"Admin"}}
+0|signage  | 2:01:31 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+0|signage  | 2:01:33 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+0|signage  | 2:01:43 PM [express] POST /api/auth/login 200 in 173ms :: {"message":"تم تسجيل الدخول بنجاح","user":{"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","firstName":"Admin"}}
+0|signage  | 2:01:43 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+0|signage  | 2:03:29 PM [express] POST /api/auth/login 200 in 163ms :: {"message":"تم تسجيل الدخول بنجاح","user":{"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","firstName":"Admin"}}
+0|signage  | 2:03:29 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+0|signage  | 2:03:32 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+0|signage  | 2:03:40 PM [express] POST /api/auth/login 200 in 168ms :: {"message":"تم تسجيل الدخول بنجاح","user":{"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","firstName":"Admin"}}
+0|signage  | 2:03:40 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+0|signage  | 2:04:20 PM [express] GET /api/auth/user 401 in 3ms :: {"message":"Unauthorized"}
+0|signage  | 2:04:26 PM [express] POST /api/auth/login 200 in 157ms :: {"message":"تم تسجيل الدخول بنجاح","user":{"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","firstName":"Admin"}}
+0|signage  | 2:04:26 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+0|signage  | 2:04:46 PM [express] POST /api/auth/login 200 in 132ms :: {"message":"تم تسجيل الدخول بنجاح","user":{"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","firstName":"Admin"}}
+0|signage  | 2:04:46 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+
+^Z
+[6]+  Stopped                 pm2 logs signage --lines 30
+root@vmi2695527:/var/www/signage-app# psql $DATABASE_URL -c "SELECT * FROM session LIMIT 5;"
+ERROR:  relation "session" does not exist
+LINE 1: SELECT * FROM session LIMIT 5;
+                      ^
