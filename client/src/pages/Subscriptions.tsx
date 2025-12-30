@@ -212,32 +212,43 @@ export default function Subscriptions() {
   };
 
   const findBestPlanForScreenCount = (count: number): SubscriptionPlan | null => {
-    const sortedPlans = [...plans].sort((a, b) => (a.maxScreens || 999) - (b.maxScreens || 999));
-    return sortedPlans.find(p => 
-      (p.minScreens || 1) <= count && (p.maxScreens || 999) >= count
-    ) || null;
+    // Sort plans by minScreens ascending to find the right tier
+    const sortedPlans = [...plans].sort((a, b) => (a.minScreens || 1) - (b.minScreens || 1));
+    
+    // Find exact match: plan where minScreens <= count <= maxScreens
+    const exactMatch = sortedPlans.find(p => {
+      const min = p.minScreens || 1;
+      const max = p.maxScreens;
+      // Only match if maxScreens is defined and count is within range
+      if (max !== null && max !== undefined) {
+        return count >= min && count <= max;
+      }
+      // If maxScreens is null/undefined, only match if count >= min (unlimited plan)
+      return count >= min;
+    });
+    
+    if (exactMatch) return exactMatch;
+    
+    // If count exceeds all plans with defined maxScreens, return the highest tier
+    const plansWithMax = sortedPlans.filter(p => p.maxScreens !== null && p.maxScreens !== undefined);
+    if (plansWithMax.length > 0) {
+      // Return the plan with highest maxScreens
+      return plansWithMax.reduce((highest, current) => 
+        (current.maxScreens || 0) > (highest.maxScreens || 0) ? current : highest
+      );
+    }
+    
+    return sortedPlans[sortedPlans.length - 1] || null;
   };
 
   const handleScreenCountChange = (newCount: number) => {
     setForm({ ...form, screenCount: newCount });
     
-    // Check if current plan still fits the new screen count
-    if (selectedPlan) {
-      const minOk = !selectedPlan.minScreens || newCount >= selectedPlan.minScreens;
-      const maxOk = !selectedPlan.maxScreens || newCount <= selectedPlan.maxScreens;
-      
-      // If still within current plan range, keep it
-      if (minOk && maxOk) {
-        return;
-      }
-    }
-    
-    // Find a matching plan for the new screen count
+    // Always find the best matching plan for this screen count
     const bestPlan = findBestPlanForScreenCount(newCount);
     if (bestPlan) {
       setSelectedPlan(bestPlan);
     }
-    // If no plan matches, keep current plan (user went beyond max range)
   };
 
   return (
