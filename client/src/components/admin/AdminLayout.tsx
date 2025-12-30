@@ -11,7 +11,8 @@ import {
   Tag,
   LayoutDashboard,
   LogOut,
-  Home
+  Home,
+  Settings
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -25,6 +26,7 @@ const adminNavItems = [
   { title: "المدراء", icon: Shield, href: "/admin/admins" },
   { title: "خطط الاشتراك", icon: Package, href: "/admin/plans" },
   { title: "أكواد الخصم", icon: Tag, href: "/admin/discount-codes" },
+  { title: "إعدادات النظام", icon: Settings, href: "/admin/settings" },
 ];
 
 interface AdminLayoutProps {

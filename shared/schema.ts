@@ -271,6 +271,18 @@ export const insertDiscountCodeSchema = createInsertSchema(discountCodes).omit({
 // Team member schema
 export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({ id: true, invitedAt: true, joinedAt: true, removedAt: true });
 
+// System settings table - for admin-configurable settings
+export const systemSettings = pgTable("system_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedBy: varchar("updated_by").references(() => users.id),
+});
+
+export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit({ id: true, updatedAt: true });
+
 // Types
 export type ScreenGroup = typeof screenGroups.$inferSelect;
 export type MediaGroup = typeof mediaGroups.$inferSelect;
@@ -302,3 +314,5 @@ export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
 export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
 export type InsertDiscountCode = z.infer<typeof insertDiscountCodeSchema>;
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;

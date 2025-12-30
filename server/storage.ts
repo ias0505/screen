@@ -3,7 +3,7 @@ import {
   screens, mediaItems, schedules, screenGroups, mediaGroups,
   subscriptionPlans, userSubscriptions, subscriptions, discountCodes,
   screenActivationCodes, screenDeviceBindings,
-  admins, adminActivityLogs, invoices, users, teamMembers,
+  admins, adminActivityLogs, invoices, users, teamMembers, systemSettings,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
   type Schedule, type InsertSchedule,
@@ -12,7 +12,7 @@ import {
   type SubscriptionPlan, type UserSubscription, type Subscription, type DiscountCode,
   type ScreenActivationCode, type ScreenDeviceBinding,
   type Admin, type AdminActivityLog, type Invoice, type User, type TeamMember,
-  type InsertSubscriptionPlan, type InsertDiscountCode
+  type InsertSubscriptionPlan, type InsertDiscountCode, type SystemSetting
 } from "@shared/schema";
 import { eq, desc, and, gt, lte, isNull, sql, ne } from "drizzle-orm";
 
@@ -139,6 +139,11 @@ export interface IStorage {
   updateDiscountCode(id: number, code: Partial<InsertDiscountCode>): Promise<DiscountCode>;
   deleteDiscountCode(id: number): Promise<void>;
   incrementDiscountCodeUsage(id: number): Promise<void>;
+  
+  // System Settings
+  getSystemSettings(): Promise<SystemSetting[]>;
+  getSystemSetting(key: string): Promise<string | null>;
+  setSystemSetting(key: string, value: string, description?: string, updatedBy?: string): Promise<SystemSetting>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -158,7 +163,9 @@ export class DatabaseStorage implements IStorage {
     const endDate = new Date();
     endDate.setFullYear(endDate.getFullYear() + durationYears);
     
-    const pricePerScreen = 50;
+    // Get price from system settings or use default
+    const priceFromSettings = await this.getSystemSetting('price_per_screen');
+    const pricePerScreen = priceFromSettings ? parseInt(priceFromSettings, 10) : 50;
     let totalPrice = screenCount * pricePerScreen * durationYears;
     
     // Apply discount if provided
@@ -912,6 +919,32 @@ export class DatabaseStorage implements IStorage {
     await db.update(discountCodes)
       .set({ usedCount: sql`${discountCodes.usedCount} + 1` })
       .where(eq(discountCodes.id, id));
+  }
+
+  // System Settings
+  async getSystemSettings(): Promise<SystemSetting[]> {
+    return await db.select().from(systemSettings);
+  }
+
+  async getSystemSetting(key: string): Promise<string | null> {
+    const [setting] = await db.select().from(systemSettings).where(eq(systemSettings.key, key));
+    return setting?.value ?? null;
+  }
+
+  async setSystemSetting(key: string, value: string, description?: string, updatedBy?: string): Promise<SystemSetting> {
+    const existing = await this.getSystemSetting(key);
+    if (existing !== null) {
+      const [updated] = await db.update(systemSettings)
+        .set({ value, description, updatedBy, updatedAt: new Date() })
+        .where(eq(systemSettings.key, key))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(systemSettings)
+        .values({ key, value, description, updatedBy })
+        .returning();
+      return created;
+    }
   }
 }
 

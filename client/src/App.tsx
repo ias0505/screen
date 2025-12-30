@@ -23,6 +23,7 @@ import AdminActivity from "@/pages/admin/AdminActivity";
 import AdminAdmins from "@/pages/admin/AdminAdmins";
 import AdminPlans from "@/pages/admin/AdminPlans";
 import AdminDiscountCodes from "@/pages/admin/AdminDiscountCodes";
+import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminLayout from "@/components/admin/AdminLayout";
 import Team from "@/pages/Team";
 import Settings from "@/pages/Settings";
@@ -135,6 +136,9 @@ function Router() {
       </Route>
       <Route path="/admin/discount-codes">
         <AdminRoute component={AdminDiscountCodes} />
+      </Route>
+      <Route path="/admin/settings">
+        <AdminRoute component={AdminSettings} />
       </Route>
 
       <Route component={NotFound} />

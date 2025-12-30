@@ -860,8 +860,10 @@ export async function registerRoutes(
     
     const subscription = await storage.createSubscription(userId, screenCount, durationYears);
     
-    // Create invoice for the subscription
-    const amount = screenCount * 50 * durationYears;
+    // Create invoice for the subscription - use price from settings
+    const priceFromSettings = await storage.getSystemSetting('price_per_screen');
+    const pricePerScreen = priceFromSettings ? parseInt(priceFromSettings, 10) : 50;
+    const amount = screenCount * pricePerScreen * durationYears;
     await storage.createInvoice(subscription.id, userId, amount, adminId);
     
     // Log admin activity
@@ -1304,6 +1306,54 @@ export async function registerRoutes(
     
     const updated = await storage.updateUserProfile(userId, updateData);
     res.json(updated);
+  });
+
+  // Admin: Get system settings
+  app.get("/api/admin/settings", requireAdmin, async (req: any, res) => {
+    const settings = await storage.getSystemSettings();
+    
+    // Return settings as key-value object for easier frontend use
+    const settingsObj: Record<string, string> = {};
+    settings.forEach(s => {
+      settingsObj[s.key] = s.value;
+    });
+    
+    // Add defaults if not set
+    if (!settingsObj['price_per_screen']) {
+      settingsObj['price_per_screen'] = '50';
+    }
+    
+    res.json(settingsObj);
+  });
+
+  // Admin: Update system settings
+  app.patch("/api/admin/settings", requireAdmin, async (req: any, res) => {
+    const adminId = getUserId(req);
+    const { key, value, description } = req.body;
+    
+    if (!key || value === undefined) {
+      return res.status(400).json({ message: "المفتاح والقيمة مطلوبان" });
+    }
+    
+    const setting = await storage.setSystemSetting(key, String(value), description, adminId);
+    
+    // Log admin activity
+    await storage.logAdminActivity(
+      adminId,
+      'setting_updated',
+      'system_settings',
+      key,
+      JSON.stringify({ key, value }),
+      req.ip
+    );
+    
+    res.json(setting);
+  });
+
+  // Public: Get price per screen (for subscription form)
+  app.get("/api/settings/price", async (req, res) => {
+    const price = await storage.getSystemSetting('price_per_screen');
+    res.json({ pricePerScreen: price ? parseInt(price, 10) : 50 });
   });
 
   return httpServer;
