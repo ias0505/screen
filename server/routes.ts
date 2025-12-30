@@ -1268,5 +1268,43 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  // Update user profile
+  app.patch("/api/user/profile", requireAuth, async (req: any, res) => {
+    const userId = getUserId(req);
+    const { firstName, lastName, companyName, email } = req.body;
+    
+    // Validate firstName if provided
+    if (firstName !== undefined && (!firstName || firstName.trim().length < 2)) {
+      return res.status(400).json({ message: "الاسم الأول يجب أن يكون حرفين على الأقل" });
+    }
+    
+    // Validate companyName if provided
+    if (companyName !== undefined && (!companyName || companyName.trim().length < 2)) {
+      return res.status(400).json({ message: "اسم الشركة يجب أن يكون حرفين على الأقل" });
+    }
+    
+    // Validate email if provided
+    if (email !== undefined) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "البريد الإلكتروني غير صالح" });
+      }
+      // Check if email is already in use by another user
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({ message: "البريد الإلكتروني مستخدم بالفعل" });
+      }
+    }
+    
+    const updateData: any = {};
+    if (firstName !== undefined) updateData.firstName = firstName.trim();
+    if (lastName !== undefined) updateData.lastName = lastName?.trim() || null;
+    if (companyName !== undefined) updateData.companyName = companyName.trim();
+    if (email !== undefined) updateData.email = email.trim();
+    
+    const updated = await storage.updateUserProfile(userId, updateData);
+    res.json(updated);
+  });
+
   return httpServer;
 }

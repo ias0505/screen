@@ -1,23 +1,68 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Eye, EyeOff } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { Lock, Eye, EyeOff, User, Building2, Mail, Save } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { User as UserType } from "@shared/schema";
 
 export default function Settings() {
   const { toast } = useToast();
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [form, setForm] = useState({
+  
+  const { data: profile, isLoading } = useQuery<UserType>({
+    queryKey: ['/api/user/profile'],
+  });
+
+  const [profileForm, setProfileForm] = useState({
+    firstName: "",
+    lastName: "",
+    companyName: "",
+    email: "",
+  });
+
+  const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+  });
+
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setProfileForm({
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+        companyName: profile.companyName || "",
+        email: profile.email || "",
+      });
+    }
+  }, [profile]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: { firstName?: string; lastName?: string; companyName?: string; email?: string }) => {
+      const res = await apiRequest("PATCH", "/api/user/profile", data);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "حدث خطأ");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      toast({ title: "تم حفظ التغييرات بنجاح" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
   });
 
   const changePasswordMutation = useMutation({
@@ -31,39 +76,136 @@ export default function Settings() {
     },
     onSuccess: () => {
       toast({ title: "تم تغيير كلمة المرور بنجاح" });
-      setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     },
     onError: (error: Error) => {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleProfileSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateProfileMutation.mutate(profileForm);
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (form.newPassword !== form.confirmPassword) {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({ title: "خطأ", description: "كلمة المرور الجديدة غير متطابقة", variant: "destructive" });
       return;
     }
 
-    if (form.newPassword.length < 6) {
+    if (passwordForm.newPassword.length < 6) {
       toast({ title: "خطأ", description: "كلمة المرور يجب أن تكون 6 أحرف على الأقل", variant: "destructive" });
       return;
     }
 
     changePasswordMutation.mutate({
-      currentPassword: form.currentPassword,
-      newPassword: form.newPassword,
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
     });
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <div className="space-y-8 max-w-2xl">
         <div>
           <h1 className="text-3xl font-bold text-foreground">الإعدادات</h1>
-          <p className="text-muted-foreground mt-1">إدارة إعدادات حسابك</p>
+          <p className="text-muted-foreground mt-1">إدارة بيانات حسابك والأمان</p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              المعلومات الشخصية
+            </CardTitle>
+            <CardDescription>
+              تعديل بياناتك الشخصية ومعلومات الشركة
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleProfileSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">الاسم الأول</Label>
+                  <Input
+                    id="firstName"
+                    value={profileForm.firstName}
+                    onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                    required
+                    minLength={2}
+                    className="rounded-xl"
+                    data-testid="input-first-name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">الاسم الأخير</Label>
+                  <Input
+                    id="lastName"
+                    value={profileForm.lastName}
+                    onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                    className="rounded-xl"
+                    data-testid="input-last-name"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="companyName" className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  اسم الشركة
+                </Label>
+                <Input
+                  id="companyName"
+                  value={profileForm.companyName}
+                  onChange={(e) => setProfileForm({ ...profileForm, companyName: e.target.value })}
+                  required
+                  minLength={2}
+                  className="rounded-xl"
+                  data-testid="input-company-name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  البريد الإلكتروني
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={profileForm.email}
+                  onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                  required
+                  className="rounded-xl"
+                  data-testid="input-email"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full rounded-xl gap-2"
+                disabled={updateProfileMutation.isPending}
+                data-testid="button-save-profile"
+              >
+                <Save className="w-4 h-4" />
+                {updateProfileMutation.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -76,15 +218,15 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="currentPassword">كلمة المرور الحالية</Label>
                 <div className="relative">
                   <Input
                     id="currentPassword"
                     type={showCurrentPassword ? "text" : "password"}
-                    value={form.currentPassword}
-                    onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                     required
                     className="rounded-xl pe-10"
                     data-testid="input-current-password"
@@ -101,14 +243,16 @@ export default function Settings() {
                 </div>
               </div>
 
+              <Separator />
+
               <div className="space-y-2">
                 <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
                 <div className="relative">
                   <Input
                     id="newPassword"
                     type={showNewPassword ? "text" : "password"}
-                    value={form.newPassword}
-                    onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                     required
                     minLength={6}
                     className="rounded-xl pe-10"
@@ -132,8 +276,8 @@ export default function Settings() {
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
-                    value={form.confirmPassword}
-                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                     required
                     minLength={6}
                     className="rounded-xl pe-10"
