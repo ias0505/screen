@@ -24,7 +24,9 @@ import {
   Pencil,
   MonitorSmartphone,
   Camera,
-  Search
+  Search,
+  Filter,
+  X
 } from "lucide-react";
 import {
   Dialog,
@@ -82,6 +84,9 @@ export default function Screens() {
   const [preselectedScreenId, setPreselectedScreenId] = useState<number | null>(null);
   const [preselectedScreenName, setPreselectedScreenName] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterOrientation, setFilterOrientation] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterGroup, setFilterGroup] = useState<string>("all");
 
   const availableSlots = slotsData?.availableSlots || 0;
 
@@ -331,16 +336,46 @@ export default function Screens() {
     return group?.name;
   };
 
-  // Filter screens based on search query
+  // Filter screens based on search query and filters
   const filteredScreens = screens.filter((screen: any) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      screen.name?.toLowerCase().includes(query) ||
-      screen.location?.toLowerCase().includes(query) ||
-      getGroupName(screen.groupId)?.toLowerCase().includes(query)
-    );
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = (
+        screen.name?.toLowerCase().includes(query) ||
+        screen.location?.toLowerCase().includes(query) ||
+        getGroupName(screen.groupId)?.toLowerCase().includes(query)
+      );
+      if (!matchesSearch) return false;
+    }
+    
+    // Orientation filter
+    if (filterOrientation !== "all" && screen.orientation !== filterOrientation) {
+      return false;
+    }
+    
+    // Status filter
+    if (filterStatus !== "all" && screen.status !== filterStatus) {
+      return false;
+    }
+    
+    // Group filter
+    if (filterGroup !== "all") {
+      if (filterGroup === "none" && screen.groupId !== null) return false;
+      if (filterGroup !== "none" && screen.groupId?.toString() !== filterGroup) return false;
+    }
+    
+    return true;
   });
+
+  const hasActiveFilters = filterOrientation !== "all" || filterStatus !== "all" || filterGroup !== "all";
+  
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setFilterOrientation("all");
+    setFilterStatus("all");
+    setFilterGroup("all");
+  };
 
   return (
     <Layout>
@@ -352,17 +387,6 @@ export default function Screens() {
           </div>
           
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="بحث عن شاشة..."
-                className="pr-10 w-56 rounded-xl"
-                data-testid="input-search-screens"
-              />
-            </div>
-            
             <Badge variant="outline" className="gap-1 py-1.5 px-3">
               <Monitor className="w-4 h-4" />
               متاح: {availableSlots} شاشة
@@ -468,6 +492,81 @@ export default function Screens() {
           </div>
         </div>
 
+        {/* Filter Bar */}
+        {screens.length > 0 && (
+          <div className="flex items-center gap-3 flex-wrap bg-muted/30 p-3 rounded-xl">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-medium">تصفية:</span>
+            </div>
+            
+            <div className="relative flex-1 min-w-[200px] max-w-xs">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="بحث بالاسم أو الموقع..."
+                className="pr-10 rounded-xl"
+                data-testid="input-search-screens"
+              />
+            </div>
+            
+            <Select value={filterOrientation} onValueChange={setFilterOrientation}>
+              <SelectTrigger className="w-36 rounded-xl" data-testid="select-filter-orientation">
+                <SelectValue placeholder="الاتجاه" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الاتجاهات</SelectItem>
+                <SelectItem value="landscape">أفقي</SelectItem>
+                <SelectItem value="portrait">عمودي</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-36 rounded-xl" data-testid="select-filter-status">
+                <SelectValue placeholder="الحالة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الحالات</SelectItem>
+                <SelectItem value="online">متصل</SelectItem>
+                <SelectItem value="offline">غير متصل</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={filterGroup} onValueChange={setFilterGroup}>
+              <SelectTrigger className="w-40 rounded-xl" data-testid="select-filter-group">
+                <SelectValue placeholder="المجموعة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل المجموعات</SelectItem>
+                <SelectItem value="none">بدون مجموعة</SelectItem>
+                {groups.map(g => (
+                  <SelectItem key={g.id} value={g.id.toString()}>
+                    {g.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {(hasActiveFilters || searchQuery) && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearAllFilters}
+                className="gap-1 text-muted-foreground"
+                data-testid="button-clear-filters"
+              >
+                <X className="w-4 h-4" />
+                مسح الفلاتر
+              </Button>
+            )}
+            
+            <Badge variant="secondary" className="mr-auto">
+              {filteredScreens.length} من {screens.length}
+            </Badge>
+          </div>
+        )}
+
         {availableSlots <= 0 && screens.length === 0 && (
           <Card className="border-amber-500/50 bg-amber-500/5">
             <CardContent className="pt-6">
@@ -502,9 +601,17 @@ export default function Screens() {
           </div>
         ) : filteredScreens.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 bg-muted/10 border-2 border-dashed border-border rounded-3xl">
-            <Search className="w-10 h-10 text-muted-foreground mb-3" />
+            <Filter className="w-10 h-10 text-muted-foreground mb-3" />
             <h3 className="text-lg font-bold text-foreground">لا توجد نتائج</h3>
-            <p className="text-muted-foreground mt-1">لم يتم العثور على شاشات تطابق "{searchQuery}"</p>
+            <p className="text-muted-foreground mt-1">لم يتم العثور على شاشات تطابق الفلاتر المحددة</p>
+            <Button 
+              variant="outline" 
+              className="mt-4 gap-2 rounded-xl"
+              onClick={clearAllFilters}
+            >
+              <X className="w-4 h-4" />
+              مسح جميع الفلاتر
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
