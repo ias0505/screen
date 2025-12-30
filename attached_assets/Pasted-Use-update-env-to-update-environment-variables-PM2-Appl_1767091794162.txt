@@ -1,0 +1,35 @@
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [signage](ids: [ 1 ])
+[PM2] [signage](1) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ screen             │ fork     │ 90   │ online    │ 0%       │ 52.1mb   │
+│ 1  │ signage            │ fork     │ 1    │ online    │ 0%       │ 13.6mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[TAILING] Tailing last 15 lines for [signage] process (change the value with --lines option)
+/root/.pm2/logs/signage-out.log last 15 lines:
+/root/.pm2/logs/signage-error.log last 15 lines:
+1|signage  | Error: DATABASE_URL must be set. Did you forget to provision a database?
+1|signage  |     at Object.<anonymous> (/var/www/signage-app/dist/index.cjs:78:109632)
+1|signage  |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+1|signage  |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+1|signage  |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+1|signage  |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+1|signage  |     at cjsLoader (node:internal/modules/esm/translators:298:15)
+1|signage  |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:240:7)
+1|signage  |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+1|signage  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+1|signage  |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+
+1|signage  | Error: DATABASE_URL must be set. Did you forget to provision a database?
+1|signage  |     at Object.<anonymous> (/var/www/signage-app/dist/index.cjs:78:109632)
+1|signage  |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+1|signage  |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+1|signage  |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+1|signage  |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+1|signage  |     at cjsLoader (node:internal/modules/esm/translators:298:15)
+1|signage  |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:240:7)
+1|signage  |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+1|signage  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+1|signage  |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
