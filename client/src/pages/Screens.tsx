@@ -24,7 +24,6 @@ import {
   XCircle,
   Pencil,
   MonitorSmartphone,
-  ScanLine,
   Camera
 } from "lucide-react";
 import {
@@ -80,6 +79,8 @@ export default function Screens() {
   const [scanning, setScanning] = useState(false);
   const [scannedDeviceId, setScannedDeviceId] = useState<string | null>(null);
   const [selectedScreenForDevice, setSelectedScreenForDevice] = useState<string>("");
+  const [preselectedScreenId, setPreselectedScreenId] = useState<number | null>(null);
+  const [preselectedScreenName, setPreselectedScreenName] = useState<string>("");
 
   const availableSlots = slotsData?.availableSlots || 0;
 
@@ -191,7 +192,19 @@ export default function Screens() {
     // Parse QR code format: DEVICE:deviceId (new device-centric format)
     const deviceMatch = decodedText.match(/DEVICE:([A-Z0-9]{8})/i);
     if (deviceMatch) {
-      setScannedDeviceId(deviceMatch[1].toUpperCase());
+      const scannedId = deviceMatch[1].toUpperCase();
+      
+      // If screen is preselected, bind directly
+      if (preselectedScreenId) {
+        setScanning(true);
+        bindDeviceMutation.mutate({ 
+          deviceId: scannedId, 
+          screenId: preselectedScreenId 
+        });
+      } else {
+        // Otherwise show screen selection
+        setScannedDeviceId(scannedId);
+      }
       return;
     }
     
@@ -213,12 +226,30 @@ export default function Screens() {
   };
 
   const handleBindDevice = () => {
-    if (!scannedDeviceId || !selectedScreenForDevice) return;
+    const screenId = preselectedScreenId || (selectedScreenForDevice ? parseInt(selectedScreenForDevice) : null);
+    if (!scannedDeviceId || !screenId) return;
     setScanning(true);
     bindDeviceMutation.mutate({ 
       deviceId: scannedDeviceId, 
-      screenId: parseInt(selectedScreenForDevice) 
+      screenId: screenId 
     });
+  };
+
+  const openScannerForScreen = (screen: { id: number; name: string }) => {
+    setPreselectedScreenId(screen.id);
+    setPreselectedScreenName(screen.name);
+    setScannedDeviceId(null);
+    setSelectedScreenForDevice("");
+    setScannerOpen(true);
+  };
+
+  const closeScannerDialog = () => {
+    setScannerOpen(false);
+    setScanning(false);
+    setScannedDeviceId(null);
+    setSelectedScreenForDevice("");
+    setPreselectedScreenId(null);
+    setPreselectedScreenName("");
   };
 
   const copyCode = () => {
@@ -313,16 +344,6 @@ export default function Screens() {
               <Monitor className="w-4 h-4" />
               متاح: {availableSlots} شاشة
             </Badge>
-            
-            <Button 
-              variant="outline"
-              className="gap-2 rounded-xl"
-              onClick={() => setScannerOpen(true)}
-              data-testid="button-scan-qr"
-            >
-              <ScanLine className="w-5 h-5" />
-              <span>مسح QR</span>
-            </Button>
             
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
               <DialogTrigger asChild>
@@ -515,6 +536,13 @@ export default function Screens() {
                               >
                                 <Key className="w-4 h-4 ml-2" />
                                 إنشاء رمز تفعيل
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => openScannerForScreen(screen)}
+                                data-testid={`button-scan-qr-${screen.id}`}
+                              >
+                                <Camera className="w-4 h-4 ml-2" />
+                                مسح QR جهاز
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => setDeviceDialogScreen(screen.id)}
@@ -765,28 +793,31 @@ export default function Screens() {
 
         {/* QR Scanner Dialog */}
         <Dialog open={scannerOpen} onOpenChange={(open) => {
-          if (!open) {
-            setScannerOpen(false);
-            setScanning(false);
-            setScannedDeviceId(null);
-            setSelectedScreenForDevice("");
-          }
+          if (!open) closeScannerDialog();
         }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Camera className="w-5 h-5 text-primary" />
-                {scannedDeviceId ? "ربط الجهاز بشاشة" : "مسح رمز QR"}
+                {preselectedScreenName ? `مسح QR - ${preselectedScreenName}` : "مسح رمز QR"}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
-              {!scannedDeviceId ? (
+              {preselectedScreenId && (
+                <div className="bg-primary/10 p-3 rounded-xl text-center">
+                  <p className="text-sm text-primary font-medium">
+                    سيتم ربط الجهاز بشاشة: {preselectedScreenName}
+                  </p>
+                </div>
+              )}
+              
+              {!scannedDeviceId && !scanning ? (
                 <>
                   <p className="text-sm text-muted-foreground text-center">
                     وجه الكاميرا نحو رمز QR الظاهر على جهاز العرض
                   </p>
                   
-                  {scannerOpen && !scanning && (
+                  {scannerOpen && (
                     <QRScanner 
                       onScan={handleScanResult}
                       onError={(error) => {
@@ -794,15 +825,13 @@ export default function Screens() {
                       }}
                     />
                   )}
-                  
-                  {scanning && (
-                    <div className="flex items-center justify-center gap-2 py-4">
-                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-primary"></div>
-                      <span className="text-muted-foreground">جاري التفعيل...</span>
-                    </div>
-                  )}
                 </>
-              ) : (
+              ) : scanning ? (
+                <div className="flex items-center justify-center gap-2 py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-primary"></div>
+                  <span className="text-muted-foreground">جاري الربط...</span>
+                </div>
+              ) : scannedDeviceId && !preselectedScreenId ? (
                 <div className="space-y-4">
                   <div className="bg-muted p-4 rounded-xl text-center">
                     <p className="text-sm text-muted-foreground mb-1">رقم تعريف الجهاز</p>
@@ -845,11 +874,11 @@ export default function Screens() {
                       onClick={handleBindDevice}
                       data-testid="button-bind-device"
                     >
-                      {scanning ? "جاري الربط..." : "ربط الجهاز"}
+                      ربط الجهاز
                     </Button>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </DialogContent>
         </Dialog>
