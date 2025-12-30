@@ -145,7 +145,7 @@ export async function registerRoutes(
     
     // Increment discount code usage if applied
     if (validatedDiscountCode) {
-      await storage.incrementDiscountCodeUsage(validatedDiscountCode.code);
+      await storage.incrementDiscountCodeUsage(validatedDiscountCode.id);
     }
     
     res.status(201).json(sub);
