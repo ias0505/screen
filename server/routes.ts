@@ -369,6 +369,34 @@ export async function registerRoutes(
     res.json(media);
   });
 
+  // Get user's storage usage
+  app.get("/api/user/storage-usage", requireAuth, async (req: any, res) => {
+    const userId = await getEffectiveUserId(req);
+    const media = await storage.getMediaItems(userId);
+    
+    let totalBytes = 0;
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    
+    for (const item of media) {
+      if (item.url && item.url.startsWith('/uploads/')) {
+        const filename = item.url.replace('/uploads/', '');
+        const filePath = path.join(uploadsDir, filename);
+        try {
+          const stats = await fs.promises.stat(filePath);
+          totalBytes += stats.size;
+        } catch {
+          // File not found, skip
+        }
+      }
+    }
+    
+    res.json({ 
+      totalBytes,
+      totalMB: Math.round(totalBytes / (1024 * 1024) * 10) / 10,
+      fileCount: media.length
+    });
+  });
+
   app.post(api.media.create.path, requireAuth, async (req: any, res) => {
     try {
       const userId = await getEffectiveUserId(req);
