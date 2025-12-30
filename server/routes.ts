@@ -1080,6 +1080,39 @@ export async function registerRoutes(
     res.json(invoices);
   });
 
+  // Get single invoice with details (for invoice view/print)
+  app.get("/api/invoices/:id", requireAuth, async (req: any, res) => {
+    const invoiceId = Number(req.params.id);
+    const userId = getUserId(req);
+    
+    const invoice = await storage.getInvoice(invoiceId);
+    if (!invoice) {
+      return res.status(404).json({ message: "الفاتورة غير موجودة" });
+    }
+    
+    // Check if user is owner or admin
+    const isAdmin = await storage.getAdmin(userId);
+    if (invoice.userId !== userId && !isAdmin) {
+      return res.status(403).json({ message: "غير مصرح لك بعرض هذه الفاتورة" });
+    }
+    
+    // Get subscription and user details
+    const subscription = await storage.getSubscription(invoice.subscriptionId);
+    const user = await storage.getUserById(invoice.userId);
+    
+    res.json({
+      ...invoice,
+      subscription,
+      user: user ? { 
+        id: user.id, 
+        email: user.email, 
+        firstName: user.firstName, 
+        lastName: user.lastName,
+        companyName: user.companyName 
+      } : null
+    });
+  });
+
   // Admin: Update invoice status
   app.patch("/api/admin/invoices/:id", requireAdmin, async (req: any, res) => {
     const adminId = getUserId(req);

@@ -28,7 +28,7 @@ import {
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { FileText, ArrowRight, CheckCircle, Clock, XCircle } from "lucide-react";
+import { FileText, ArrowRight, CheckCircle, Clock, XCircle, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
@@ -202,19 +202,30 @@ export default function AdminInvoices() {
                       {format(new Date(invoice.createdAt), 'dd MMM yyyy', { locale: ar })}
                     </TableCell>
                     <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedInvoice(invoice);
-                          setNewStatus(invoice.status);
-                          setPaymentMethod(invoice.paymentMethod || "");
-                          setShowUpdateDialog(true);
-                        }}
-                        data-testid={`button-update-invoice-${invoice.id}`}
-                      >
-                        تحديث
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/invoice/${invoice.id}`}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            data-testid={`button-view-invoice-${invoice.id}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedInvoice(invoice);
+                            setNewStatus(invoice.status);
+                            setPaymentMethod(invoice.paymentMethod || "");
+                            setShowUpdateDialog(true);
+                          }}
+                          data-testid={`button-update-invoice-${invoice.id}`}
+                        >
+                          تحديث
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

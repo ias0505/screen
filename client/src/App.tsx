@@ -29,6 +29,7 @@ import Team from "@/pages/Team";
 import Settings from "@/pages/Settings";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import InvoiceView from "@/pages/InvoiceView";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -101,6 +102,9 @@ function Router() {
       </Route>
       <Route path="/subscriptions">
         <ProtectedRoute component={Subscriptions} />
+      </Route>
+      <Route path="/invoice/:id">
+        <ProtectedRoute component={InvoiceView} />
       </Route>
       <Route path="/team">
         <ProtectedRoute component={Team} />

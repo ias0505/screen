@@ -177,9 +177,13 @@ export const adminActivityLogs = pgTable("admin_activity_logs", {
 // الفواتير
 export const invoices = pgTable("invoices", {
   id: serial("id").primaryKey(),
+  invoiceNumber: varchar("invoice_number", { length: 50 }), // رقم الفاتورة التسلسلي
   subscriptionId: integer("subscription_id").references(() => subscriptions.id).notNull(),
   userId: varchar("user_id").references(() => users.id).notNull(),
-  amount: integer("amount").notNull(), // المبلغ بالريال
+  amount: integer("amount").notNull(), // المبلغ الإجمالي بالريال (للتوافق مع القديم)
+  baseAmount: integer("base_amount"), // المبلغ الأساسي قبل الضريبة
+  taxRate: integer("tax_rate").default(10), // نسبة الضريبة (10%)
+  taxAmount: integer("tax_amount"), // مبلغ الضريبة
   status: text("status").notNull().default("pending"), // pending, paid, cancelled
   paymentMethod: text("payment_method"), // cash, bank_transfer, online
   paidAt: timestamp("paid_at"),

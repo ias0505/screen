@@ -276,17 +276,6 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.isActive, true));
   }
 
-  async getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
-    const [result] = await db.select().from(discountCodes).where(eq(discountCodes.code, code)).limit(1);
-    return result;
-  }
-
-  async incrementDiscountCodeUsage(code: string): Promise<void> {
-    await db.update(discountCodes)
-      .set({ usedCount: sql`${discountCodes.usedCount} + 1` })
-      .where(eq(discountCodes.code, code));
-  }
-
   async getUserSubscription(userId: string): Promise<(UserSubscription & { plan?: SubscriptionPlan }) | undefined> {
     const result = await db.select({
       subscription: userSubscriptions,
@@ -736,10 +725,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createInvoice(subscriptionId: number, userId: string, amount: number, createdBy: string, notes?: string): Promise<Invoice> {
+    // Generate invoice number: INV-YYYYMMDD-XXX
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const [countResult] = await db.select({ count: sql<number>`count(*)` }).from(invoices);
+    const invoiceNumber = `INV-${dateStr}-${String((Number(countResult?.count) || 0) + 1).padStart(4, '0')}`;
+    
+    // Calculate tax (10%)
+    const taxRate = 10;
+    const baseAmount = amount; // المبلغ المدخل هو المبلغ الأساسي
+    const taxAmount = Math.round(baseAmount * taxRate / 100);
+    const totalAmount = baseAmount + taxAmount;
+    
     const [invoice] = await db.insert(invoices).values({
+      invoiceNumber,
       subscriptionId,
       userId,
-      amount,
+      amount: totalAmount, // المبلغ الإجمالي شامل الضريبة
+      baseAmount,
+      taxRate,
+      taxAmount,
       status: 'pending',
       createdBy,
       notes
