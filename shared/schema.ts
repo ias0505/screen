@@ -141,6 +141,17 @@ export const screenDeviceBindings = pgTable("screen_device_bindings", {
   revokedAt: timestamp("revoked_at"), // null = فعال
 });
 
+// طلبات ربط الأجهزة المعلقة - عندما يمسح المدير QR الجهاز
+export const pendingDeviceBindings = pgTable("pending_device_bindings", {
+  id: serial("id").primaryKey(),
+  deviceId: text("device_id").notNull(), // رقم تعريف الجهاز من QR
+  screenId: integer("screen_id").references(() => screens.id).notNull(),
+  deviceToken: text("device_token").notNull(), // token للجهاز بعد التفعيل
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  claimedAt: timestamp("claimed_at"), // عندما يستلم الجهاز الربط
+});
+
 // المدراء - Super Admin للتحكم الكامل بالنظام
 export const admins = pgTable("admins", {
   id: serial("id").primaryKey(),

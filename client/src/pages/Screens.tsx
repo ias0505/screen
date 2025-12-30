@@ -78,6 +78,8 @@ export default function Screens() {
   const [codeCopied, setCodeCopied] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [scannedDeviceId, setScannedDeviceId] = useState<string | null>(null);
+  const [selectedScreenForDevice, setSelectedScreenForDevice] = useState<string>("");
 
   const availableSlots = slotsData?.availableSlots || 0;
 
@@ -123,7 +125,7 @@ export default function Screens() {
     }
   });
 
-  // Scan QR and activate mutation (uses authenticated admin endpoint)
+  // Scan QR and activate mutation (uses authenticated admin endpoint) - for SCREEN: format
   const scanActivateMutation = useMutation({
     mutationFn: async ({ code, screenId }: { code: string; screenId: number }) => {
       const response = await apiRequest("POST", "/api/admin/screens/activate-by-scan", { code, screenId });
@@ -152,23 +154,71 @@ export default function Screens() {
     },
   });
 
+  // Bind device mutation - for DEVICE: format
+  const bindDeviceMutation = useMutation({
+    mutationFn: async ({ deviceId, screenId }: { deviceId: string; screenId: number }) => {
+      const response = await apiRequest("POST", `/api/screens/${screenId}/bind-device`, { deviceId });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "فشل الربط");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "تم الربط بنجاح",
+        description: data.message || `تم ربط الجهاز بالشاشة: ${data.screenName}`,
+      });
+      setScannerOpen(false);
+      setScanning(false);
+      setScannedDeviceId(null);
+      setSelectedScreenForDevice("");
+      queryClient.invalidateQueries({ queryKey: ['/api/screens'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ في الربط",
+        description: error.message,
+        variant: "destructive",
+      });
+      setScanning(false);
+    },
+  });
+
   const handleScanResult = (decodedText: string) => {
     if (scanning) return;
     
-    // Parse QR code format: SCREEN:screenId:code
-    const match = decodedText.match(/SCREEN:(\d+):([A-Z0-9]{6})/);
-    if (match) {
-      setScanning(true);
-      const screenId = parseInt(match[1]);
-      const code = match[2];
-      scanActivateMutation.mutate({ code, screenId });
-    } else {
-      toast({
-        title: "رمز غير صالح",
-        description: "يرجى مسح رمز QR صحيح من الشاشة",
-        variant: "destructive",
-      });
+    // Parse QR code format: DEVICE:deviceId (new device-centric format)
+    const deviceMatch = decodedText.match(/DEVICE:([A-Z0-9]{8})/i);
+    if (deviceMatch) {
+      setScannedDeviceId(deviceMatch[1].toUpperCase());
+      return;
     }
+    
+    // Parse QR code format: SCREEN:screenId:code (legacy format)
+    const screenMatch = decodedText.match(/SCREEN:(\d+):([A-Z0-9]{6})/);
+    if (screenMatch) {
+      setScanning(true);
+      const screenId = parseInt(screenMatch[1]);
+      const code = screenMatch[2];
+      scanActivateMutation.mutate({ code, screenId });
+      return;
+    }
+    
+    toast({
+      title: "رمز غير صالح",
+      description: "يرجى مسح رمز QR صحيح من الجهاز",
+      variant: "destructive",
+    });
+  };
+
+  const handleBindDevice = () => {
+    if (!scannedDeviceId || !selectedScreenForDevice) return;
+    setScanning(true);
+    bindDeviceMutation.mutate({ 
+      deviceId: scannedDeviceId, 
+      screenId: parseInt(selectedScreenForDevice) 
+    });
   };
 
   const copyCode = () => {
@@ -718,33 +768,86 @@ export default function Screens() {
           if (!open) {
             setScannerOpen(false);
             setScanning(false);
+            setScannedDeviceId(null);
+            setSelectedScreenForDevice("");
           }
         }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Camera className="w-5 h-5 text-primary" />
-                مسح رمز QR
+                {scannedDeviceId ? "ربط الجهاز بشاشة" : "مسح رمز QR"}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
-              <p className="text-sm text-muted-foreground text-center">
-                وجه الكاميرا نحو رمز QR الظاهر على الشاشة لتفعيلها
-              </p>
-              
-              {scannerOpen && (
-                <QRScanner 
-                  onScan={handleScanResult}
-                  onError={(error) => {
-                    console.error("Scanner error:", error);
-                  }}
-                />
-              )}
-              
-              {scanning && (
-                <div className="flex items-center justify-center gap-2 py-4">
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-primary"></div>
-                  <span className="text-muted-foreground">جاري التفعيل...</span>
+              {!scannedDeviceId ? (
+                <>
+                  <p className="text-sm text-muted-foreground text-center">
+                    وجه الكاميرا نحو رمز QR الظاهر على جهاز العرض
+                  </p>
+                  
+                  {scannerOpen && !scanning && (
+                    <QRScanner 
+                      onScan={handleScanResult}
+                      onError={(error) => {
+                        console.error("Scanner error:", error);
+                      }}
+                    />
+                  )}
+                  
+                  {scanning && (
+                    <div className="flex items-center justify-center gap-2 py-4">
+                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-primary"></div>
+                      <span className="text-muted-foreground">جاري التفعيل...</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-muted p-4 rounded-xl text-center">
+                    <p className="text-sm text-muted-foreground mb-1">رقم تعريف الجهاز</p>
+                    <p className="text-2xl font-mono font-bold tracking-wider">{scannedDeviceId}</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>اختر الشاشة للربط</Label>
+                    <Select 
+                      value={selectedScreenForDevice} 
+                      onValueChange={setSelectedScreenForDevice}
+                    >
+                      <SelectTrigger className="rounded-xl" data-testid="select-screen-for-device">
+                        <SelectValue placeholder="اختر شاشة..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {screens.map((screen) => (
+                          <SelectItem key={screen.id} value={screen.id.toString()}>
+                            {screen.name} {screen.location && `- ${screen.location}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 rounded-xl"
+                      onClick={() => {
+                        setScannedDeviceId(null);
+                        setSelectedScreenForDevice("");
+                      }}
+                    >
+                      مسح جهاز آخر
+                    </Button>
+                    <Button 
+                      className="flex-1 rounded-xl"
+                      disabled={!selectedScreenForDevice || scanning}
+                      onClick={handleBindDevice}
+                      data-testid="button-bind-device"
+                    >
+                      {scanning ? "جاري الربط..." : "ربط الجهاز"}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

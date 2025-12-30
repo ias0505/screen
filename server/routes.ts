@@ -722,6 +722,63 @@ export async function registerRoutes(
   // Use /api/admin/screens/activate-by-scan (authenticated) for admin QR scanning
   // Use /api/player/:id/check-activation for player to fetch device token after activation
 
+  // Device-centric binding: Device checks if it has been bound to a screen
+  app.get("/api/device/:deviceId/check-binding", async (req, res) => {
+    const deviceId = req.params.deviceId;
+    
+    if (!deviceId || deviceId.length < 6) {
+      return res.json({ bound: false });
+    }
+    
+    // Check for pending binding and claim it
+    const binding = await storage.claimPendingDeviceBinding(deviceId);
+    
+    if (binding) {
+      return res.json({ 
+        bound: true, 
+        screenId: binding.screenId,
+        deviceToken: binding.deviceToken
+      });
+    }
+    
+    return res.json({ bound: false });
+  });
+
+  // Device-centric binding: Admin binds a device to a screen by scanning device QR
+  app.post("/api/screens/:screenId/bind-device", requireAuth, async (req: any, res) => {
+    const userId = getUserId(req);
+    const screenId = Number(req.params.screenId);
+    const { deviceId } = req.body;
+    
+    if (!deviceId) {
+      return res.status(400).json({ message: "رقم تعريف الجهاز مطلوب" });
+    }
+    
+    // Verify the screen exists and belongs to this user
+    const screen = await storage.getScreen(screenId);
+    if (!screen) {
+      return res.status(404).json({ message: "الشاشة غير موجودة" });
+    }
+    
+    const isAdmin = await storage.isAdmin(userId);
+    if (screen.userId !== parseInt(userId) && !isAdmin) {
+      return res.status(403).json({ message: "ليس لديك صلاحية ربط هذه الشاشة" });
+    }
+    
+    // Generate device token
+    const deviceToken = crypto.randomUUID();
+    
+    // Create pending binding (device will claim it when it polls)
+    await storage.createPendingDeviceBinding(deviceId, screenId, deviceToken, userId);
+    
+    res.json({ 
+      success: true, 
+      message: "تم إرسال طلب الربط. سيتم ربط الجهاز تلقائياً.",
+      screenId,
+      screenName: screen.name
+    });
+  });
+
   // Device Binding - التحقق من ربط الجهاز (public endpoint)
   app.post("/api/player/verify", async (req, res) => {
     const { deviceToken, screenId } = req.body;

@@ -2,7 +2,7 @@ import { db } from "./db";
 import {
   screens, mediaItems, schedules, screenGroups, mediaGroups,
   subscriptionPlans, userSubscriptions, subscriptions, discountCodes,
-  screenActivationCodes, screenDeviceBindings,
+  screenActivationCodes, screenDeviceBindings, pendingDeviceBindings,
   admins, adminActivityLogs, invoices, users, teamMembers, systemSettings,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
@@ -72,6 +72,11 @@ export interface IStorage {
   updateDeviceLastSeen(id: number): Promise<void>;
   setActivationPollingToken(activationId: number, pollingToken: string): Promise<void>;
   clearActivationPollingToken(activationId: number): Promise<void>;
+  
+  // Pending device bindings (device-centric activation)
+  createPendingDeviceBinding(deviceId: string, screenId: number, deviceToken: string, createdBy: string): Promise<void>;
+  getPendingDeviceBinding(deviceId: string): Promise<{ screenId: number; deviceToken: string } | null>;
+  claimPendingDeviceBinding(deviceId: string): Promise<{ screenId: number; deviceToken: string } | null>;
 
   // Admin operations
   isAdmin(userId: string): Promise<boolean>;
@@ -544,6 +549,48 @@ export class DatabaseStorage implements IStorage {
     await db.update(screenActivationCodes)
       .set({ pollingToken: null })
       .where(eq(screenActivationCodes.id, activationId));
+  }
+
+  // Pending device bindings (device-centric activation)
+  async createPendingDeviceBinding(deviceId: string, screenId: number, deviceToken: string, createdBy: string): Promise<void> {
+    // Delete any existing pending binding for this device
+    await db.delete(pendingDeviceBindings).where(eq(pendingDeviceBindings.deviceId, deviceId));
+    
+    await db.insert(pendingDeviceBindings).values({
+      deviceId,
+      screenId,
+      deviceToken,
+      createdBy
+    });
+  }
+
+  async getPendingDeviceBinding(deviceId: string): Promise<{ screenId: number; deviceToken: string } | null> {
+    const [pending] = await db.select().from(pendingDeviceBindings)
+      .where(and(
+        eq(pendingDeviceBindings.deviceId, deviceId),
+        isNull(pendingDeviceBindings.claimedAt)
+      ));
+    
+    if (!pending) return null;
+    return { screenId: pending.screenId, deviceToken: pending.deviceToken };
+  }
+
+  async claimPendingDeviceBinding(deviceId: string): Promise<{ screenId: number; deviceToken: string } | null> {
+    const pending = await this.getPendingDeviceBinding(deviceId);
+    if (!pending) return null;
+    
+    // Mark as claimed
+    await db.update(pendingDeviceBindings)
+      .set({ claimedAt: new Date() })
+      .where(eq(pendingDeviceBindings.deviceId, deviceId));
+    
+    // Create the actual device binding
+    await db.insert(screenDeviceBindings).values({
+      screenId: pending.screenId,
+      deviceToken: pending.deviceToken
+    });
+    
+    return pending;
   }
 
   // Admin operations
