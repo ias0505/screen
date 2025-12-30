@@ -178,35 +178,29 @@ export default function Subscriptions() {
     }
   };
 
-  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
-    if (e) e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (!selectedPlan) {
-      toast({ title: "يرجى اختيار خطة", variant: "destructive" });
-      return;
-    }
-    
-    const screenCount = selectedPlan.maxScreens || 1;
-    const durationYears = 1;
-    const pricePerScreen = selectedPlan.pricePerScreen;
-    const totalPrice = screenCount * pricePerScreen * durationYears;
-    
+    const finalPrice = calculateFinalPrice();
     const confirmed = window.confirm(
-      `هل تريد الاشتراك في خطة "${selectedPlan.name}"؟\n` +
-      `عدد الشاشات: ${screenCount}\n` +
-      `المدة: سنة واحدة\n` +
-      `المبلغ: ${totalPrice} ريال`
+      `هل تريد إنشاء اشتراك جديد؟\n` +
+      `عدد الشاشات: ${form.screenCount}\n` +
+      `المدة: ${form.durationYears} سنة\n` +
+      `المبلغ: ${finalPrice} ريال` +
+      (discountResult?.valid ? `\n(بعد الخصم)` : '')
     );
     
     if (confirmed) {
       await createSubscription.mutateAsync({
-        screenCount,
-        durationYears,
-        pricePerScreen
+        ...form,
+        discountCode: discountResult?.valid ? discountCode : undefined,
+        pricePerScreen: getPricePerScreen()
       });
       setIsOpen(false);
+      setForm({ screenCount: 5, durationYears: 1 });
       setSelectedPlan(null);
-      toast({ title: "تم إنشاء الاشتراك بنجاح" });
+      setDiscountCode("");
+      setDiscountResult(null);
     }
   };
 
@@ -311,37 +305,113 @@ export default function Subscriptions() {
                 </div>
               )}
               
-              {selectedPlan && (
-                <div className="pt-4 space-y-4">
-                  <Card className="bg-muted/50">
-                    <CardContent className="pt-4 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">الخطة المختارة:</span>
-                        <span className="font-bold">{selectedPlan.name}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm text-muted-foreground">
-                        <span>السعر:</span>
-                        <span>{selectedPlan.pricePerScreen} ريال/شاشة/سنة</span>
-                      </div>
-                      {selectedPlan.maxScreens && (
-                        <div className="flex justify-between items-center text-sm text-muted-foreground">
-                          <span>الحد الأقصى للشاشات:</span>
-                          <span>{selectedPlan.maxScreens} شاشة</span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                  <Button 
-                    onClick={handleSubmit} 
-                    disabled={createSubscription.isPending} 
-                    className="w-full bg-primary rounded-xl" 
-                    data-testid="button-confirm-subscription"
-                  >
-                    <CreditCard className="w-4 h-4 ml-2" />
-                    {createSubscription.isPending ? "جاري الإنشاء..." : "اشتراك في هذه الخطة"}
-                  </Button>
+              <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>عدد الشاشات</Label>
+                    <Input 
+                      type="number"
+                      min={selectedPlan?.minScreens || 1}
+                      max={selectedPlan?.maxScreens || 100}
+                      value={form.screenCount} 
+                      onChange={(e) => setForm({...form, screenCount: parseInt(e.target.value) || 1})}
+                      className="rounded-xl"
+                      data-testid="input-screen-count"
+                    />
+                    {selectedPlan?.minScreens && (
+                      <p className="text-xs text-muted-foreground">الحد الأدنى: {selectedPlan.minScreens} شاشة</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>مدة الاشتراك</Label>
+                    <Select 
+                      value={form.durationYears.toString()} 
+                      onValueChange={(v) => setForm({...form, durationYears: parseInt(v)})}
+                    >
+                      <SelectTrigger className="rounded-xl" data-testid="select-duration">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">سنة واحدة</SelectItem>
+                        <SelectItem value="2">سنتان</SelectItem>
+                        <SelectItem value="3">3 سنوات</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              )}
+                
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Tag className="w-4 h-4" />
+                    كود الخصم (اختياري)
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="text"
+                      placeholder="أدخل كود الخصم"
+                      value={discountCode}
+                      onChange={(e) => {
+                        setDiscountCode(e.target.value.toUpperCase());
+                        setDiscountResult(null);
+                      }}
+                      className="rounded-xl"
+                      data-testid="input-discount-code"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={validateDiscountCode}
+                      disabled={isValidating || !discountCode.trim()}
+                      data-testid="button-validate-code"
+                    >
+                      {isValidating ? "..." : "تحقق"}
+                    </Button>
+                  </div>
+                  {discountResult && (
+                    <p className={`text-sm ${discountResult.valid ? 'text-green-600' : 'text-red-500'}`}>
+                      {discountResult.message}
+                    </p>
+                  )}
+                </div>
+                
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-4 space-y-2">
+                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                      <span>السعر الأساسي:</span>
+                      <span>{form.screenCount * getPricePerScreen() * form.durationYears} ريال</span>
+                    </div>
+                    {selectedPlan?.discountPercentage && selectedPlan.discountPercentage > 0 && (
+                      <div className="flex justify-between items-center text-sm text-green-600">
+                        <span>خصم الخطة ({selectedPlan.discountPercentage}%):</span>
+                        <span>-{Math.round(form.screenCount * getPricePerScreen() * form.durationYears * selectedPlan.discountPercentage / 100)} ريال</span>
+                      </div>
+                    )}
+                    {discountResult?.valid && (
+                      <div className="flex justify-between items-center text-sm text-green-600">
+                        <span>كود الخصم:</span>
+                        <span>
+                          {discountResult.discountType === 'percentage' 
+                            ? `-${discountResult.discountValue}%` 
+                            : `-${discountResult.discountValue} ريال`}
+                        </span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2 flex justify-between items-center">
+                      <span className="font-medium">السعر الإجمالي:</span>
+                      <span className="text-2xl font-bold text-primary">
+                        {calculateFinalPrice()} ريال
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {form.screenCount} شاشة × {getPricePerScreen()} ريال × {form.durationYears} سنة
+                    </p>
+                  </CardContent>
+                </Card>
+                <Button type="submit" disabled={createSubscription.isPending} className="w-full bg-primary rounded-xl" data-testid="button-confirm-subscription">
+                  <CreditCard className="w-4 h-4 ml-2" />
+                  {createSubscription.isPending ? "جاري الإنشاء..." : "تأكيد الاشتراك"}
+                </Button>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
