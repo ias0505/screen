@@ -143,6 +143,9 @@ export async function registerRoutes(
 
     const sub = await storage.createSubscription(userId, screenCount, durationYears, validatedDiscountCode, pricePerScreen);
     
+    // Create invoice for the subscription (base amount before tax)
+    await storage.createInvoice(sub.id, userId, sub.totalPrice, userId);
+    
     // Increment discount code usage if applied
     if (validatedDiscountCode) {
       await storage.incrementDiscountCodeUsage(validatedDiscountCode.id);
