@@ -30,7 +30,7 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/screen-groups',
-      input: insertScreenGroupSchema,
+      input: insertScreenGroupSchema.omit({ userId: true }),
       responses: {
         201: z.custom<typeof screenGroups.$inferSelect>(),
         400: errorSchemas.validation,
@@ -48,7 +48,7 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/media-groups',
-      input: insertMediaGroupSchema,
+      input: insertMediaGroupSchema.omit({ userId: true }),
       responses: {
         201: z.custom<typeof mediaGroups.$inferSelect>(),
         400: errorSchemas.validation,
