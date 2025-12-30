@@ -1,0 +1,46 @@
+root@vmi2695527:/var/www/signage-app# pm2 delete all
+pm2 start /var/www/signage-app/ecosystem.config.cjs
+pm2 save
+pm2 logs signage --lines 10
+[PM2] Applying action deleteProcessId on app [all](ids: [ 0 ])
+[PM2] [signage](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Applications signage not running, starting...
+[PM2] App [signage] launched (1 instances)
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ signage            │ fork     │ 0    │ online    │ 0%       │ 13.7mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+[TAILING] Tailing last 10 lines for [signage] process (change the value with --lines option)
+/root/.pm2/logs/signage-out.log last 10 lines:
+0|signage  | 1:53:03 PM [express] POST /api/auth/login 500 in 29ms :: {"message":"حدث خطأ أثناء تسجيل الدخول"}
+0|signage  | 1:53:05 PM [express] POST /api/auth/login 500 in 24ms :: {"message":"حدث خطأ أثناء تسجيل الدخول"}
+0|signage  | 1:53:05 PM [express] POST /api/auth/login 500 in 27ms :: {"message":"حدث خطأ أثناء تسجيل الدخول"}
+0|signage  | 1:53:31 PM [express] POST /api/auth/register 500 in 27ms :: {"message":"حدث خطأ أثناء التسجيل"}
+0|signage  | 1:53:32 PM [express] POST /api/auth/register 500 in 26ms :: {"message":"حدث خطأ أثناء التسجيل"}
+0|signage  | 1:53:33 PM [express] POST /api/auth/register 500 in 25ms :: {"message":"حدث خطأ أثناء التسجيل"}
+0|signage  | 1:53:33 PM [express] POST /api/auth/register 500 in 22ms :: {"message":"حدث خطأ أثناء التسجيل"}
+0|signage  | 1:53:33 PM [express] POST /api/auth/register 500 in 24ms :: {"message":"حدث خطأ أثناء التسجيل"}
+0|signage  | 1:53:47 PM [express] GET /api/auth/user 401 in 3ms :: {"message":"Unauthorized"}
+0|signage  | 1:53:55 PM [express] POST /api/auth/login 500 in 22ms :: {"message":"حدث خطأ أثناء تسجيل الدخول"}
+
+/root/.pm2/logs/signage-error.log last 10 lines:
+0|signage  |   where: undefined,
+0|signage  |   schema: undefined,
+0|signage  |   table: undefined,
+0|signage  |   column: undefined,
+0|signage  |   dataType: undefined,
+0|signage  |   constraint: undefined,
+0|signage  |   file: 'parse_relation.c',
+0|signage  |   line: '1381',
+0|signage  |   routine: 'parserOpenTable'
+0|signage  | }
+
+0|signage  | Replit Auth disabled via REPLIT_AUTH_DISABLED=true
+0|signage  | 1:55:36 PM [express] serving on port 5000
+
