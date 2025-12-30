@@ -1,17 +1,26 @@
 import { useScreens } from "@/hooks/use-screens";
 import { useMedia } from "@/hooks/use-media";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Monitor, Image as ImageIcon, PlayCircle, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
 import { Link } from "wouter";
+import type { Schedule } from "@shared/schema";
 
 export default function Dashboard() {
   const { data: screens = [], isLoading: loadingScreens } = useScreens();
   const { data: media = [], isLoading: loadingMedia } = useMedia();
+  
+  // Fetch schedules from all screens to count active campaigns
+  const { data: allSchedules = [] } = useQuery<Schedule[]>({
+    queryKey: ['/api/schedules/all'],
+    enabled: screens.length > 0,
+  });
 
   const activeScreens = screens.filter(s => s.status === 'online').length;
   const totalScreens = screens.length;
   const totalMedia = media.length;
+  const activeSchedules = allSchedules.filter(s => s.isActive).length;
 
   const stats = [
     {
@@ -31,8 +40,8 @@ export default function Dashboard() {
       href: "/media"
     },
     {
-      title: "حملات نشطة",
-      value: "3", // Mock for MVP
+      title: "جدولات نشطة",
+      value: activeSchedules,
       icon: PlayCircle,
       color: "text-purple-500",
       bg: "bg-purple-500/10",

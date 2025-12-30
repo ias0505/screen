@@ -493,6 +493,28 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Get all schedules for the current user (across all screens)
+  app.get("/api/schedules/all", requireAuth, async (req: any, res) => {
+    const userId = await getEffectiveUserId(req);
+    const screens = await storage.getScreens(userId);
+    const screenIds = screens.map(s => s.id);
+    
+    let allSchedules: any[] = [];
+    for (const screenId of screenIds) {
+      const schedules = await storage.getSchedules(screenId);
+      allSchedules = [...allSchedules, ...schedules];
+    }
+    
+    // Also get group schedules
+    const groups = await storage.getScreenGroups(userId);
+    for (const group of groups) {
+      const groupSchedules = await storage.getSchedulesByGroup(group.id);
+      allSchedules = [...allSchedules, ...groupSchedules];
+    }
+    
+    res.json(allSchedules);
+  });
+
   app.patch("/api/schedules/reorder", requireAuth, async (req: any, res) => {
     try {
       const { updates } = req.body;
