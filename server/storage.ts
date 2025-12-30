@@ -738,8 +738,8 @@ export class DatabaseStorage implements IStorage {
     const [countResult] = await db.select({ count: sql<number>`count(*)` }).from(invoices);
     const invoiceNumber = `INV-${dateStr}-${String((Number(countResult?.count) || 0) + 1).padStart(4, '0')}`;
     
-    // Calculate tax (10%)
-    const taxRate = 10;
+    // Calculate tax (15%)
+    const taxRate = 15;
     const baseAmount = amount; // المبلغ المدخل هو المبلغ الأساسي
     const taxAmount = Math.round(baseAmount * taxRate / 100);
     const totalAmount = baseAmount + taxAmount;

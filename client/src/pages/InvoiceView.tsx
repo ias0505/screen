@@ -101,7 +101,7 @@ export default function InvoiceView() {
 
   // Handle tax calculation - for legacy invoices without tax fields, back-calculate
   const hasNewTaxFields = invoice.baseAmount !== null && invoice.taxAmount !== null;
-  const taxRate = invoice.taxRate ?? 10;
+  const taxRate = invoice.taxRate ?? 15;
   
   let baseAmount: number;
   let taxAmount: number;
