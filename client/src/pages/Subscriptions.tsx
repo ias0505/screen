@@ -293,7 +293,7 @@ export default function Subscriptions() {
                     اختر خطة الاشتراك
                   </Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {plans.map((plan) => {
+                    {[...plans].sort((a, b) => (a.minScreens || 1) - (b.minScreens || 1)).map((plan) => {
                       const features = parseFeatures(plan.features);
                       return (
                         <Card 
