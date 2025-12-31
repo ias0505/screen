@@ -71,15 +71,13 @@ export default function Login() {
 
       <Card className="w-full max-w-md shadow-2xl z-10">
         <CardHeader className="text-center pb-2">
-          <div className="flex justify-center mb-4">
-            <img src={logoImage} alt="Meror" className="h-16 w-auto" />
+          <div className="flex flex-col items-center mb-4">
+            <img src={logoImage} alt="Meror" className="h-16 w-auto mb-2" />
+            <p className="text-muted-foreground text-sm">مرآة محتواك الرقمي</p>
           </div>
           <CardTitle className="text-2xl">
             {isRegisterMode ? "إنشاء حساب جديد" : "تسجيل الدخول"}
           </CardTitle>
-          <p className="text-muted-foreground text-sm mt-2">
-            منصة إدارة الشاشات الذكية
-          </p>
         </CardHeader>
         
         <CardContent>
