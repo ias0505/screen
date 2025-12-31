@@ -23,6 +23,13 @@ import {
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Users, 
   ArrowRight,
@@ -30,7 +37,9 @@ import {
   Plus,
   Monitor,
   CreditCard,
-  Eye
+  Eye,
+  Filter,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -44,8 +53,15 @@ interface User {
   createdAt: string;
 }
 
+interface UserWithStats extends User {
+  screenCount?: number;
+  subscriptionCount?: number;
+}
+
 export default function AdminUsers() {
   const [search, setSearch] = useState("");
+  const [filterScreens, setFilterScreens] = useState<string>("all");
+  const [filterSubscriptions, setFilterSubscriptions] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showAddScreen, setShowAddScreen] = useState(false);
   const [showAddSubscription, setShowAddSubscription] = useState(false);
@@ -55,7 +71,7 @@ export default function AdminUsers() {
   const [durationYears, setDurationYears] = useState(1);
   const { toast } = useToast();
 
-  const { data: users, isLoading } = useQuery<User[]>({
+  const { data: users, isLoading } = useQuery<UserWithStats[]>({
     queryKey: ['/api/admin/users'],
   });
 
@@ -103,11 +119,47 @@ export default function AdminUsers() {
     }
   });
 
-  const filteredUsers = users?.filter(user => 
-    user.email?.toLowerCase().includes(search.toLowerCase()) ||
-    user.firstName?.toLowerCase().includes(search.toLowerCase()) ||
-    user.lastName?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = users?.filter(user => {
+    // Search filter
+    if (search.trim()) {
+      const query = search.toLowerCase();
+      const matchesSearch = (
+        user.email?.toLowerCase().includes(query) ||
+        user.firstName?.toLowerCase().includes(query) ||
+        user.lastName?.toLowerCase().includes(query)
+      );
+      if (!matchesSearch) return false;
+    }
+    
+    // Screen filter
+    if (filterScreens === "with" && (!user.screenCount || user.screenCount === 0)) {
+      return false;
+    }
+    if (filterScreens === "without" && user.screenCount && user.screenCount > 0) {
+      return false;
+    }
+    
+    // Subscription filter
+    if (filterSubscriptions === "with" && (!user.subscriptionCount || user.subscriptionCount === 0)) {
+      return false;
+    }
+    if (filterSubscriptions === "without" && user.subscriptionCount && user.subscriptionCount > 0) {
+      return false;
+    }
+    
+    return true;
+  }) || [];
+
+  const hasActiveFilters = filterScreens !== "all" || filterSubscriptions !== "all" || search.trim();
+  
+  const clearAllFilters = () => {
+    setSearch("");
+    setFilterScreens("all");
+    setFilterSubscriptions("all");
+  };
+
+  const usersWithScreens = users?.filter(u => u.screenCount && u.screenCount > 0).length || 0;
+  const usersWithSubscriptions = users?.filter(u => u.subscriptionCount && u.subscriptionCount > 0).length || 0;
 
   return (
     <div className="p-6 space-y-6">
@@ -123,18 +175,101 @@ export default function AdminUsers() {
         </h1>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="البحث عن مستخدم..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pr-10"
-            data-testid="input-search-users"
-          />
-        </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">إجمالي المستخدمين</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{users?.length || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">لديهم شاشات</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-green-600">{usersWithScreens}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">لديهم اشتراكات</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-blue-600">{usersWithSubscriptions}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">بدون شاشات</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-500">{(users?.length || 0) - usersWithScreens}</p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Filter Bar */}
+      {users && users.length > 0 && (
+        <div className="flex items-center gap-3 flex-wrap bg-muted/30 p-3 rounded-xl">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Filter className="w-4 h-4" />
+            <span className="text-sm font-medium">تصفية:</span>
+          </div>
+          
+          <div className="relative flex-1 min-w-[200px] max-w-xs">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="بحث بالاسم أو البريد..."
+              className="pr-10 rounded-xl"
+              data-testid="input-search-users"
+            />
+          </div>
+          
+          <Select value={filterScreens} onValueChange={setFilterScreens}>
+            <SelectTrigger className="w-36 rounded-xl" data-testid="select-filter-screens">
+              <SelectValue placeholder="الشاشات" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل المستخدمين</SelectItem>
+              <SelectItem value="with">لديهم شاشات</SelectItem>
+              <SelectItem value="without">بدون شاشات</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={filterSubscriptions} onValueChange={setFilterSubscriptions}>
+            <SelectTrigger className="w-40 rounded-xl" data-testid="select-filter-subscriptions">
+              <SelectValue placeholder="الاشتراكات" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">الكل</SelectItem>
+              <SelectItem value="with">لديهم اشتراك</SelectItem>
+              <SelectItem value="without">بدون اشتراك</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {hasActiveFilters && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={clearAllFilters}
+              className="gap-1 text-muted-foreground"
+              data-testid="button-clear-filters"
+            >
+              <X className="w-4 h-4" />
+              مسح الفلاتر
+            </Button>
+          )}
+          
+          <Badge variant="secondary" className="mr-auto">
+            {filteredUsers.length} من {users.length}
+          </Badge>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -146,6 +281,10 @@ export default function AdminUsers() {
               {isLoading ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  {users && users.length > 0 ? "لا توجد نتائج تطابق البحث" : "لا يوجد مستخدمين"}
                 </div>
               ) : (
                 <Table>

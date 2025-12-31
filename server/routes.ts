@@ -1091,10 +1091,20 @@ export async function registerRoutes(
     }
   });
 
-  // Admin: Get all users
+  // Admin: Get all users with stats
   app.get("/api/admin/users", requireAdmin, async (req: any, res) => {
     const users = await storage.getAllUsers();
-    res.json(users);
+    // Add screen and subscription counts for each user
+    const usersWithStats = await Promise.all(users.map(async (user) => {
+      const screens = await storage.getScreens(user.id);
+      const subscriptions = await storage.getSubscriptions(user.id);
+      return {
+        ...user,
+        screenCount: screens.length,
+        subscriptionCount: subscriptions.length
+      };
+    }));
+    res.json(usersWithStats);
   });
 
   // Admin: Get user details with subscriptions and screens
