@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,9 +12,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Link } from "wouter";
-import { Monitor, ArrowRight, Wifi, WifiOff } from "lucide-react";
+import { Monitor, ArrowRight, Wifi, WifiOff, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Screen {
   id: number;
@@ -34,9 +36,34 @@ interface Screen {
 }
 
 export default function AdminScreens() {
+  const { toast } = useToast();
   const { data: screens, isLoading } = useQuery<Screen[]>({
     queryKey: ['/api/admin/screens'],
   });
+
+  const deleteScreenMutation = useMutation({
+    mutationFn: async (screenId: number) => {
+      await apiRequest("DELETE", `/api/admin/screens/${screenId}`);
+    },
+    onSuccess: () => {
+      toast({ title: "تم حذف الشاشة بنجاح" });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/screens'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const handleDelete = (screen: Screen) => {
+    const userName = screen.user.firstName || screen.user.lastName 
+      ? `${screen.user.firstName || ''} ${screen.user.lastName || ''}`.trim()
+      : screen.user.email || 'بدون اسم';
+    
+    if (window.confirm(`هل أنت متأكد من حذف شاشة "${screen.name}" للمستخدم "${userName}"؟`)) {
+      deleteScreenMutation.mutate(screen.id);
+    }
+  };
 
   const onlineCount = screens?.filter(s => s.status === 'online').length || 0;
   const offlineCount = screens?.filter(s => s.status === 'offline').length || 0;
@@ -113,6 +140,7 @@ export default function AdminScreens() {
                   <TableHead className="text-right">الاشتراك</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-right">تاريخ الإنشاء</TableHead>
+                  <TableHead className="text-right">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -148,6 +176,18 @@ export default function AdminScreens() {
                     </TableCell>
                     <TableCell>
                       {format(new Date(screen.createdAt), 'dd MMM yyyy', { locale: ar })}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(screen)}
+                        disabled={deleteScreenMutation.isPending}
+                        className="text-destructive"
+                        data-testid={`button-delete-screen-${screen.id}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

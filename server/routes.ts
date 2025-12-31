@@ -1188,6 +1188,31 @@ export async function registerRoutes(
     res.json(screens);
   });
 
+  // Admin: Delete any screen
+  app.delete("/api/admin/screens/:id", requireAdmin, async (req: any, res) => {
+    const adminId = getUserId(req);
+    const screenId = Number(req.params.id);
+    
+    const screen = await storage.getScreen(screenId);
+    if (!screen) {
+      return res.status(404).json({ message: "الشاشة غير موجودة" });
+    }
+    
+    await storage.deleteScreen(screenId);
+    
+    // Log admin activity
+    await storage.logAdminActivity(
+      adminId,
+      'screen_deleted',
+      'screen',
+      String(screenId),
+      JSON.stringify({ screenName: screen.name, userId: screen.userId }),
+      req.ip
+    );
+    
+    res.json({ message: "تم حذف الشاشة بنجاح" });
+  });
+
   // Admin: Get all invoices
   app.get("/api/admin/invoices", requireAdmin, async (req: any, res) => {
     const invoices = await storage.getInvoices();
