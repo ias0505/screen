@@ -345,7 +345,12 @@ export default function Player() {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%) rotate(90deg)',
-          }}
+            WebkitTransform: 'translate(-50%, -50%) rotate(90deg)',
+            MozTransform: 'translate(-50%, -50%) rotate(90deg)',
+            msTransform: 'translate(-50%, -50%) rotate(90deg)',
+            transformOrigin: 'center center',
+            WebkitTransformOrigin: 'center center',
+          } as React.CSSProperties}
         >
           {schedules.map((item: any, index: number) => (
             <div 
