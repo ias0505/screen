@@ -67,14 +67,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className="w-full md:w-64 bg-card border-l border-border/50 shadow-xl z-20 flex-shrink-0">
         <div className="p-6 border-b border-border/50">
-          <div className="flex items-center gap-3 mb-3">
-            <img src={logoImage} alt="Meror" className="h-10 w-auto" />
-            <div className="overflow-hidden">
-              <h1 className="font-bold text-lg text-foreground tracking-tight truncate" data-testid="text-company-name">
-                {profile?.companyName || 'منصة العرض'}
-              </h1>
-              <p className="text-xs text-muted-foreground">لوحة التحكم</p>
-            </div>
+          <div className="flex flex-col items-center text-center mb-3">
+            <img src={logoImage} alt="Meror" className="h-12 w-auto mb-3" />
+            <h1 className="font-bold text-lg text-foreground tracking-tight truncate max-w-full" data-testid="text-company-name">
+              {profile?.companyName || 'منصة العرض'}
+            </h1>
+            <p className="text-xs text-muted-foreground">لوحة التحكم</p>
           </div>
           <WorkContextSwitcher />
         </div>
