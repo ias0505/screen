@@ -155,16 +155,24 @@ export default function Activate() {
 
   if (isChecking) {
     return (
-      <div className="min-h-screen bg-zinc-900 flex items-center justify-center text-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-white"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+          <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary z-10"></div>
       </div>
     );
   }
 
   if (isActivated) {
     return (
-      <div className="min-h-screen bg-zinc-900 flex flex-col items-center justify-center text-white" dir="rtl">
-        <div className="text-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden" dir="rtl">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+          <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+        <div className="text-center z-10">
           {/* Logo */}
           <img 
             src={logoImage} 
@@ -176,7 +184,7 @@ export default function Activate() {
             <CheckCircle className="w-12 h-12 text-green-500" />
           </div>
           <h1 className="text-3xl font-bold mb-2">تم الربط بنجاح</h1>
-          <p className="text-zinc-400">جاري تحويلك لصفحة العرض...</p>
+          <p className="text-muted-foreground">جاري تحويلك لصفحة العرض...</p>
           <Loader2 className="w-6 h-6 animate-spin mx-auto mt-4 text-primary" />
         </div>
       </div>
@@ -184,8 +192,12 @@ export default function Activate() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-900 flex flex-col items-center justify-center text-white" dir="rtl">
-      <div className="text-center max-w-lg px-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden" dir="rtl">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+        <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+      </div>
+      <div className="text-center max-w-lg px-4 z-10">
         {/* Logo */}
         <img 
           src={logoImage} 
@@ -197,7 +209,7 @@ export default function Activate() {
           <Smartphone className="w-12 h-12 text-primary" />
         </div>
         <h1 className="text-4xl font-bold mb-2">تفعيل الشاشة</h1>
-        <p className="text-zinc-400 text-lg mb-6">
+        <p className="text-muted-foreground text-lg mb-6">
           اختر طريقة التفعيل المناسبة
         </p>
         
@@ -226,10 +238,10 @@ export default function Activate() {
         <div className="space-y-6">
           {activationMode === 'qr' ? (
             <>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-muted-foreground">
                 امسح هذا الرمز من لوحة التحكم لربط الجهاز بشاشة
               </p>
-              <div className="bg-white p-6 rounded-2xl inline-block">
+              <div className="bg-white p-6 rounded-2xl inline-block shadow-lg">
                 <QRCodeSVG 
                   value={`DEVICE:${deviceId}`}
                   size={220}
@@ -238,29 +250,29 @@ export default function Activate() {
                 />
               </div>
               
-              <div className="bg-zinc-800 p-6 rounded-xl">
-                <p className="text-sm text-zinc-400 mb-2">رقم تعريف الجهاز</p>
-                <p className="text-4xl font-mono font-bold tracking-[0.2em] text-white">
+              <div className="bg-card border p-6 rounded-xl">
+                <p className="text-sm text-muted-foreground mb-2">رقم تعريف الجهاز</p>
+                <p className="text-4xl font-mono font-bold tracking-[0.2em]">
                   {deviceId}
                 </p>
               </div>
               
-              <div className="flex items-center justify-center gap-2 text-zinc-500 text-sm">
+              <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>في انتظار الربط من لوحة التحكم...</span>
               </div>
             </>
           ) : (
             <>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-muted-foreground">
                 أدخل رمز التفعيل المكون من 6 أحرف الذي تم إنشاؤه من لوحة التحكم
               </p>
-              <div className="bg-zinc-800 p-6 rounded-xl space-y-4">
+              <div className="bg-card border p-6 rounded-xl space-y-4">
                 <Input
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value.toUpperCase().slice(0, 6))}
                   placeholder="أدخل الرمز"
-                  className="text-center text-3xl font-mono tracking-[0.3em] h-16 bg-zinc-700 border-zinc-600 text-white placeholder:text-zinc-500"
+                  className="text-center text-3xl font-mono tracking-[0.3em] h-16"
                   maxLength={6}
                   data-testid="input-activation-code"
                 />
@@ -281,7 +293,7 @@ export default function Activate() {
                 </Button>
               </div>
               
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 يمكنك الحصول على رمز التفعيل من صفحة الشاشات في لوحة التحكم
               </p>
             </>
