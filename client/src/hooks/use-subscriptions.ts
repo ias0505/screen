@@ -31,11 +31,6 @@ export function useCreateSubscription() {
 export function useSubscriptionScreensCount(subscriptionId: number) {
   return useQuery<{ count: number }>({
     queryKey: ['/api/subscriptions', subscriptionId, 'screens-count'],
-    queryFn: async () => {
-      const res = await fetch(`/api/subscriptions/${subscriptionId}/screens-count`, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to fetch');
-      return res.json();
-    },
     enabled: !!subscriptionId,
   });
 }

@@ -155,14 +155,14 @@ export async function registerRoutes(
 
   // Subscriptions (new independent model)
   app.get("/api/subscriptions", requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     await storage.expireOldSubscriptions();
     const subs = await storage.getSubscriptions(userId);
     res.json(subs);
   });
 
   app.post("/api/subscriptions", requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const { screenCount, durationYears, discountCode, pricePerScreen } = req.body;
     
     if (!screenCount || !durationYears) {
@@ -209,7 +209,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/subscriptions/available-slots", requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+    const userId = await getEffectiveUserId(req);
     const slots = await storage.getAvailableScreenSlots(userId);
     res.json({ availableSlots: slots });
   });
