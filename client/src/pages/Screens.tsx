@@ -819,18 +819,20 @@ export default function Screens() {
                           </p>
                         )}
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => {
-                          if (window.confirm('هل أنت متأكد من إلغاء ربط هذا الجهاز؟')) {
-                            revokeBindingMutation.mutate(binding.id);
-                          }
-                        }}
-                        data-testid={`button-revoke-binding-${binding.id}`}
-                      >
-                        <XCircle className="w-5 h-5 text-destructive" />
-                      </Button>
+                      {canDelete && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => {
+                            if (window.confirm('هل أنت متأكد من إلغاء ربط هذا الجهاز؟')) {
+                              revokeBindingMutation.mutate(binding.id);
+                            }
+                          }}
+                          data-testid={`button-revoke-binding-${binding.id}`}
+                        >
+                          <XCircle className="w-5 h-5 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
