@@ -157,7 +157,7 @@ export default function Login() {
                 <Label htmlFor="password">كلمة المرور *</Label>
                 {!isRegisterMode && (
                   <Link href="/forgot-password">
-                    <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground" data-testid="link-forgot-password">
+                    <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground" data-testid="link-forgot-password">
                       نسيت كلمة المرور؟
                     </Button>
                   </Link>
