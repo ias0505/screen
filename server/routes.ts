@@ -810,14 +810,14 @@ export async function registerRoutes(
       return res.status(404).json({ message: "الشاشة غير موجودة" });
     }
     
-    const isAdmin = await storage.isAdmin(parseInt(userId));
-    const isOwner = screen.userId === parseInt(userId);
+    const isAdmin = await storage.isAdmin(userId);
+    const isOwner = screen.userId === userId;
     
     // Check if user is a team member of the screen owner with editor/manager permission
     let hasTeamPermission = false;
     if (!isOwner && !isAdmin) {
       const memberships = await storage.getAcceptedTeamMemberships(userId);
-      const membership = memberships.find(m => m.ownerId === String(screen.userId));
+      const membership = memberships.find(m => m.ownerId === screen.userId);
       if (membership && (membership.permission === 'editor' || membership.permission === 'manager')) {
         hasTeamPermission = true;
       }
