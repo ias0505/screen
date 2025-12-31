@@ -405,7 +405,7 @@ export default function Schedule() {
                 قائمة التشغيل الحالية
               </h3>
               <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">اسحب العناصر لإعادة الترتيب</span>
+                {canEdit && <span className="text-sm text-muted-foreground">اسحب العناصر لإعادة الترتيب</span>}
                 <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
                   {schedules.length} عناصر
                 </span>
@@ -421,17 +421,17 @@ export default function Schedule() {
                 {schedules.map((schedule, index) => (
                   <div 
                     key={schedule.id} 
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragEnd={handleDragEnd}
-                    className={`p-4 flex items-center gap-4 hover:bg-muted/30 transition-colors group cursor-grab active:cursor-grabbing ${
-                      draggedItem === index ? 'bg-primary/10' : ''
-                    }`}
+                    draggable={canEdit}
+                    onDragStart={canEdit ? (e) => handleDragStart(e, index) : undefined}
+                    onDragOver={canEdit ? (e) => handleDragOver(e, index) : undefined}
+                    onDragEnd={canEdit ? handleDragEnd : undefined}
+                    className={`p-4 flex items-center gap-4 hover:bg-muted/30 transition-colors group ${
+                      canEdit ? 'cursor-grab active:cursor-grabbing' : ''
+                    } ${draggedItem === index ? 'bg-primary/10' : ''}`}
                     data-testid={`schedule-item-${schedule.id}`}
                   >
                     <div className="flex items-center gap-2">
-                      <GripVertical className="w-5 h-5 text-muted-foreground/50" />
+                      {canEdit && <GripVertical className="w-5 h-5 text-muted-foreground/50" />}
                       <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
                         {index + 1}
                       </div>
