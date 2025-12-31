@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, Link } from "wouter";
-import { Monitor, Mail, Lock, User, Building2, Loader2 } from "lucide-react";
+import { Mail, Lock, User, Building2, Loader2 } from "lucide-react";
+import logoImage from "@assets/Meror_logo_v.1_1767180225600.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,8 +71,8 @@ export default function Login() {
 
       <Card className="w-full max-w-md shadow-2xl z-10">
         <CardHeader className="text-center pb-2">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
-            <Monitor className="w-8 h-8" />
+          <div className="flex justify-center mb-4">
+            <img src={logoImage} alt="Meror" className="h-16 w-auto" />
           </div>
           <CardTitle className="text-2xl">
             {isRegisterMode ? "إنشاء حساب جديد" : "تسجيل الدخول"}

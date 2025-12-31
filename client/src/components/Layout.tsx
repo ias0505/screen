@@ -12,9 +12,9 @@ import {
   Layers,
   Shield,
   Users,
-  Building2,
   Settings
 } from "lucide-react";
+import logoImage from "@assets/Meror_logo_v.1_1767180225600.png";
 import { cn } from "@/lib/utils";
 import Onboarding from "./Onboarding";
 import { WorkContextSwitcher } from "./WorkContextSwitcher";
@@ -68,9 +68,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <aside className="w-full md:w-64 bg-card border-l border-border/50 shadow-xl z-20 flex-shrink-0">
         <div className="p-6 border-b border-border/50">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-primary" />
-            </div>
+            <img src={logoImage} alt="Meror" className="h-10 w-auto" />
             <div className="overflow-hidden">
               <h1 className="font-bold text-lg text-foreground tracking-tight truncate" data-testid="text-company-name">
                 {profile?.companyName || 'منصة العرض'}
