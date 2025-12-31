@@ -804,14 +804,26 @@ export async function registerRoutes(
       return res.status(400).json({ message: "انتهت صلاحية رمز التفعيل" });
     }
     
-    // Verify the screen belongs to this user (or user is admin)
+    // Verify the screen belongs to this user (or user is admin or team member)
     const screen = await storage.getScreen(activation.screenId);
     if (!screen) {
       return res.status(404).json({ message: "الشاشة غير موجودة" });
     }
     
     const isAdmin = await storage.isAdmin(parseInt(userId));
-    if (screen.userId !== parseInt(userId) && !isAdmin) {
+    const isOwner = screen.userId === parseInt(userId);
+    
+    // Check if user is a team member of the screen owner with editor/manager permission
+    let hasTeamPermission = false;
+    if (!isOwner && !isAdmin) {
+      const memberships = await storage.getAcceptedTeamMemberships(userId);
+      const membership = memberships.find(m => m.ownerId === String(screen.userId));
+      if (membership && (membership.permission === 'editor' || membership.permission === 'manager')) {
+        hasTeamPermission = true;
+      }
+    }
+    
+    if (!isOwner && !isAdmin && !hasTeamPermission) {
       return res.status(403).json({ message: "ليس لديك صلاحية تفعيل هذه الشاشة" });
     }
     
