@@ -327,54 +327,95 @@ export default function Player() {
   }
 
   // For portrait orientation, rotate content 90 degrees
+  // This is for landscape monitors mounted vertically - we rotate content to fill the vertical space
   const isPortrait = screen?.orientation === 'portrait';
-  console.log('Screen orientation:', screen?.orientation, 'isPortrait:', isPortrait);
   
+  if (isPortrait) {
+    // Portrait mode: rotate the entire content area
+    // The monitor is physically rotated 90 degrees (landscape screen mounted vertically)
+    // So we rotate content 90 degrees to match
+    return (
+      <div className="w-screen h-screen bg-black overflow-hidden relative">
+        {/* Rotated container for portrait mode */}
+        <div 
+          style={{
+            position: 'absolute',
+            width: '100vh',
+            height: '100vw',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%) rotate(90deg)',
+          }}
+        >
+          {schedules.map((item: any, index: number) => (
+            <div 
+              key={item.id}
+              style={{ 
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                visibility: index === currentIndex ? 'visible' : 'hidden',
+                zIndex: index === currentIndex ? 1 : 0
+              }}
+            >
+              {item.mediaItem.type === 'video' ? (
+                <video 
+                  src={item.mediaItem.url} 
+                  autoPlay={index === currentIndex}
+                  muted 
+                  loop={false}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <img 
+                  src={item.mediaItem.url} 
+                  alt={item.mediaItem.title} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+        
+        <div className="absolute bottom-4 left-4 bg-black/50 text-white/50 text-xs p-2 rounded backdrop-blur-sm pointer-events-none z-10">
+           {screen.name} • {currentIndex + 1}/{schedules.length}
+        </div>
+      </div>
+    );
+  }
+  
+  // Landscape mode (default)
   return (
     <div className="w-screen h-screen bg-black overflow-hidden relative">
-      {/* Content wrapper with rotation for portrait mode */}
-      <div 
-        className={`absolute inset-0 ${isPortrait ? 'portrait-rotate' : ''}`}
-        style={isPortrait ? {
-          transform: 'rotate(90deg)',
-          transformOrigin: 'center center',
-          width: '100vh',
-          height: '100vw',
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          marginLeft: 'calc(-50vh)',
-          marginTop: 'calc(-50vw)',
-        } : undefined}
-      >
-        {/* Render all items but only show current one */}
-        {schedules.map((item: any, index: number) => (
-          <div 
-            key={item.id}
-            className="absolute inset-0 w-full h-full"
-            style={{ 
-              visibility: index === currentIndex ? 'visible' : 'hidden',
-              zIndex: index === currentIndex ? 1 : 0
-            }}
-          >
-            {item.mediaItem.type === 'video' ? (
-              <video 
-                src={item.mediaItem.url} 
-                autoPlay={index === currentIndex}
-                muted 
-                loop={false}
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <img 
-                src={item.mediaItem.url} 
-                alt={item.mediaItem.title} 
-                className="w-full h-full object-cover"
-              />
-            )}
-          </div>
-        ))}
-      </div>
+      {/* Render all items but only show current one */}
+      {schedules.map((item: any, index: number) => (
+        <div 
+          key={item.id}
+          className="absolute inset-0 w-full h-full"
+          style={{ 
+            visibility: index === currentIndex ? 'visible' : 'hidden',
+            zIndex: index === currentIndex ? 1 : 0
+          }}
+        >
+          {item.mediaItem.type === 'video' ? (
+            <video 
+              src={item.mediaItem.url} 
+              autoPlay={index === currentIndex}
+              muted 
+              loop={false}
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <img 
+              src={item.mediaItem.url} 
+              alt={item.mediaItem.title} 
+              className="w-full h-full object-cover"
+            />
+          )}
+        </div>
+      ))}
       
       <div className="absolute bottom-4 left-4 bg-black/50 text-white/50 text-xs p-2 rounded backdrop-blur-sm pointer-events-none z-10">
          {screen.name} • {currentIndex + 1}/{schedules.length}
