@@ -756,7 +756,7 @@ export async function registerRoutes(
     }
     
     // Get the device binding created by this activation
-    const bindings = await storage.getDeviceBindings(screenId);
+    const bindings = await storage.getDeviceBindingsByScreen(screenId);
     const latestBinding = bindings.sort((a, b) => 
       new Date(b.activatedAt).getTime() - new Date(a.activatedAt).getTime()
     )[0];
