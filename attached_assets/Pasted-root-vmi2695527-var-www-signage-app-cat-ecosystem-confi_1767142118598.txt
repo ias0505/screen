@@ -1,0 +1,67 @@
+root@vmi2695527:/var/www/signage-app# cat > ecosystem.config.cjs << 'EOF'
+module.exports = {
+  apps: [{
+    name: 'signage-app',
+    script: 'dist/index.cjs',
+    env: {
+      PORT: 5000,
+      DATABASE_URL: 'postgresql://signage_user:StrongPassword123@localhost:5432/signage_db',
+      SESSION_SECRET: 'X7kM9pL2qR5vN8wY3zB6cF1dG4hJ0mT',
+      REPLIT_AUTH_DISABLED: 'true',
+      NODE_ENV: 'production',
+      RESEND_API_KEY: 're_3wRhXBEu_JEaKpXTpgoj2WcBfi1ktn2Qr',
+      EMAIL_FROM: 'screen <noreply@screen.com>',
+      APP_URL: 'http://167.86.115.180'
+    }
+  }]
+};
+EOF
+
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 logs signage-app --lines 20
+[PM2] Applying action restartProcessId on app [signage-app](ids: [ 0 ])
+[PM2] [signage-app](0) ✓
+┌────┬────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name           │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ signage-app    │ default     │ 1.0.0   │ fork    │ 1566607  │ 0s     │ 1    │ online    │ 0%       │ 18.6mb   │ root     │ disabled │
+└────┴────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+[TAILING] Tailing last 20 lines for [signage-app] process (change the value with --lines option)
+/root/.pm2/logs/signage-app-error.log last 20 lines:
+0|signage- |     at async Ag.getInvoices (/var/www/signage-app/dist/index.cjs:119:17104)
+0|signage- |     at async /var/www/signage-app/dist/index.cjs:120:2417 {
+0|signage- |   length: 121,
+0|signage- |   severity: 'ERROR',
+0|signage- |   code: '42703',
+0|signage- |   detail: undefined,
+0|signage- |   hint: undefined,
+0|signage- |   position: '25',
+0|signage- |   internalPosition: undefined,
+0|signage- |   internalQuery: undefined,
+0|signage- |   where: undefined,
+0|signage- |   schema: undefined,
+0|signage- |   table: undefined,
+0|signage- |   column: undefined,
+0|signage- |   dataType: undefined,
+0|signage- |   constraint: undefined,
+0|signage- |   file: 'parse_relation.c',
+0|signage- |   line: '3647',
+0|signage- |   routine: 'errorMissingColumn'
+0|signage- | }
+
+/root/.pm2/logs/signage-app-out.log last 20 lines:
+0|signage- | 45:08.374Z","user":{"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","password":"$2b$10$p6EXpX0X32S.jGnAN/bdZ..IhWdlFrSA.ojt9rhrZjuiSsoYRHqOC","firstName":"Admin","lastName":"User","profileImageUrl":null,"companyName":"شاشات","authProvider":"local","createdAt":"2025-12-30T14:00:35.404Z","updatedAt":"2025-12-30T19:20:21.328Z"}},{"id":2,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","screenCount":1,"durationYears":1,"startDate":"2025-12-31T01:44:06.660Z","endDate":"2026-12-31T00:44:06.636Z","status":"active","pricePerScreen":100,"totalPrice":100,"createdAt":"2025-12-31T01:44:06.660Z","user":{"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","password":"$2b$10$p6EXpX0X32S.jGnAN/bdZ..IhWdlFrSA.ojt9rhrZjuiSsoYRHqOC","firstName":"Admin","lastName":"User","profileImageUrl":null,"companyName":"شاشات","authProvider":"local","createdAt":"2025-12-30T14:00:35.404Z","updatedAt":"2025-12-30T19:20:21.328Z"}},{"id":1,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","screenCount":1,"durationYears":1,"startDate":"2025-12-30T14:34:42.526Z","endDate":"2026-12-30T13:34:42.512Z","status":"active","pricePerScreen":50,"totalPrice":50,"createdAt":"2025-12-30T14:34:42.526Z","user":{"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","password":"$2b$10$p6EXpX0X32S.jGnAN/bdZ..IhWdlFrSA.ojt9rhrZjuiSsoYRHqOC","firstName":"Admin","lastName":"User","profileImageUrl":null,"companyName":"شاشات","authProvider":"local","createdAt":"2025-12-30T14:00:35.404Z","updatedAt":"2025-12-30T19:20:21.328Z"}}]
+0|signage- | 1:46:15 AM [express] GET /api/admin/plans 304 in 10ms :: [{"id":5,"name":"المؤسسات والشركات","description":"صممة هذة الباقة للشركات والمؤسسات ذات الافرع المتعددة على مستوى عالي","pricePerScreen":70,"minScreens":51,"maxScreens":null,"discountPercentage":0,"features":null,"isActive":true,"isDefault":false,"createdAt":"2025-12-31T01:43:10.273Z"},{"id":4,"name":"الأعمال","description":"صممة هذة الخطة لأصحاب الاعمال ذو الافرع المتعددة","pricePerScreen":80,"minScreens":21,"maxScreens":50,"discountPercentage":0,"features":null,"isActive":true,"isDefault":false,"createdAt":"2025-12-31T01:41:19.057Z"},{"id":3,"name":"الأحترافية","description":"خطة مصممة لاصحاب البراندات ذات الافرع المتعدده","pricePerScreen":90,"minScreens":4,"maxScreens":20,"discountPercentage":0,"features":null,"isActive":true,"isDefault":true,"createdAt":"2025-12-31T01:39:28.385Z"},{"id":2,"name":"الخطة الأساسية","description":"خطة صممة للافراد وللمحلات ذات الفرع الواحد","pricePerScreen":100,"minScreens":1,"maxScreens":3,"discountPercentage":0,"features":null,"isActive":true,"isDefault":false,"createdAt":"2025-12-31T01:38:10.446Z"}]
+0|signage- | 1:46:23 AM [express] GET /api/admin/discount-codes 200 in 13ms :: []
+0|signage- | 1:46:25 AM [express] GET /api/screens 200 in 7ms :: [{"id":1,"name":"الاستقبال","location":"الرياض","status":"online","orientation":"portrait","lastHeartbeat":"2025-12-31T00:45:37.491Z","groupId":1,"subscriptionId":1,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2025-12-30T14:39:17.821Z"}]
+0|signage- | 1:46:25 AM [express] GET /api/media 304 in 27ms :: [{"id":2,"title":"فريك ام تركي لفتره محدودة 2","type":"image","url":"/uploads/file-1767102127923-896018769.png","duration":10,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2025-12-30T14:42:08.051Z"},{"id":1,"title":"اعلان دجاج كريمة 2","type":"image","url":"/uploads/file-1767101871206-870638658.png","duration":10,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2025-12-30T14:37:51.337Z"}]
+0|signage- | 1:46:37 AM [express] POST /api/screens/1/heartbeat 200 in 57ms :: {"success":true}
+0|signage- | Replit Auth disabled via REPLIT_AUTH_DISABLED=true
+0|signage- | 1:48:11 AM [express] serving on port 5000
+
+0|signage-app  | Replit Auth disabled via REPLIT_AUTH_DISABLED=true
+0|signage-app  | 1:48:20 AM [express] serving on port 5000
+
