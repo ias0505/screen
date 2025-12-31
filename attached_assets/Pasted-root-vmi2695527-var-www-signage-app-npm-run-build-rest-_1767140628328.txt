@@ -1,0 +1,44 @@
+root@vmi2695527:/var/www/signage-app# npm run build
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+✓ 3083 modules transformed.
+../dist/public/index.html                   2.01 kB │ gzip:   0.77 kB
+../dist/public/assets/index-87t8wqtK.css   77.00 kB │ gzip:  12.94 kB
+../dist/public/assets/index-CcoKxFJ5.js   334.94 kB │ gzip: 100.08 kB
+../dist/public/assets/index-dc9aC-WT.js   852.01 kB │ gzip: 246.36 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 14.57s
+building server...
+
+  dist/index.cjs  1.2mb ⚠️
+
+⚡ Done in 298ms
+root@vmi2695527:/var/www/signage-app# pm2 restart signage-app
+Use --update-env to update environment variables
+[PM2][ERROR] Process or Namespace signage-app not found
+root@vmi2695527:/var/www/signage-app# pm2 restart signage-app
+Use --update-env to update environment variables
+[PM2][ERROR] Process or Namespace signage-app not found
+root@vmi2695527:/var/www/signage-app# ^C
+root@vmi2695527:/var/www/signage-app# cd /var/www/signage-app
+root@vmi2695527:/var/www/signage-app# pm2 start dist/index.cjs --name signage-app
+[PM2] Starting /var/www/signage-app/dist/index.cjs in fork_mode (1 instance)
+[PM2] Done.
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ signage            │ fork     │ 0    │ online    │ 0%       │ 94.9mb   │
+│ 1  │ signage-app        │ fork     │ 0    │ online    │ 0%       │ 16.6mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@vmi2695527:/var/www/signage-app# pm2 save
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+root@vmi2695527:/var/www/signage-app#
