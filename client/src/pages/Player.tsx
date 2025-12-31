@@ -327,22 +327,24 @@ export default function Player() {
   }
 
   // For portrait orientation, rotate content 90 degrees
-  const isPortrait = screen.orientation === 'portrait';
+  const isPortrait = screen?.orientation === 'portrait';
+  console.log('Screen orientation:', screen?.orientation, 'isPortrait:', isPortrait);
   
   return (
     <div className="w-screen h-screen bg-black overflow-hidden relative">
       {/* Content wrapper with rotation for portrait mode */}
       <div 
-        className="absolute inset-0"
+        className={`absolute inset-0 ${isPortrait ? 'portrait-rotate' : ''}`}
         style={isPortrait ? {
           transform: 'rotate(90deg)',
           transformOrigin: 'center center',
           width: '100vh',
           height: '100vw',
+          position: 'absolute',
           left: '50%',
           top: '50%',
-          marginLeft: '-50vh',
-          marginTop: '-50vw',
+          marginLeft: 'calc(-50vh)',
+          marginTop: 'calc(-50vw)',
         } : undefined}
       >
         {/* Render all items but only show current one */}
