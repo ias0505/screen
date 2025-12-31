@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Monitor, Loader2, CheckCircle, Smartphone, QrCode, Keyboard } from "lucide-react";
+import { Loader2, CheckCircle, QrCode, Keyboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
@@ -205,9 +205,6 @@ export default function Activate() {
           className="h-16 mx-auto mb-8"
         />
         
-        <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
-          <Smartphone className="w-12 h-12 text-primary" />
-        </div>
         <h1 className="text-4xl font-bold mb-2">تفعيل الشاشة</h1>
         <p className="text-muted-foreground text-lg mb-6">
           اختر طريقة التفعيل المناسبة
