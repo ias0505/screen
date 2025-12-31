@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import logoImage from "@assets/Meror_logo_v.1_1767180225600.png";
 
 // Generate or retrieve persistent device ID
 function getDeviceId(): string {
@@ -164,6 +165,13 @@ export default function Activate() {
     return (
       <div className="min-h-screen bg-zinc-900 flex flex-col items-center justify-center text-white" dir="rtl">
         <div className="text-center">
+          {/* Logo */}
+          <img 
+            src={logoImage} 
+            alt="Meror" 
+            className="h-16 mx-auto mb-8"
+          />
+          
           <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-12 h-12 text-green-500" />
           </div>
@@ -178,6 +186,13 @@ export default function Activate() {
   return (
     <div className="min-h-screen bg-zinc-900 flex flex-col items-center justify-center text-white" dir="rtl">
       <div className="text-center max-w-lg px-4">
+        {/* Logo */}
+        <img 
+          src={logoImage} 
+          alt="Meror" 
+          className="h-16 mx-auto mb-8"
+        />
+        
         <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
           <Smartphone className="w-12 h-12 text-primary" />
         </div>
