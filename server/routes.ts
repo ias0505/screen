@@ -288,13 +288,9 @@ export async function registerRoutes(
 
   // Screens
   app.get(api.screens.list.path, requireAuth, async (req: any, res) => {
-    const workContext = req.headers['x-work-context'];
-    const rawUserId = getUserId(req);
     const userId = await getEffectiveUserId(req);
-    console.log('[DEBUG] GET /api/screens - rawUserId:', rawUserId, 'workContext header:', workContext, 'effectiveUserId:', userId);
     await storage.expireOldSubscriptions();
     const screens = await storage.getScreens(userId);
-    console.log('[DEBUG] GET /api/screens - found', screens.length, 'screens');
     res.json(screens);
   });
 

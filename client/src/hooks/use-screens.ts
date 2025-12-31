@@ -1,29 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import { type InsertScreen, type InsertSchedule } from "@shared/schema";
+import { type InsertScreen, type InsertSchedule, type Screen, type Schedule } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export function useScreens() {
-  return useQuery({
+  return useQuery<Screen[]>({
     queryKey: [api.screens.list.path],
-    queryFn: async () => {
-      const res = await fetch(api.screens.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("فشل في تحميل الشاشات");
-      return api.screens.list.responses[200].parse(await res.json());
-    },
   });
 }
 
 export function useScreen(id: number) {
-  return useQuery({
-    queryKey: [api.screens.get.path, id],
-    queryFn: async () => {
-      const url = buildUrl(api.screens.get.path, { id });
-      const res = await fetch(url, { credentials: "include" });
-      if (res.status === 404) return null;
-      if (!res.ok) throw new Error("فشل في تحميل الشاشة");
-      return api.screens.get.responses[200].parse(await res.json());
-    },
+  return useQuery<Screen | null>({
+    queryKey: ['/api/screens', id],
     enabled: !!id,
   });
 }
@@ -35,21 +24,8 @@ export function useCreateScreen() {
   return useMutation({
     mutationFn: async (data: InsertScreen) => {
       const validated = api.screens.create.input.parse(data);
-      const res = await fetch(api.screens.create.path, {
-        method: api.screens.create.method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(validated),
-        credentials: "include",
-      });
-      
-      if (!res.ok) {
-        if (res.status === 400) {
-          const error = api.screens.create.responses[400].parse(await res.json());
-          throw new Error(error.message);
-        }
-        throw new Error('فشل في إضافة الشاشة');
-      }
-      return api.screens.create.responses[201].parse(await res.json());
+      const res = await apiRequest(api.screens.create.method, api.screens.create.path, validated);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.screens.list.path] });
@@ -75,12 +51,7 @@ export function useDeleteScreen() {
   return useMutation({
     mutationFn: async (id: number) => {
       const url = buildUrl(api.screens.delete.path, { id });
-      const res = await fetch(url, { 
-        method: api.screens.delete.method, 
-        credentials: "include" 
-      });
-      
-      if (!res.ok) throw new Error('فشل في حذف الشاشة');
+      await apiRequest(api.screens.delete.method, url);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.screens.list.path] });
@@ -99,14 +70,7 @@ export function useUpdateScreen() {
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: { name?: string; location?: string; orientation?: string; groupId?: number | null } }) => {
       const url = buildUrl(api.screens.update.path, { id });
-      const res = await fetch(url, {
-        method: api.screens.update.method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      
-      if (!res.ok) throw new Error('فشل في تحديث الشاشة');
+      const res = await apiRequest(api.screens.update.method, url, data);
       return res.json();
     },
     onSuccess: () => {
@@ -120,14 +84,8 @@ export function useUpdateScreen() {
 }
 
 export function useScreenSchedules(screenId: number) {
-  return useQuery({
-    queryKey: [api.schedules.list.path, screenId],
-    queryFn: async () => {
-      const url = buildUrl(api.schedules.list.path, { screenId });
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("فشل في تحميل الجدول");
-      return api.schedules.list.responses[200].parse(await res.json());
-    },
+  return useQuery<Schedule[]>({
+    queryKey: ['/api/screens', screenId, 'schedules'],
     enabled: !!screenId,
   });
 }
@@ -139,19 +97,12 @@ export function useCreateSchedule() {
   return useMutation({
     mutationFn: async (data: InsertSchedule) => {
       const validated = api.schedules.create.input.parse(data);
-      const res = await fetch(api.schedules.create.path, {
-        method: api.schedules.create.method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(validated),
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error('فشل في جدولة المحتوى');
-      return api.schedules.create.responses[201].parse(await res.json());
+      const res = await apiRequest(api.schedules.create.method, api.schedules.create.path, validated);
+      return res.json();
     },
     onSuccess: (_, variables) => {
       if (variables.screenId) {
-        queryClient.invalidateQueries({ queryKey: [api.schedules.list.path, variables.screenId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/screens', variables.screenId, 'schedules'] });
       }
       toast({
         title: "تمت الجدولة",
@@ -168,14 +119,10 @@ export function useDeleteSchedule() {
   return useMutation({
     mutationFn: async ({ id, screenId }: { id: number, screenId: number }) => {
       const url = buildUrl(api.schedules.delete.path, { id });
-      const res = await fetch(url, { 
-        method: api.schedules.delete.method, 
-        credentials: "include" 
-      });
-      if (!res.ok) throw new Error('فشل في حذف العنصر من الجدول');
+      await apiRequest(api.schedules.delete.method, url);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [api.schedules.list.path, variables.screenId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/screens', variables.screenId, 'schedules'] });
       toast({
         title: "تم الحذف",
         description: "تم إزالة المحتوى من الجدول",
@@ -190,18 +137,12 @@ export function useUpdateSchedule() {
 
   return useMutation({
     mutationFn: async ({ id, duration, screenId, groupId }: { id: number; duration: number; screenId?: number; groupId?: number }) => {
-      const res = await fetch(`/api/schedules/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ duration }),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error('فشل في تحديث المدة');
+      const res = await apiRequest('PATCH', `/api/schedules/${id}`, { duration });
       return { ...(await res.json()), screenId, groupId };
     },
     onSuccess: (data) => {
       if (data.screenId) {
-        queryClient.invalidateQueries({ queryKey: [api.schedules.list.path, data.screenId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/screens', data.screenId, 'schedules'] });
       }
       if (data.groupId) {
         queryClient.invalidateQueries({ queryKey: ['/api/group-schedules', data.groupId] });
@@ -220,18 +161,12 @@ export function useReorderSchedules() {
       screenId?: number;
       groupId?: number;
     }) => {
-      const res = await fetch('/api/schedules/reorder', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates }),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error('فشل في إعادة الترتيب');
+      await apiRequest('PATCH', '/api/schedules/reorder', { updates });
       return { screenId, groupId };
     },
     onSuccess: (data) => {
       if (data.screenId) {
-        queryClient.invalidateQueries({ queryKey: [api.schedules.list.path, data.screenId] });
+        queryClient.invalidateQueries({ queryKey: ['/api/screens', data.screenId, 'schedules'] });
       }
       if (data.groupId) {
         queryClient.invalidateQueries({ queryKey: ['/api/group-schedules', data.groupId] });

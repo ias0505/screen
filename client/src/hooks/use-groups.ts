@@ -47,12 +47,7 @@ export function useCreateMediaGroup() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async (group: InsertMediaGroup) => {
-      const response = await fetch('/api/media-groups', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(group),
-      });
-      if (!response.ok) throw new Error('Failed to create group');
+      const response = await apiRequest('POST', '/api/media-groups', group);
       return response.json();
     },
     onSuccess: () => {
@@ -65,12 +60,6 @@ export function useCreateMediaGroup() {
 export function useGroupSchedules(groupId: number) {
   return useQuery({
     queryKey: ['/api/group-schedules', groupId],
-    queryFn: async () => {
-      if (!groupId) return [];
-      const res = await fetch(`/api/group-schedules/${groupId}`, { credentials: "include" });
-      if (!res.ok) throw new Error("فشل في تحميل الجدول");
-      return res.json();
-    },
     enabled: !!groupId,
   });
 }
