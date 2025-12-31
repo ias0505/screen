@@ -456,6 +456,21 @@ export default function Screens() {
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                    {/* معاينة الاتجاه */}
+                    <div className="flex justify-center pt-2">
+                      <div 
+                        className={`border-2 border-primary/50 rounded-lg bg-muted/50 flex items-center justify-center transition-all duration-300 ${
+                          form.orientation === 'portrait' 
+                            ? 'w-16 h-28' 
+                            : 'w-28 h-16'
+                        }`}
+                      >
+                        <Monitor className={`text-muted-foreground ${form.orientation === 'portrait' ? 'w-6 h-6' : 'w-8 h-8'}`} />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      {form.orientation === 'portrait' ? 'الشاشة ستعرض المحتوى بشكل عمودي' : 'الشاشة ستعرض المحتوى بشكل أفقي'}
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>المجموعة (اختياري)</Label>
@@ -896,6 +911,21 @@ export default function Screens() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                {/* معاينة الاتجاه */}
+                <div className="flex justify-center pt-2">
+                  <div 
+                    className={`border-2 border-primary/50 rounded-lg bg-muted/50 flex items-center justify-center transition-all duration-300 ${
+                      editForm.orientation === 'portrait' 
+                        ? 'w-16 h-28' 
+                        : 'w-28 h-16'
+                    }`}
+                  >
+                    <Monitor className={`text-muted-foreground ${editForm.orientation === 'portrait' ? 'w-6 h-6' : 'w-8 h-8'}`} />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  {editForm.orientation === 'portrait' ? 'الشاشة ستعرض المحتوى بشكل عمودي' : 'الشاشة ستعرض المحتوى بشكل أفقي'}
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>المجموعة (اختياري)</Label>
