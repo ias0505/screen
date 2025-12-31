@@ -44,11 +44,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="flex min-h-screen">
-      <div className="flex-1 overflow-auto bg-muted/30">
-        {children}
-      </div>
-      
-      <div className="w-64 border-r bg-background flex flex-col">
+      <div className="w-64 border-l bg-background flex flex-col">
         <div className="p-4 border-b">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -115,6 +111,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <span>تسجيل خروج</span>
           </Button>
         </div>
+      </div>
+      
+      <div className="flex-1 overflow-auto bg-muted/30">
+        {children}
       </div>
     </div>
   );
