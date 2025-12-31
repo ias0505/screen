@@ -1,8 +1,17 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -12,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Link } from "wouter";
-import { Monitor, ArrowRight, Wifi, WifiOff, Trash2 } from "lucide-react";
+import { Monitor, ArrowRight, Wifi, WifiOff, Trash2, Search, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -37,6 +46,10 @@ interface Screen {
 
 export default function AdminScreens() {
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterSubscription, setFilterSubscription] = useState<string>("all");
+  
   const { data: screens, isLoading } = useQuery<Screen[]>({
     queryKey: ['/api/admin/screens'],
   });
@@ -69,6 +82,46 @@ export default function AdminScreens() {
   const offlineCount = screens?.filter(s => s.status === 'offline').length || 0;
   const withSubscription = screens?.filter(s => s.subscriptionId).length || 0;
   const withoutSubscription = screens?.filter(s => !s.subscriptionId).length || 0;
+
+  const getUserName = (screen: Screen) => {
+    return screen.user.firstName || screen.user.lastName 
+      ? `${screen.user.firstName || ''} ${screen.user.lastName || ''}`.trim()
+      : screen.user.email || 'بدون اسم';
+  };
+
+  const filteredScreens = screens?.filter(screen => {
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = (
+        screen.name?.toLowerCase().includes(query) ||
+        screen.location?.toLowerCase().includes(query) ||
+        getUserName(screen).toLowerCase().includes(query) ||
+        screen.user.email?.toLowerCase().includes(query)
+      );
+      if (!matchesSearch) return false;
+    }
+    
+    if (filterStatus !== "all" && screen.status !== filterStatus) {
+      return false;
+    }
+    
+    if (filterSubscription === "with" && !screen.subscriptionId) {
+      return false;
+    }
+    if (filterSubscription === "without" && screen.subscriptionId) {
+      return false;
+    }
+    
+    return true;
+  }) || [];
+
+  const hasActiveFilters = filterStatus !== "all" || filterSubscription !== "all" || searchQuery.trim();
+  
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setFilterStatus("all");
+    setFilterSubscription("all");
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -119,6 +172,66 @@ export default function AdminScreens() {
         </Card>
       </div>
 
+      {/* Filter Bar */}
+      {screens && screens.length > 0 && (
+        <div className="flex items-center gap-3 flex-wrap bg-muted/30 p-3 rounded-xl">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Filter className="w-4 h-4" />
+            <span className="text-sm font-medium">تصفية:</span>
+          </div>
+          
+          <div className="relative flex-1 min-w-[200px] max-w-xs">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="بحث بالاسم أو المستخدم..."
+              className="pr-10 rounded-xl"
+              data-testid="input-search-screens"
+            />
+          </div>
+          
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-36 rounded-xl" data-testid="select-filter-status">
+              <SelectValue placeholder="الحالة" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل الحالات</SelectItem>
+              <SelectItem value="online">متصل</SelectItem>
+              <SelectItem value="offline">غير متصل</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={filterSubscription} onValueChange={setFilterSubscription}>
+            <SelectTrigger className="w-40 rounded-xl" data-testid="select-filter-subscription">
+              <SelectValue placeholder="الاشتراك" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">الكل</SelectItem>
+              <SelectItem value="with">مع اشتراك</SelectItem>
+              <SelectItem value="without">بدون اشتراك</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {hasActiveFilters && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={clearAllFilters}
+              className="gap-1 text-muted-foreground"
+              data-testid="button-clear-filters"
+            >
+              <X className="w-4 h-4" />
+              مسح الفلاتر
+            </Button>
+          )}
+          
+          <Badge variant="secondary" className="mr-auto">
+            {filteredScreens.length} من {screens.length}
+          </Badge>
+        </div>
+      )}
+
       <Card>
         <CardContent className="pt-6">
           {isLoading ? (
@@ -128,6 +241,10 @@ export default function AdminScreens() {
           ) : screens?.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               لا توجد شاشات
+            </div>
+          ) : filteredScreens.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              لا توجد نتائج تطابق البحث
             </div>
           ) : (
             <Table>
@@ -144,16 +261,12 @@ export default function AdminScreens() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {screens?.map(screen => (
+                {filteredScreens.map(screen => (
                   <TableRow key={screen.id} data-testid={`row-screen-${screen.id}`}>
                     <TableCell>#{screen.id}</TableCell>
                     <TableCell className="font-medium">{screen.name}</TableCell>
                     <TableCell>{screen.location || '-'}</TableCell>
-                    <TableCell>
-                      {screen.user.firstName || screen.user.lastName 
-                        ? `${screen.user.firstName || ''} ${screen.user.lastName || ''}`.trim()
-                        : screen.user.email || 'بدون اسم'}
-                    </TableCell>
+                    <TableCell>{getUserName(screen)}</TableCell>
                     <TableCell>
                       {screen.subscriptionId ? (
                         <Badge variant="outline">#{screen.subscriptionId}</Badge>
