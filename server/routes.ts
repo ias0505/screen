@@ -390,6 +390,7 @@ export async function registerRoutes(
       name: screen.name,
       status: screen.status,
       groupId: screen.groupId,
+      orientation: screen.orientation,
     });
   });
 
