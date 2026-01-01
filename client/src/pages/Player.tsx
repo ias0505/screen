@@ -330,9 +330,6 @@ export default function Player() {
   // This is for landscape monitors mounted vertically - we rotate content to fill the vertical space
   const isPortrait = screen?.orientation === 'portrait';
   
-  // Debug: log orientation for troubleshooting
-  console.log('Screen orientation:', screen?.orientation, 'isPortrait:', isPortrait);
-  
   if (isPortrait) {
     // Portrait mode: rotate the entire content area
     // The monitor is physically rotated 90 degrees (landscape screen mounted vertically)
@@ -388,7 +385,7 @@ export default function Player() {
         </div>
         
         <div className="absolute bottom-4 left-4 bg-black/50 text-white/50 text-xs p-2 rounded backdrop-blur-sm pointer-events-none z-10">
-           {screen.name} • {currentIndex + 1}/{schedules.length} • Portrait Mode
+           {screen.name} • {currentIndex + 1}/{schedules.length}
         </div>
       </div>
     );
@@ -426,7 +423,7 @@ export default function Player() {
       ))}
       
       <div className="absolute bottom-4 left-4 bg-black/50 text-white/50 text-xs p-2 rounded backdrop-blur-sm pointer-events-none z-10">
-         {screen.name} • {currentIndex + 1}/{schedules.length} • Landscape (ori: {screen?.orientation || 'unknown'})
+         {screen.name} • {currentIndex + 1}/{schedules.length}
       </div>
     </div>
   );
