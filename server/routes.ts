@@ -523,11 +523,13 @@ export async function registerRoutes(
       return res.json([]);
     }
 
-    let schedulesList = await storage.getSchedules(screenId);
-    
+    // If screen belongs to a group, show only group content
+    // Otherwise show screen's individual content
+    let schedulesList: any[];
     if (screen.groupId) {
-      const groupSchedules = await storage.getSchedulesByGroup(screen.groupId);
-      schedulesList = [...schedulesList, ...groupSchedules];
+      schedulesList = await storage.getSchedulesByGroup(screen.groupId);
+    } else {
+      schedulesList = await storage.getSchedules(screenId);
     }
     
     res.json(schedulesList);
