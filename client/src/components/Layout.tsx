@@ -12,8 +12,7 @@ import {
   Layers,
   Shield,
   Users,
-  Settings,
-  Wand2
+  Settings
 } from "lucide-react";
 import logoImage from "@assets/Meror_logo_v.1_1767180225600.png";
 import { cn } from "@/lib/utils";
@@ -42,7 +41,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/screens", label: "الشاشات", icon: Monitor },
     { href: "/groups", label: "المجموعات", icon: Layers },
     { href: "/media", label: "المحتوى", icon: ImageIcon },
-    { href: "/image-editor", label: "محرر الصور", icon: Wand2, badge: "Beta" },
     { href: "/schedule", label: "الجدولة", icon: CalendarClock },
     { href: "/subscriptions", label: "الاشتراكات", icon: CreditCard },
     { href: "/team", label: "الفريق", icon: Users },
