@@ -3,7 +3,7 @@ import { authStorage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
 import bcrypt from "bcrypt";
 import { registerSchema, loginSchema } from "@shared/schema";
-import { sendPasswordResetEmail } from "../../email";
+import { sendPasswordResetEmail, sendWelcomeEmail } from "../../email";
 
 // Register auth-specific routes
 export function registerAuthRoutes(app: Express): void {
@@ -61,6 +61,12 @@ export function registerAuthRoutes(app: Express): void {
         companyName: companyName || null,
         authProvider: "local",
       });
+
+      // Send welcome email
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      const appUrl = process.env.APP_URL || `${protocol}://${host}`;
+      sendWelcomeEmail(email, firstName, appUrl).catch(err => console.error('Failed to send welcome email:', err));
 
       // Create session
       const userSession = {

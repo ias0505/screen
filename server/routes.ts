@@ -8,6 +8,7 @@ import multer from "multer";
 import path from "path";
 import express from "express";
 import crypto from "crypto";
+import { sendSubscriptionEmail, sendTeamInviteEmail } from "./email";
 
 // Rate limiting for activation attempts (in-memory store)
 const activationAttempts = new Map<string, { count: number; blockedUntil: number }>();
@@ -203,6 +204,14 @@ export async function registerRoutes(
     // Increment discount code usage if applied
     if (validatedDiscountCode) {
       await storage.incrementDiscountCodeUsage(validatedDiscountCode.id);
+    }
+    
+    // Send subscription confirmation email
+    const user = await storage.getUserById(userId);
+    if (user?.email) {
+      const appUrl = process.env.APP_URL || `${req.protocol}://${req.headers.host}`;
+      sendSubscriptionEmail(user.email, user.firstName || '', screenCount, durationYears, sub.totalPrice, appUrl)
+        .catch(err => console.error('Failed to send subscription email:', err));
     }
     
     res.status(201).json(sub);
@@ -1546,6 +1555,15 @@ export async function registerRoutes(
     }
     
     const member = await storage.inviteTeamMember(ownerId, email, name, selectedPermission);
+    
+    // Send team invite email
+    const owner = await storage.getUserById(ownerId);
+    const ownerName = owner?.firstName || 'مستخدم';
+    const companyName = owner?.companyName || 'فريق العمل';
+    const appUrl = process.env.APP_URL || `${req.protocol}://${req.headers.host}`;
+    sendTeamInviteEmail(email, ownerName, companyName, selectedPermission, appUrl)
+      .catch(err => console.error('Failed to send team invite email:', err));
+    
     res.status(201).json(member);
   });
 
