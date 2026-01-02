@@ -76,6 +76,7 @@ export default function Player() {
   });
   
   const [currentIndex, setCurrentIndex] = useState(0);
+  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const preloadedImages = useRef<Set<string>>(new Set());
 
   // Fetch activation code for unbound screens
@@ -196,12 +197,42 @@ export default function Player() {
     });
   }, [schedules, isDeviceBound]);
 
+  // Handle video playback when index changes
+  useEffect(() => {
+    if (!isDeviceBound || !schedules.length) return;
+    
+    const currentItem = schedules[currentIndex] as any;
+    
+    // Pause all videos except current
+    videoRefs.current.forEach((video, idx) => {
+      if (idx === currentIndex) {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
+  }, [currentIndex, schedules, isDeviceBound]);
+
   useEffect(() => {
     if (!isDeviceBound || !schedules.length) return;
 
     const currentItem = schedules[currentIndex] as any;
+    
+    // For videos, use onEnded event instead of timer
+    if (currentItem.mediaItem?.type === 'video') {
+      const video = videoRefs.current.get(currentIndex);
+      if (video) {
+        const handleEnded = () => {
+          setCurrentIndex((prev) => (prev + 1) % schedules.length);
+        };
+        video.addEventListener('ended', handleEnded);
+        return () => video.removeEventListener('ended', handleEnded);
+      }
+    }
+    
+    // For images, use duration timer
     const duration = (currentItem.duration || 10) * 1000;
-
     const timer = setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % schedules.length);
     }, duration);
@@ -367,10 +398,12 @@ export default function Player() {
             >
               {item.mediaItem.type === 'video' ? (
                 <video 
+                  ref={(el) => { if (el) videoRefs.current.set(index, el); }}
                   src={item.mediaItem.url} 
                   autoPlay={index === currentIndex}
                   muted 
                   loop={false}
+                  playsInline
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
@@ -403,10 +436,12 @@ export default function Player() {
         >
           {item.mediaItem.type === 'video' ? (
             <video 
+              ref={(el) => { if (el) videoRefs.current.set(index, el); }}
               src={item.mediaItem.url} 
               autoPlay={index === currentIndex}
               muted 
               loop={false}
+              playsInline
               className="w-full h-full object-contain"
             />
           ) : (
