@@ -88,6 +88,16 @@ export default function Schedule() {
 
   const ungroupedScreens = screens.filter(s => !s.groupId);
   
+  const handleMediaSelect = (item: any) => {
+    setSelectedMediaId(item.id.toString());
+    // For videos, default to video duration or 30 seconds if not set
+    if (item.type === 'video') {
+      setNewItemDuration(item.duration ? item.duration.toString() : "30");
+    } else {
+      setNewItemDuration("10");
+    }
+  };
+  
   const rawSchedules = scheduleType === "screen" ? screenSchedules : groupSchedules;
   const schedules: ScheduleItem[] = localSchedules.length > 0 ? localSchedules : (rawSchedules as ScheduleItem[]);
   const isLoading = scheduleType === "screen" ? loadingScreenSchedules : loadingGroupSchedules;
@@ -312,7 +322,7 @@ export default function Schedule() {
                     .map((item) => (
                     <div 
                       key={item.id}
-                      onClick={() => setSelectedMediaId(item.id.toString())}
+                      onClick={() => handleMediaSelect(item)}
                       className={`
                         cursor-pointer rounded-xl border-2 overflow-hidden transition-all
                         ${selectedMediaId === item.id.toString() ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'}
