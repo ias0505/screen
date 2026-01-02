@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, Link } from "wouter";
 import { Mail, Lock, User, Building2, Loader2 } from "lucide-react";
+import { SiGoogle } from "react-icons/si";
 import logoImage from "@assets/Meror_logo_v.1_1767180225600.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,6 +191,27 @@ export default function Login() {
               {isRegisterMode ? "إنشاء الحساب" : "تسجيل الدخول"}
             </Button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">أو</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="w-full"
+            onClick={() => window.location.href = "/api/login"}
+            data-testid="button-google-login"
+          >
+            <SiGoogle className="w-4 h-4 ml-2" />
+            {isRegisterMode ? "التسجيل بحساب Google" : "الدخول بحساب Google"}
+          </Button>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
