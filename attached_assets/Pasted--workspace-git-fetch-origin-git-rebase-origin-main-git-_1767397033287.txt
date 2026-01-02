@@ -1,0 +1,150 @@
+~/workspace$ git fetch origin
+git rebase origin/main
+git push origin main
+Current branch main is up to date.
+Enumerating objects: 34, done.
+Counting objects: 100% (34/34), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (28/28), done.
+Writing objects: 100% (28/28), 288.81 KiB | 22.22 MiB/s, done.
+Total 28 (delta 21), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (21/21), completed with 5 local objects.
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: 
+remote: - GITHUB PUSH PROTECTION
+remote:   —————————————————————————————————————————
+remote:     Resolve the following violations before pushing again
+remote: 
+remote:     - Push cannot contain secrets
+remote: 
+remote:     
+remote:      (?) Learn how to resolve a blocked push
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push
+remote:     
+remote:     
+remote:       —— Google OAuth Client ID ————————————————————————————
+remote:        locations:
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:16
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:36
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/ias0505/screen/security/secret-scanning/unblock-secret/37irQfuBQYxtSpC5BXRuzT1wAjb
+remote:     
+remote:     
+remote:       —— Google OAuth Client Secret ————————————————————————
+remote:        locations:
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:17
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:37
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/ias0505/screen/security/secret-scanning/unblock-secret/37irQbwaR0sp2EeAkVt4wL25CQi
+remote:     
+remote: 
+remote: 
+To https://github.com/ias0505/screen.git
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/ias0505/screen.git'
+~/workspace$ git rebase --abort
+git pull origin main --no-rebase
+git push origin main
+fatal: no rebase in progress
+From https://github.com/ias0505/screen
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+Enumerating objects: 34, done.
+Counting objects: 100% (34/34), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (28/28), done.
+Writing objects: 100% (28/28), 288.81 KiB | 28.88 MiB/s, done.
+Total 28 (delta 21), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (21/21), completed with 5 local objects.
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: 
+remote: - GITHUB PUSH PROTECTION
+remote:   —————————————————————————————————————————
+remote:     Resolve the following violations before pushing again
+remote: 
+remote:     - Push cannot contain secrets
+remote: 
+remote:     
+remote:      (?) Learn how to resolve a blocked push
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push
+remote:     
+remote:     
+remote:       —— Google OAuth Client ID ————————————————————————————
+remote:        locations:
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:16
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:36
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/ias0505/screen/security/secret-scanning/unblock-secret/37irQfuBQYxtSpC5BXRuzT1wAjb
+remote:     
+remote:     
+remote:       —— Google OAuth Client Secret ————————————————————————
+remote:        locations:
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:17
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:37
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/ias0505/screen/security/secret-scanning/unblock-secret/37irQbwaR0sp2EeAkVt4wL25CQi
+remote:     
+remote: 
+remote: 
+To https://github.com/ias0505/screen.git
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/ias0505/screen.git'
+~/workspace$ git push origin main --force
+Enumerating objects: 34, done.
+Counting objects: 100% (34/34), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (28/28), done.
+Writing objects: 100% (28/28), 288.81 KiB | 24.07 MiB/s, done.
+Total 28 (delta 21), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (21/21), completed with 5 local objects.
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: 
+remote: - GITHUB PUSH PROTECTION
+remote:   —————————————————————————————————————————
+remote:     Resolve the following violations before pushing again
+remote: 
+remote:     - Push cannot contain secrets
+remote: 
+remote:     
+remote:      (?) Learn how to resolve a blocked push
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push
+remote:     
+remote:     
+remote:       —— Google OAuth Client ID ————————————————————————————
+remote:        locations:
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:16
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:36
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/ias0505/screen/security/secret-scanning/unblock-secret/37irQfuBQYxtSpC5BXRuzT1wAjb
+remote:     
+remote:     
+remote:       —— Google OAuth Client Secret ————————————————————————
+remote:        locations:
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:17
+remote:          - commit: 8e89e8bcf43179a2eca3335a8634475162f5fdc7
+remote:            path: attached_assets/Pasted--root-vmi2695527-var-www-signage-app-cat-ecosystem-conf_1767395291927.txt:37
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/ias0505/screen/security/secret-scanning/unblock-secret/37irQbwaR0sp2EeAkVt4wL25CQi
+remote:     
+remote: 
+remote: 
+To https://github.com/ias0505/screen.git
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/ias0505/screen.git'
