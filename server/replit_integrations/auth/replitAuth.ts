@@ -102,7 +102,13 @@ export async function setupAuth(app: Express) {
       }, async (accessToken, refreshToken, profile, done) => {
         try {
           // Get or create user from Google profile
-          const email = profile.emails?.[0]?.value || "";
+          const email = profile.emails?.[0]?.value;
+          
+          // Require email for Google login
+          if (!email) {
+            return done(null, false, { message: "البريد الإلكتروني مطلوب لتسجيل الدخول" });
+          }
+          
           const firstName = profile.name?.givenName || profile.displayName || "";
           const lastName = profile.name?.familyName || "";
           const profileImageUrl = profile.photos?.[0]?.value || null;
@@ -132,14 +138,14 @@ export async function setupAuth(app: Express) {
             user = await authStorage.getUserByEmail(email);
           }
           
-          // Return user with claims structure for compatibility
-          const userWithClaims = {
+          // Return session object matching local auth format
+          const userSession = {
             id: user!.id,
             claims: { sub: user!.id },
-            ...user,
+            authProvider: "google",
           };
           
-          done(null, userWithClaims);
+          done(null, userSession);
         } catch (error) {
           done(error as Error);
         }
