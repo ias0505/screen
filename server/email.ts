@@ -162,7 +162,7 @@ export async function sendSubscriptionEmail(
       subject: 'تأكيد اشتراكك في منصة Meror',
       html: `
         <div dir="rtl" style="font-family: 'Tajawal', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #10b981, #059669); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
+          <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
             <h1 style="color: white; margin: 0; font-size: 24px;">تم تأكيد اشتراكك</h1>
           </div>
           
@@ -195,13 +195,13 @@ export async function sendSubscriptionEmail(
                 </tr>
                 <tr style="border-top: 2px solid #e2e8f0;">
                   <td style="padding: 12px 0; font-weight: bold; font-size: 18px;">الإجمالي:</td>
-                  <td style="padding: 12px 0; text-align: left; font-weight: bold; font-size: 18px; color: #10b981;">${totalWithVat.toFixed(2)} ر.س</td>
+                  <td style="padding: 12px 0; text-align: left; font-weight: bold; font-size: 18px; color: #6366f1;">${totalWithVat.toFixed(2)} ر.س</td>
                 </tr>
               </table>
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${appUrl}/screens" style="background: #10b981; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: bold; display: inline-block;">
+              <a href="${appUrl}/screens" style="background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: bold; display: inline-block;">
                 إدارة الشاشات
               </a>
             </div>
