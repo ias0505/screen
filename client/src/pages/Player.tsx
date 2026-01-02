@@ -201,15 +201,23 @@ export default function Player() {
   useEffect(() => {
     if (!isDeviceBound || !schedules.length) return;
     
-    const currentItem = schedules[currentIndex] as any;
-    
-    // Pause all videos except current
+    // Pause all videos first, then play current
     videoRefs.current.forEach((video, idx) => {
       if (idx === currentIndex) {
+        // Reset and play current video
         video.currentTime = 0;
-        video.play().catch(() => {});
+        video.load(); // Force reload to ensure it plays again
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // Auto-play was prevented, try muted play
+            video.muted = true;
+            video.play().catch(() => {});
+          });
+        }
       } else {
         video.pause();
+        video.currentTime = 0;
       }
     });
   }, [currentIndex, schedules, isDeviceBound]);
@@ -229,9 +237,11 @@ export default function Player() {
         video.addEventListener('ended', handleEnded);
         return () => video.removeEventListener('ended', handleEnded);
       }
+      // Return early - don't set timer for videos
+      return;
     }
     
-    // For images, use duration timer
+    // For images only, use duration timer
     const duration = (currentItem.duration || 10) * 1000;
     const timer = setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % schedules.length);
