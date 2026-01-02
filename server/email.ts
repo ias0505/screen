@@ -87,8 +87,10 @@ export async function sendWelcomeEmail(email: string, firstName: string, appUrl:
       subject: 'مرحباً بك في منصة Meror',
       html: `
         <div dir="rtl" style="font-family: 'Tajawal', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
-            <img src="${appUrl}/logo.png" alt="Meror" style="height: 50px; margin-bottom: 15px;" />
+          <div style="background: white; padding: 20px; border-radius: 12px 12px 0 0; text-align: center; border: 1px solid #e2e8f0; border-bottom: none;">
+            <img src="${appUrl}/logo.png" alt="Meror" style="height: 60px;" />
+          </div>
+          <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 20px; border-radius: 0 0 12px 12px; text-align: center; margin-bottom: 20px;">
             <h1 style="color: white; margin: 0; font-size: 28px;">مرحباً بك في Meror</h1>
             <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">مرآة محتواك الرقمي</p>
           </div>
@@ -163,8 +165,10 @@ export async function sendSubscriptionEmail(
       subject: 'تأكيد اشتراكك في منصة Meror',
       html: `
         <div dir="rtl" style="font-family: 'Tajawal', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
-            <img src="${appUrl}/logo.png" alt="Meror" style="height: 50px; margin-bottom: 15px;" />
+          <div style="background: white; padding: 20px; border-radius: 12px 12px 0 0; text-align: center; border: 1px solid #e2e8f0; border-bottom: none;">
+            <img src="${appUrl}/logo.png" alt="Meror" style="height: 60px;" />
+          </div>
+          <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 20px; border-radius: 0 0 12px 12px; text-align: center; margin-bottom: 20px;">
             <h1 style="color: white; margin: 0; font-size: 24px;">تم تأكيد اشتراكك</h1>
           </div>
           
@@ -255,8 +259,10 @@ export async function sendTeamInviteEmail(
       subject: `دعوة للانضمام إلى فريق ${companyName} في Meror`,
       html: `
         <div dir="rtl" style="font-family: 'Tajawal', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
-            <img src="${appUrl}/logo.png" alt="Meror" style="height: 50px; margin-bottom: 15px;" />
+          <div style="background: white; padding: 20px; border-radius: 12px 12px 0 0; text-align: center; border: 1px solid #e2e8f0; border-bottom: none;">
+            <img src="${appUrl}/logo.png" alt="Meror" style="height: 60px;" />
+          </div>
+          <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 20px; border-radius: 0 0 12px 12px; text-align: center; margin-bottom: 20px;">
             <h1 style="color: white; margin: 0; font-size: 24px;">دعوة للانضمام للفريق</h1>
           </div>
           
