@@ -1,5 +1,6 @@
 import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 
 import passport from "passport";
 import session from "express-session";
@@ -10,6 +11,10 @@ import { authStorage } from "./storage";
 
 // Check if Replit Auth is disabled (for external hosting like Contabo)
 const isReplitAuthDisabled = process.env.REPLIT_AUTH_DISABLED === "true";
+
+// Google OAuth configuration
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
 const getOidcConfig = memoize(
   async () => {
@@ -83,9 +88,86 @@ export async function setupAuth(app: Express) {
     passport.serializeUser((user: Express.User, cb) => cb(null, user));
     passport.deserializeUser((user: Express.User, cb) => cb(null, user));
     
-    // Provide stub routes that redirect to local login
+    // Setup Google OAuth if credentials are available
+    if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
+      console.log("Google OAuth enabled");
+      
+      const baseUrl = process.env.APP_URL || "https://meror.net";
+      
+      passport.use(new GoogleStrategy({
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: `${baseUrl}/api/auth/google/callback`,
+        scope: ["profile", "email"],
+      }, async (accessToken, refreshToken, profile, done) => {
+        try {
+          // Get or create user from Google profile
+          const email = profile.emails?.[0]?.value || "";
+          const firstName = profile.name?.givenName || profile.displayName || "";
+          const lastName = profile.name?.familyName || "";
+          const profileImageUrl = profile.photos?.[0]?.value || null;
+          
+          // Check if user exists with this email
+          let user = await authStorage.getUserByEmail(email);
+          
+          if (user) {
+            // Update existing user with Google profile info if needed
+            await authStorage.upsertUser({
+              id: user.id,
+              email,
+              firstName: user.firstName || firstName,
+              lastName: user.lastName || lastName,
+              profileImageUrl: user.profileImageUrl || profileImageUrl,
+            });
+          } else {
+            // Create new user with Google profile
+            const googleUserId = `google_${profile.id}`;
+            await authStorage.upsertUser({
+              id: googleUserId,
+              email,
+              firstName,
+              lastName,
+              profileImageUrl,
+            });
+            user = await authStorage.getUserByEmail(email);
+          }
+          
+          // Return user with claims structure for compatibility
+          const userWithClaims = {
+            id: user!.id,
+            claims: { sub: user!.id },
+            ...user,
+          };
+          
+          done(null, userWithClaims);
+        } catch (error) {
+          done(error as Error);
+        }
+      }));
+      
+      // Google OAuth routes
+      app.get("/api/auth/google", passport.authenticate("google", {
+        scope: ["profile", "email"],
+      }));
+      
+      app.get("/api/auth/google/callback", passport.authenticate("google", {
+        failureRedirect: "/login?error=google_auth_failed",
+      }), (req, res) => {
+        // Successful authentication
+        res.redirect("/");
+      });
+    } else {
+      console.log("Google OAuth not configured (missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET)");
+    }
+    
+    // Provide stub routes that redirect to local login (when Google OAuth not available)
     app.get("/api/login", (req, res) => {
-      res.redirect("/login");
+      if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
+        // Redirect to Google OAuth
+        res.redirect("/api/auth/google");
+      } else {
+        res.redirect("/login");
+      }
     });
 
     app.get("/api/callback", (req, res) => {

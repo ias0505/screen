@@ -206,7 +206,7 @@ export default function Login() {
             variant="outline"
             size="lg"
             className="w-full"
-            onClick={() => window.location.href = "/api/login"}
+            onClick={() => window.location.href = "/api/auth/google"}
             data-testid="button-google-login"
           >
             <SiGoogle className="w-4 h-4 ml-2" />
