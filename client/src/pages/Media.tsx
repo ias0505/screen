@@ -239,6 +239,11 @@ export default function Media() {
                           {file ? file.name : "اضغط هنا أو اسحب الملف للرفع"}
                         </p>
                       </div>
+                      <div className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 space-y-1">
+                        <p className="font-medium">الأبعاد الموصى بها:</p>
+                        <p>الشاشة الأفقية: 1920 × 1080 بكسل</p>
+                        <p>الشاشة العمودية: 1080 × 1920 بكسل</p>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
