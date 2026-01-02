@@ -1846,5 +1846,67 @@ export async function registerRoutes(
     }
   });
 
+  // AI Image Editing using Pollinations.ai kontext model (image-to-image)
+  // Requires editor permission to prevent abuse
+  app.post("/api/ai/edit-image", requireAuth, requireEditor, async (req: any, res) => {
+    try {
+      const { prompt, imageData } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ message: "وصف التعديل مطلوب" });
+      }
+
+      if (!imageData) {
+        return res.status(400).json({ message: "الصورة الأصلية مطلوبة" });
+      }
+
+      // Validate that imageData is a valid base64 data URL with allowed MIME types
+      const mimeMatch = imageData.match(/^data:(image\/(jpeg|jpg|png|gif|webp));base64,/);
+      if (!mimeMatch) {
+        return res.status(400).json({ message: "صيغة الصورة غير صالحة - يُسمح فقط بـ JPEG, PNG, GIF, WebP" });
+      }
+
+      // Extract base64 data and validate size (max 5MB)
+      const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+      const sizeInBytes = Buffer.byteLength(base64Data, 'base64');
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      
+      if (sizeInBytes > maxSize) {
+        return res.status(400).json({ message: "حجم الصورة يجب أن يكون أقل من 5 ميجابايت" });
+      }
+
+      // Save the source image temporarily to get a public URL
+      const fs = await import('fs');
+      const tempFileName = `temp-${Date.now()}-${Math.round(Math.random() * 1e9)}.png`;
+      const tempFilePath = path.join('public/uploads', tempFileName);
+      
+      await fs.promises.writeFile(tempFilePath, base64Data, 'base64');
+      
+      // Get public URL for the image
+      const host = process.env.REPL_SLUG 
+        ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER?.toLowerCase()}.repl.co`
+        : 'https://meror.net';
+      const publicImageUrl = `${host}/uploads/${tempFileName}`;
+
+      // Build the Pollinations.ai URL with flux model for image editing
+      // Note: Pollinations image parameter is experimental, flux model supports basic image influence
+      const encodedPrompt = encodeURIComponent(prompt);
+      const encodedImageUrl = encodeURIComponent(publicImageUrl);
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?model=flux&image=${encodedImageUrl}&nologo=true`;
+      
+      // Clean up temp file after a delay (give Pollinations time to fetch it)
+      setTimeout(async () => {
+        try {
+          await fs.promises.unlink(tempFilePath);
+        } catch {}
+      }, 120000); // 2 minutes
+      
+      res.json({ imageUrl });
+    } catch (error: any) {
+      console.error("AI image edit error:", error);
+      res.status(500).json({ message: "فشل في تعديل الصورة" });
+    }
+  });
+
   return httpServer;
 }
