@@ -1,0 +1,68 @@
+root@vmi2695527:/var/www/signage-app# git pull
+error: Pulling is not possible because you have unmerged files.
+hint: Fix them up in the work tree, and then use 'git add/rm <file>'
+hint: as appropriate to mark resolution and make a commit.
+fatal: Exiting because of an unresolved conflict.
+root@vmi2695527:/var/www/signage-app# npm install
+
+up to date, audited 535 packages in 2s
+
+73 packages are looking for funding
+  run `npm fund` for details
+
+3 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+root@vmi2695527:/var/www/signage-app# npm run build
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+✓ 3098 modules transformed.
+../dist/public/index.html                                          2.08 kB │ gzip:   0.84 kB
+../dist/public/assets/Meror_logo_v.1_1767180225600-CaZ4IK_u.png    5.95 kB
+../dist/public/assets/index-C4ZQCvyO.css                          76.88 kB │ gzip:  12.96 kB
+../dist/public/assets/index-BKd0t8sG.js                          334.94 kB │ gzip: 100.08 kB
+../dist/public/assets/index-DGNiqLjk.js                          864.69 kB │ gzip: 249.23 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 13.91s
+building server...
+✘ [ERROR] Expected identifier but found "<<"
+
+    server/replit_integrations/auth/replitAuth.ts:50:0:
+      50 │ <<<<<<< Updated upstream
+         ╵ ~~
+
+1 error
+Error: Build failed with 1 error:
+server/replit_integrations/auth/replitAuth.ts:50:0: ERROR: Expected identifier but found "<<"
+    at failureErrorWithLog (/var/www/signage-app/node_modules/esbuild/lib/main.js:1467:15)
+    at /var/www/signage-app/node_modules/esbuild/lib/main.js:926:25
+    at /var/www/signage-app/node_modules/esbuild/lib/main.js:878:52
+    at buildResponseToResult (/var/www/signage-app/node_modules/esbuild/lib/main.js:924:7)
+    at /var/www/signage-app/node_modules/esbuild/lib/main.js:951:16
+    at responseCallbacks.<computed> (/var/www/signage-app/node_modules/esbuild/lib/main.js:603:9)
+    at handleIncomingPacket (/var/www/signage-app/node_modules/esbuild/lib/main.js:658:12)
+    at Socket.readFromStdout (/var/www/signage-app/node_modules/esbuild/lib/main.js:581:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12) {
+  errors: [Getter/Setter],
+  warnings: [Getter/Setter]
+}
+root@vmi2695527:/var/www/signage-app# pm2 delete signage-app
+[PM2][ERROR] Process or Namespace signage-app not found
+root@vmi2695527:/var/www/signage-app# pm2 start ecosystem.config.cjs
+[PM2][WARN] Applications signage-app not running, starting...
+[PM2][ERROR] Error: Script not found: /var/www/signage-app/dist/index.cjs
+root@vmi2695527:/var/www/signage-app# pm2 logs signage-app --lines 20
+[TAILING] Tailing last 20 lines for [signage-app] process (change the value with --lines option)
+
