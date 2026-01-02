@@ -12,7 +12,8 @@ import {
   Layers,
   Shield,
   Users,
-  Settings
+  Settings,
+  Wand2
 } from "lucide-react";
 import logoImage from "@assets/Meror_logo_v.1_1767180225600.png";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { href: "/screens", label: "الشاشات", icon: Monitor },
     { href: "/groups", label: "المجموعات", icon: Layers },
     { href: "/media", label: "المحتوى", icon: ImageIcon },
+    { href: "/image-editor", label: "محرر الصور", icon: Wand2, badge: "Beta" },
     { href: "/schedule", label: "الجدولة", icon: CalendarClock },
     { href: "/subscriptions", label: "الاشتراكات", icon: CreditCard },
     { href: "/team", label: "الفريق", icon: Users },
@@ -78,7 +80,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="p-4 space-y-2 flex-1">
-          {navItems.map((item) => {
+          {navItems.map((item: any) => {
             const isActive = location === item.href;
             return (
               <Link key={item.href} href={item.href} className={cn(
@@ -89,6 +91,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}>
                 <item.icon className={cn("w-5 h-5", isActive ? "animate-pulse" : "")} />
                 <span className="font-medium">{item.label}</span>
+                {item.badge && (
+                  <span className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded-full",
+                    isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary"
+                  )}>
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

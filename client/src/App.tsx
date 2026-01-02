@@ -30,6 +30,7 @@ import Settings from "@/pages/Settings";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import InvoiceView from "@/pages/InvoiceView";
+import ImageEditor from "@/pages/ImageEditor";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -111,6 +112,9 @@ function Router() {
       </Route>
       <Route path="/settings">
         <ProtectedRoute component={Settings} />
+      </Route>
+      <Route path="/image-editor">
+        <ProtectedRoute component={ImageEditor} />
       </Route>
 
       {/* Admin Routes */}

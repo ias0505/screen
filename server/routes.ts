@@ -1749,5 +1749,102 @@ export async function registerRoutes(
     res.json({ pricePerScreen: price ? parseInt(price, 10) : 50 });
   });
 
+  // AI Image Generation using Pollinations.ai (free, no API key required)
+  app.post("/api/ai/generate-image", requireAuth, async (req: any, res) => {
+    try {
+      const { prompt, width = 1024, height = 1024 } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ message: "الوصف مطلوب" });
+      }
+
+      // Build the Pollinations.ai URL
+      const encodedPrompt = encodeURIComponent(prompt);
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&nologo=true&enhance=true`;
+      
+      res.json({ imageUrl });
+    } catch (error: any) {
+      console.error("AI image generation error:", error);
+      res.status(500).json({ message: "فشل في إنشاء الصورة" });
+    }
+  });
+
+  // Save AI-generated image to media library (requires editor permission)
+  app.post("/api/ai/save-image", requireAuth, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { imageUrl, title } = req.body;
+      
+      if (!imageUrl) {
+        return res.status(400).json({ message: "رابط الصورة مطلوب" });
+      }
+
+      // Security: Only allow Pollinations.ai URLs to prevent SSRF attacks
+      const allowedDomain = 'image.pollinations.ai';
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(imageUrl);
+      } catch {
+        return res.status(400).json({ message: "رابط غير صالح" });
+      }
+      
+      if (parsedUrl.hostname !== allowedDomain) {
+        return res.status(400).json({ message: "مصدر الصورة غير مسموح به" });
+      }
+
+      // Fetch the image from Pollinations
+      const https = await import('https');
+      const fs = await import('fs');
+      
+      const fileName = `ai-${Date.now()}-${Math.round(Math.random() * 1e9)}.png`;
+      const filePath = path.join('public/uploads', fileName);
+      
+      await new Promise((resolve, reject) => {
+        https.get(imageUrl, (response: any) => {
+          // Check for successful response
+          if (response.statusCode !== 200) {
+            reject(new Error(`HTTP ${response.statusCode}`));
+            return;
+          }
+          
+          // Verify content type is an image
+          const contentType = response.headers['content-type'] || '';
+          if (!contentType.startsWith('image/')) {
+            reject(new Error('Invalid content type'));
+            return;
+          }
+          
+          const file = fs.createWriteStream(filePath);
+          response.pipe(file);
+          file.on('finish', () => {
+            file.close();
+            resolve(true);
+          });
+          file.on('error', (err: any) => {
+            fs.unlink(filePath, () => {});
+            reject(err);
+          });
+        }).on('error', (err: any) => {
+          reject(err);
+        });
+      });
+
+      // Create media item
+      const mediaItem = await storage.createMediaItem({
+        title: title || 'صورة AI',
+        url: `/uploads/${fileName}`,
+        type: 'image',
+        duration: 10,
+        groupId: null,
+        userId: userId,
+      });
+
+      res.json(mediaItem);
+    } catch (error: any) {
+      console.error("Save AI image error:", error);
+      res.status(500).json({ message: "فشل في حفظ الصورة" });
+    }
+  });
+
   return httpServer;
 }

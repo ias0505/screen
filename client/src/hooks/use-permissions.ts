@@ -17,6 +17,7 @@ const allMenus = [
   '/screens',
   '/groups',
   '/media',
+  '/image-editor',
   '/schedule',
   '/subscriptions',
   '/team',
@@ -25,9 +26,9 @@ const allMenus = [
 ];
 
 const menuPermissions: Record<Permission, string[]> = {
-  viewer: ['/', '/screens', '/groups', '/media', '/schedule'],
-  editor: ['/', '/screens', '/groups', '/media', '/schedule'],
-  manager: ['/', '/screens', '/groups', '/media', '/schedule', '/subscriptions', '/team', '/settings'],
+  viewer: ['/', '/screens', '/groups', '/media', '/image-editor', '/schedule'],
+  editor: ['/', '/screens', '/groups', '/media', '/image-editor', '/schedule'],
+  manager: ['/', '/screens', '/groups', '/media', '/image-editor', '/schedule', '/subscriptions', '/team', '/settings'],
   owner: allMenus,
 };
 
