@@ -10,10 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, 
   ArrowRight, 
-  Globe, 
-  Mail, 
-  Phone, 
-  MapPin,
+  Globe,
   Send,
   Loader2
 } from "lucide-react";
@@ -48,28 +45,6 @@ export default function ContactUs() {
     setForm({ name: "", email: "", subject: "", message: "" });
     setIsSubmitting(false);
   };
-
-  const contactInfo = [
-    {
-      icon: Mail,
-      titleAr: "البريد الإلكتروني",
-      titleEn: "Email",
-      value: "support@meror.net"
-    },
-    {
-      icon: Phone,
-      titleAr: "الهاتف",
-      titleEn: "Phone",
-      value: "+966 50 000 0000"
-    },
-    {
-      icon: MapPin,
-      titleAr: "الموقع",
-      titleEn: "Location",
-      valueAr: "الرياض، المملكة العربية السعودية",
-      valueEn: "Riyadh, Saudi Arabia"
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-background" dir={dir}>
@@ -114,8 +89,7 @@ export default function ContactUs() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-          {/* Contact Form */}
+        <div className="max-w-xl mx-auto">
           <Card>
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-6">
@@ -197,51 +171,6 @@ export default function ContactUs() {
               </form>
             </CardContent>
           </Card>
-
-          {/* Contact Information */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-6">
-              {language === 'ar' ? 'معلومات التواصل' : 'Contact Information'}
-            </h2>
-
-            {contactInfo.map((item, index) => (
-              <Card key={index}>
-                <CardContent className="p-4 flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium mb-1">
-                      {language === 'ar' ? item.titleAr : item.titleEn}
-                    </h3>
-                    <p className="text-muted-foreground">
-                      {item.valueAr && item.valueEn 
-                        ? (language === 'ar' ? item.valueAr : item.valueEn)
-                        : item.value}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-2">
-                  {language === 'ar' ? 'ساعات العمل' : 'Working Hours'}
-                </h3>
-                <p className="text-muted-foreground">
-                  {language === 'ar' 
-                    ? 'الأحد - الخميس: 9 صباحاً - 6 مساءً'
-                    : 'Sunday - Thursday: 9 AM - 6 PM'}
-                </p>
-                <p className="text-muted-foreground">
-                  {language === 'ar' 
-                    ? 'الجمعة - السبت: مغلق'
-                    : 'Friday - Saturday: Closed'}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     </div>
