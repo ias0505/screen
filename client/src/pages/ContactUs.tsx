@@ -108,6 +108,7 @@ export default function ContactUs() {
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder={language === 'ar' ? 'أدخل اسمك' : 'Enter your name'}
                     required
+                    className="text-start"
                     data-testid="input-name"
                   />
                 </div>
@@ -123,6 +124,7 @@ export default function ContactUs() {
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     placeholder={language === 'ar' ? 'أدخل رقم جوالك' : 'Enter your phone number'}
                     required
+                    className="text-start"
                     data-testid="input-phone"
                   />
                 </div>
@@ -138,6 +140,7 @@ export default function ContactUs() {
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder={language === 'ar' ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
                     required
+                    className="text-start"
                     data-testid="input-email"
                   />
                 </div>
@@ -152,6 +155,7 @@ export default function ContactUs() {
                     onChange={(e) => setForm({ ...form, subject: e.target.value })}
                     placeholder={language === 'ar' ? 'موضوع الرسالة' : 'Message subject'}
                     required
+                    className="text-start"
                     data-testid="input-subject"
                   />
                 </div>
@@ -167,6 +171,7 @@ export default function ContactUs() {
                     placeholder={language === 'ar' ? 'اكتب رسالتك هنا...' : 'Write your message here...'}
                     rows={5}
                     required
+                    className="text-start"
                     data-testid="input-message"
                   />
                 </div>
