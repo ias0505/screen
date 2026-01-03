@@ -1784,8 +1784,10 @@ export async function registerRoutes(
       const created = await storage.createContactMessage({ name, phone, email, subject, message });
       
       // إرسال إشعار بريد إلكتروني للإدارة
-      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'ias0505@gmail.com';
-      sendContactNotificationEmail(adminEmail, name, email, phone, subject, message);
+      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+      if (adminEmail) {
+        sendContactNotificationEmail(adminEmail, name, email, phone, subject, message);
+      }
       
       res.json({ success: true, message: "تم إرسال رسالتك بنجاح" });
     } catch (error) {
