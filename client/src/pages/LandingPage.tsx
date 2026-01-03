@@ -1,6 +1,7 @@
 import { Link } from "wouter";
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { useLanguage } from "@/hooks/use-language";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -67,11 +68,44 @@ export default function LandingPage() {
   ];
 
   const stats = [
-    { value: "99.9%", labelAr: "وقت التشغيل", labelEn: "Uptime" },
-    { value: "500+", labelAr: "عميل سعيد", labelEn: "Happy Clients" },
-    { value: "10K+", labelAr: "شاشة نشطة", labelEn: "Active Screens" },
-    { value: "24/7", labelAr: "دعم فني", labelEn: "Support" }
+    { value: 99.9, suffix: "%", labelAr: "وقت التشغيل", labelEn: "Uptime", decimals: 1 },
+    { value: 500, suffix: "+", labelAr: "عميل سعيد", labelEn: "Happy Clients", decimals: 0 },
+    { value: 10, suffix: "K+", labelAr: "شاشة نشطة", labelEn: "Active Screens", decimals: 0 },
+    { value: 24, suffix: "/7", labelAr: "دعم فني", labelEn: "Support", decimals: 0 }
   ];
+
+  function AnimatedCounter({ value, suffix, decimals }: { value: number; suffix: string; decimals: number }) {
+    const [count, setCount] = useState(0);
+    const ref = useRef<HTMLDivElement>(null);
+    const isInView = useInView(ref, { once: true, margin: "-100px" });
+    
+    useEffect(() => {
+      if (!isInView) return;
+      
+      const duration = 2000;
+      const steps = 60;
+      const increment = value / steps;
+      let current = 0;
+      
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= value) {
+          setCount(value);
+          clearInterval(timer);
+        } else {
+          setCount(current);
+        }
+      }, duration / steps);
+      
+      return () => clearInterval(timer);
+    }, [isInView, value]);
+    
+    return (
+      <div ref={ref} className="text-3xl md:text-4xl font-bold text-primary mb-2">
+        {decimals > 0 ? count.toFixed(decimals) : Math.floor(count)}{suffix}
+      </div>
+    );
+  }
 
   const pricingPlans = [
     {
@@ -231,7 +265,7 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold text-primary mb-2">{stat.value}</div>
+                <AnimatedCounter value={stat.value} suffix={stat.suffix} decimals={stat.decimals} />
                 <div className="text-muted-foreground">{language === 'ar' ? stat.labelAr : stat.labelEn}</div>
               </motion.div>
             ))}
