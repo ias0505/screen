@@ -1,0 +1,103 @@
+
+root@vmi2695527:/var/www/signage-app# pm2 logs meror --lines 50
+[TAILING] Tailing last 50 lines for [meror] process (change the value with --lines option)
+/root/.pm2/logs/meror-out.log last 50 lines:
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+
+/root/.pm2/logs/meror-error.log last 50 lines:
+0|meror    | iption:z("description"),updatedAt:Z("updated_at").defaultNow(),updatedBy:le("updated_by").references(()=>B.id)}),JU=vt(Zr).omit({id:!0,updatedAt:!0}),Mr=ze("contact_messages",{id:Ze("id").primaryKey(),name:z("name").notNull(),phone:z("phone").notNull(),email:z("email").notNull(),subject:z("subject").notNull(),message:z("message").notNull(),isRead:dn("is_read").default(!1),createdAt:Z("created_at").defaultNow()}),YU=vt(Mr).omit({id:!0,isRead:!0,createdAt:!0});var{Pool:XU}=bn;if(!process.env.DATABASE_URL)throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");var ez=new XU({connectionString:process.env.DATABASE_URL}),E=cl(ez,{schema:wg});var rT=mt(require("crypto"),1),Sg=class{async getUser(e){let[r]=await E.select().from(B).where(k(B.id,e));return r}async getUserByEmail(e){let[r]=await E.select().from(B).where(k(B.email,e));return r}async upsertUser(e){let[r]=await E.insert(B).values(e).onConflictDoUpdate({target:B.id,set:{...e,updatedAt:new Date}}).returning();return r}async createLocalUser(e){let[r]=await E.insert(B).values({email:e.email,password:e.password,firstName:e.firstName,lastName:e.lastName,companyName:e.companyName,authProvider:e.authProvider}).returning();return r}async updateUserPassword(e,r){await E.update(B).set({password:r,updatedAt:new Date}).where(k(B.id,e))}async createPasswordResetToken(e){let r=rT.default.randomBytes(32).toString("hex"),n=new Date(Date.now()+3600*1e3);return await E.insert(ar).values({userId:e,token:r,expiresAt:n}),r}async getValidPasswordResetToken(e){let[r]=await E.select().from(ar).where(Oe(k(ar.token,e),Jn(ar.expiresAt,new Date),ht(ar.usedAt)));return r}async markPasswordResetTokenUsed(e){await E.update(ar).set({usedAt:new Date}).where(k(ar.id,e))}async invalidateUserPasswordResetTokens(e){await E.update(ar).set({usedAt:new Date}).where(Oe(k(ar.userId,e),ht(ar.usedAt)))}},nt=new Sg;var oT=process.env.REPLIT_AUTH_DISABLED==="true",_g=process.env.GOOGLE_CLIENT_ID,Eg=process.env.GOOGLE_CLIENT_SECRET,tz=(0,aT.default)(async()=>oT?null:await Ao.discovery(new URL(process.env.ISSUER_URL??"https://replit.com/oidc"),process.env.REPL_ID),{maxAge:3600*1e3});function cT(){let e=(0,sT.default)(Tg.default),r=new e({conString:process.env.DATABASE_URL,createTableIfMissing:!1,ttl:6048e5,tableName:"sessions"}),n=!0;return(0,Tg.default)({secret:process.env.SESSION_SECRET,store:r,resave:!1,saveUninitialized:!1,cookie:{httpOnly:!0,secure:!1,sameSite:"lax",maxAge:6048e5}})}function rz(t,e){t.claims=e.claims(),t.access_token=e.access_token,t.refresh_token=e.refresh_token,t.expires_at=t.claims?.exp}async function nz(t){await nt.upsertUser({id:t.sub,email:t.email,firstName:t.first_name,lastName:t.last_name,profileImageUrl:t.profile_image_url})}async function kg(t){if(t.set("trust proxy",1),t.use(cT()),t.use(Kt.default.initialize()),t.use(Kt.default.session()),oT){if(console.log("Replit Auth disabled via REPLIT_AUTH_DISABLED=true"),Kt.default.serializeUser((a,s)=>s(null,a)),Kt.default.deserializeUser((a,s)=>s(null,a)),_g&&Eg){console.log("Google OAuth enabled");let a=process.env.APP_URL||"https://meror.net";Kt.default.use(new iT.Strategy({clientID:_g,clientSecret:Eg,callbackURL:`${a}/api/auth/google/callback`,scope:["profile","email"]},async(s,o,u,c)=>{try{let l=u.emails?.[0]?.value;if(!l)return c(null,!1,{message:"\u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u0645\u0637\u0644\u0648\u0628 \u0644\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644"});let p=u.name?.givenName||u.displayName||"",d=u.name?.familyName||"",f=u.photos?.[0]?.value||null,m=await nt.getUserByEmail(l);if(m)await nt.upsertUser({id:m.id,email:l,firstName:m.firstName||p,lastName:m.lastName||d,profileImageUrl:m.profileImageUrl||f});else{let v=`google_${u.id}`;await nt.upsertUser({id:v,email:l,firstName:p,lastName:d,profileImageUrl:f}),m=await nt.getUserByEmail(l)}let h={id:m.id,claims:{sub:m.id},authProvider:"google"};c(null,h)}catch(l){c(l)}})),t.get("/api/auth/google",Kt.default.authenticate("google",{scope:["profile","email"]})),t.get("/api/auth/google/callback",Kt.default.authenticate("google",{failureRedirect:"/login?error=google_auth_failed"}),(s,o)=>{o.redirect("/")})}else console.log("Google OAuth not configured (missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET)");t.get("/api/login",(a,s)=>{_g&&Eg?s.redirect("/api/auth/google"):s.redirect("/login")}),t.get("/api/callback",(a,s)=>{s.redirect("/")}),t.get("/api/logout",(a,s)=>{a.logout(()=>{s.redirect("/login")})});return}let e=await tz();if(!e){console.log("OIDC config not available, skipping Replit Auth setup");return}let r=async(a,s)=>{let o={};rz(o,a),await nz(a.claims()),s(null,o)},n=new Set,i=a=>{let s=`replitauth:${a}`;if(!n.has(s)){let o=new nT.Strategy({name:s,config:e,scope:"openid email profile offline_access",callbackURL:`https://${a}/api/callback`},r);Kt.default.use(o),n.add(s)}};Kt.default.serializeUser((a,s)=>s(null,a)),Kt.default.deserializeUser((a,s)=>s(null,a)),t.get("/api/login",(a,s,o)=>{i(a.hostname),Kt.default.authenticate(`replitauth:${a.hostname}`,{prompt:"login consent",scope:["openid","email","profile","offline_access"]})(a,s,o)}),t.get("/api/callback",(a,s,o)=>{i(a.hostname),Kt.default.authenticate(`replitauth:${a.hostname}`,{successReturnToOrRedirect:"/",failureRedirect:"/api/login"})(a,s,o)}),t.get("/api/logout",(a,s)=>{a.logout(()=>{s.redirect(Ao.buildEndSessionUrl(e,{client_id:process.env.REPL_ID,post_logout_redirect_uri:`${a.protocol}://${a.hostname}`}).href)})})}var Oa=mt(require("bcrypt"),1);var lT=require("resend"),uT=process.env.RESEND_API_KEY,Dr=uT?new lT.Resend(uT):null;async function pT(t,e,r){if(!Dr)return console.warn("Resend API key not configured (RESEND_API_KEY). Password reset email not sent."),!1;let n=`${r}/reset-password?token=${e}`;try{let{data:i,error:a}=await Dr.emails.send({from:process.env.EMAIL_FROM||"Digital Signage <noreply@resend.dev>",to:t,subject:"\u0625\u0639\u0627\u062F\u0629 \u062A\u0639\u064A\u064A\u0646 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631",html:`
+0|meror    |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+0|meror    |
+0|meror    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|meror    |     at Object.<anonymous> (/var/www/signage-app/dist/index.cjs:78:110446)
+0|meror    |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+0|meror    |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|meror    |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+0|meror    |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+0|meror    |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+0|meror    |     at node:internal/main/run_main_module:28:49
+0|meror    |
+0|meror    | Node.js v20.19.6
+0|meror    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|meror    |     at Object.<anonymous> (/var/www/signage-app/dist/index.cjs:78:110446)
+0|meror    |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+0|meror    |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|meror    |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+0|meror    |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+0|meror    |     at cjsLoader (node:internal/modules/esm/translators:298:15)
+0|meror    |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:240:7)
+0|meror    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|meror    |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|meror    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|meror    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|meror    |     at Object.<anonymous> (/var/www/signage-app/dist/index.cjs:78:110446)
+0|meror    |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+0|meror    |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|meror    |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+0|meror    |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+0|meror    |     at cjsLoader (node:internal/modules/esm/translators:298:15)
+0|meror    |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:240:7)
+0|meror    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|meror    |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|meror    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|meror    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|meror    |     at Object.<anonymous> (/var/www/signage-app/dist/index.cjs:78:110554)
+0|meror    |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+0|meror    |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|meror    |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+0|meror    |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+0|meror    |     at cjsLoader (node:internal/modules/esm/translators:298:15)
+0|meror    |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:240:7)
+0|meror    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|meror    |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|meror    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+
