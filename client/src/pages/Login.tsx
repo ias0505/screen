@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
 import { Redirect, Link } from "wouter";
-import { Mail, Lock, User, Building2, Loader2, Languages } from "lucide-react";
+import { Mail, Lock, User, Building2, Loader2, Globe } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
 import logoImage from "@assets/Meror_logo_v.1_1767180225600.png";
 import { Button } from "@/components/ui/button";
@@ -75,14 +75,14 @@ export default function Login() {
 
       <div className="absolute top-4 left-4 z-20">
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
           className="gap-2"
           data-testid="button-language-toggle"
         >
-          <Languages className="w-4 h-4" />
-          <span>{language === 'ar' ? 'EN' : 'عربي'}</span>
+          <Globe className="w-4 h-4" />
+          <span>{language === 'ar' ? 'English' : 'العربية'}</span>
         </Button>
       </div>
 

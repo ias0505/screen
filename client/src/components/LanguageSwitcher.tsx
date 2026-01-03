@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
-import { Languages } from 'lucide-react';
+import { Globe } from 'lucide-react';
 
 export function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage();
@@ -11,15 +11,15 @@ export function LanguageSwitcher() {
 
   return (
     <Button
-      variant="ghost"
+      variant="outline"
       size="sm"
       onClick={toggleLanguage}
       className="gap-2"
       data-testid="button-language-toggle"
     >
-      <Languages className="w-4 h-4" />
+      <Globe className="w-4 h-4" />
       <span className="text-sm font-medium">
-        {language === 'ar' ? 'EN' : 'عربي'}
+        {language === 'ar' ? 'English' : 'العربية'}
       </span>
     </Button>
   );

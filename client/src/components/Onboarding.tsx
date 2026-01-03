@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Building2, Languages } from "lucide-react";
+import { Building2, Globe } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,14 +50,14 @@ export default function Onboarding() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4" dir={dir}>
       <div className="absolute top-4 left-4 z-20">
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
           className="gap-2"
           data-testid="button-language-toggle"
         >
-          <Languages className="w-4 h-4" />
-          <span>{language === 'ar' ? 'EN' : 'عربي'}</span>
+          <Globe className="w-4 h-4" />
+          <span>{language === 'ar' ? 'English' : 'العربية'}</span>
         </Button>
       </div>
 
