@@ -1,0 +1,64 @@
+root@vmi2695527:/var/www/signage-app# pm2 logs meror --lines 30
+[TAILING] Tailing last 30 lines for [meror] process (change the value with --lines option)
+/root/.pm2/logs/meror-error.log last 30 lines:
+0|meror    |   dataType: undefined,
+0|meror    |   constraint: undefined,
+0|meror    |   file: 'parse_relation.c',
+0|meror    |   line: '3647',
+0|meror    |   routine: 'errorMissingColumn'
+0|meror    | }
+0|meror    | error: column "storage_per_screen_mb" does not exist
+0|meror    |     at /var/www/signage-app/dist/index.cjs:70:13326
+0|meror    |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|meror    |     at async /var/www/signage-app/dist/index.cjs:78:94252
+0|meror    |     at async Cg.getUserStorageUsage (/var/www/signage-app/dist/index.cjs:295:23171)
+0|meror    |     at async /var/www/signage-app/dist/index.cjs:295:27457 {
+0|meror    |   length: 121,
+0|meror    |   severity: 'ERROR',
+0|meror    |   code: '42703',
+0|meror    |   detail: undefined,
+0|meror    |   hint: undefined,
+0|meror    |   position: '24',
+0|meror    |   internalPosition: undefined,
+0|meror    |   internalQuery: undefined,
+0|meror    |   where: undefined,
+0|meror    |   schema: undefined,
+0|meror    |   table: undefined,
+0|meror    |   column: undefined,
+0|meror    |   dataType: undefined,
+0|meror    |   constraint: undefined,
+0|meror    |   file: 'parse_relation.c',
+0|meror    |   line: '3647',
+0|meror    |   routine: 'errorMissingColumn'
+0|meror    | }
+
+/root/.pm2/logs/meror-out.log last 30 lines:
+0|meror    | ress] GET /api/screens 200 in 24ms :: [{"id":1,"name":"الاستقبال","location":"الرياض","status":"online","orientation":"portrait","lastHeartbeat":"2026-01-03T13:31:12.209Z","groupId":1,"subscriptionId":1,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2025-12-30T14:39:17.821Z"}]
+0|meror    | 2:31:22 PM [express] GET /api/subscriptions/available-slots 304 in 23ms :: {"availableSlots":20}
+0|meror    | 2:31:22 PM [express] GET /api/storage/usage 304 in 52ms :: {"usedBytes":195962,"limitBytes":22548578304,"remainingBytes":22548382342,"percentage":0}
+0|meror    | 2:31:22 PM [express] GET /api/admin/check 304 in 53ms :: {"isAdmin":true,"role":"super_admin"}
+0|meror    | 2:31:22 PM [express] GET /api/user/profile 200 in 37ms :: {"id":"1efc1b27-9a07-4edf-9e94-bb860b032af3","email":"ias0505@gmail.com","password":"$2b$10$p6EXpX0X32S.jGnAN/bdZ..IhWdlFrSA.ojt9rhrZjuiSsoYRHqOC","firstName":"Admin","lastName":"User","profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJFinpRJWQ4-wjGVmXdF7-oib-8Q8WxnAh5O6ZrZj-ufpbwRUPn=s96-c","companyName":"شاشات","authProvider":"local","createdAt":"2025-12-30T14:00:35.404Z","updatedAt":"2026-01-03T13:31:20.489Z"}
+0|meror    | 2:31:22 PM [express] GET /api/media 304 in 52ms :: [{"id":10,"title":"Kibdha Laham Box  1_Page_3","type":"image","url":"/uploads/file-1767446716775-645292748.png","duration":10,"fileSizeBytes":195962,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T14:25:16.937Z"}]
+0|meror    | 2:31:22 PM [express] GET /api/team/accepted 304 in 9ms :: []
+0|meror    | 2:31:26 PM [express] POST /api/auth/logout 200 in 9ms :: {"message":"تم تسجيل الخروج بنجاح"}
+0|meror    | 2:31:26 PM [express] GET /api/auth/user 401 in 6ms :: {"message":"Unauthorized"}
+0|meror    | 2:31:42 PM [express] POST /api/screens/1/heartbeat 200 in 29ms :: {"success":true}
+0|meror    | 2:31:43 PM [express] GET /api/screens/1/playable 304 in 8ms :: {"playable":true}
+0|meror    | 2:31:43 PM [express] POST /api/auth/logout 200 in 30ms :: {"message":"تم تسجيل الخروج بنجاح"}
+0|meror    | 2:31:43 PM [express] GET /api/screens/1/schedules 304 in 11ms :: [{"id":19,"screenId":null,"screenGroupId":1,"mediaItemId":10,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":10,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-03T14:25:59.142Z","mediaItem":{"id":10,"title":"Kibdha Laham Box  1_Page_3","type":"image","url":"/uploads/file-1767446716775-645292748.png","duration":10,"fileSizeBytes":195962,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T14:25:16.937Z"}}]
+0|meror    | 2:31:44 PM [express] GET /api/auth/user 401 in 5ms :: {"message":"Unauthorized"}
+0|meror    | 2:31:44 PM [express] GET /api/auth/google 302 in 5ms
+0|meror    | 2:31:45 PM [express] GET /api/auth/google/callback 302 in 153ms
+0|meror    | 2:32:12 PM [express] POST /api/screens/1/heartbeat 200 in 32ms :: {"success":true}
+0|meror    | 2:32:13 PM [express] GET /api/screens/1/schedules 304 in 13ms :: [{"id":19,"screenId":null,"screenGroupId":1,"mediaItemId":10,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":10,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-03T14:25:59.142Z","mediaItem":{"id":10,"title":"Kibdha Laham Box  1_Page_3","type":"image","url":"/uploads/file-1767446716775-645292748.png","duration":10,"fileSizeBytes":195962,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T14:25:16.937Z"}}]
+0|meror    | 2:32:42 PM [express] POST /api/screens/1/heartbeat 200 in 32ms :: {"success":true}
+0|meror    | 2:32:43 PM [express] GET /api/screens/1/playable 304 in 10ms :: {"playable":true}
+0|meror    | 2:32:43 PM [express] GET /api/screens/1/schedules 304 in 10ms :: [{"id":19,"screenId":null,"screenGroupId":1,"mediaItemId":10,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":10,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-03T14:25:59.142Z","mediaItem":{"id":10,"title":"Kibdha Laham Box  1_Page_3","type":"image","url":"/uploads/file-1767446716775-645292748.png","duration":10,"fileSizeBytes":195962,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T14:25:16.937Z"}}]
+0|meror    | 2:33:12 PM [express] POST /api/screens/1/heartbeat 200 in 32ms :: {"success":true}
+0|meror    | 2:33:14 PM [express] GET /api/screens/1/schedules 304 in 11ms :: [{"id":19,"screenId":null,"screenGroupId":1,"mediaItemId":10,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":10,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-03T14:25:59.142Z","mediaItem":{"id":10,"title":"Kibdha Laham Box  1_Page_3","type":"image","url":"/uploads/file-1767446716775-645292748.png","duration":10,"fileSizeBytes":195962,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T14:25:16.937Z"}}]
+0|meror    | 2:33:42 PM [express] POST /api/screens/1/heartbeat 200 in 30ms :: {"success":true}
+0|meror    | 2:33:43 PM [express] GET /api/screens/1/playable 304 in 9ms :: {"playable":true}
+0|meror    | 2:33:44 PM [express] GET /api/screens/1/schedules 304 in 13ms :: [{"id":19,"screenId":null,"screenGroupId":1,"mediaItemId":10,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":10,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-03T14:25:59.142Z","mediaItem":{"id":10,"title":"Kibdha Laham Box  1_Page_3","type":"image","url":"/uploads/file-1767446716775-645292748.png","duration":10,"fileSizeBytes":195962,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T14:25:16.937Z"}}]
+0|meror    | 2:34:12 PM [express] POST /api/screens/1/heartbeat 200 in 24ms :: {"success":true}
+0|meror    | 2:34:14 PM [express] GET /api/screens/1/schedules 304 in 14ms :: [{"id":19,"screenId":null,"screenGroupId":1,"mediaItemId":10,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":10,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-03T14:25:59.142Z","mediaItem":{"id":10,"title":"Kibdha Laham Box  1_Page_3","type":"image","url":"/uploads/file-1767446716775-645292748.png","duration":10,"fileSizeBytes":195962,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T14:25:16.937Z"}}]
+

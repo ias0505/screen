@@ -159,8 +159,8 @@ export async function setupAuth(app: Express) {
       app.get("/api/auth/google/callback", passport.authenticate("google", {
         failureRedirect: "/login?error=google_auth_failed",
       }), (req, res) => {
-        // Successful authentication
-        res.redirect("/");
+        // Successful authentication - redirect to dashboard
+        res.redirect("/dashboard");
       });
     } else {
       console.log("Google OAuth not configured (missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET)");
