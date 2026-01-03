@@ -1,0 +1,47 @@
+root@vmi2695527:/var/www/signage-app# pm2 logs meror --lines 20
+[TAILING] Tailing last 20 lines for [meror] process (change the value with --lines option)
+/root/.pm2/logs/meror-out.log last 20 lines:
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+
+/root/.pm2/logs/meror-error.log last 20 lines:
+0|meror    |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+0|meror    |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|meror    |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+0|meror    |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+0|meror    |     at cjsLoader (node:internal/modules/esm/translators:298:15)
+0|meror    |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:240:7)
+0|meror    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|meror    |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|meror    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+0|meror    | Error: DATABASE_URL must be set. Did you forget to provision a database?
+0|meror    |     at Object.<anonymous> (/var/www/signage-app/dist/index.cjs:78:110554)
+0|meror    |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+0|meror    |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|meror    |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+0|meror    |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+0|meror    |     at cjsLoader (node:internal/modules/esm/translators:298:15)
+0|meror    |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:240:7)
+0|meror    |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+0|meror    |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|meror    |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+
+
