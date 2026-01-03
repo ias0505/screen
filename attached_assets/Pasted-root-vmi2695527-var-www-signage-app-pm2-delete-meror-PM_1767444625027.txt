@@ -1,0 +1,44 @@
+root@vmi2695527:/var/www/signage-app# pm2 delete meror
+[PM2] Applying action deleteProcessId on app [meror](ids: [ 0 ])
+[PM2] [meror](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@vmi2695527:/var/www/signage-app# pm2 delete signage-app
+[PM2][ERROR] Process or Namespace signage-app not found
+root@vmi2695527:/var/www/signage-app# npm run build
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+✓ 3106 modules transformed.
+../dist/public/index.html                                          2.08 kB │ gzip:   0.84 kB
+../dist/public/assets/Meror_logo_v.1_1767180225600-CaZ4IK_u.png    5.95 kB
+../dist/public/assets/index-DwhsZYrI.css                         101.12 kB │ gzip:  15.98 kB
+../dist/public/assets/index-C0jkbfXP.js                          334.94 kB │ gzip: 100.08 kB
+../dist/public/assets/index-DW4KLIVS.js                          944.08 kB │ gzip: 269.91 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 15.71s
+building server...
+
+  dist/index.cjs  1.2mb ⚠️
+
+⚡ Done in 229ms
+root@vmi2695527:/var/www/signage-app# pm2 start dist/index.cjs --name meror
+[PM2] Starting /var/www/signage-app/dist/index.cjs in fork_mode (1 instance)
+[PM2] Done.
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ meror              │ fork     │ 0    │ online    │ 0%       │ 16.5mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@vmi2695527:/var/www/signage-app# pm2 save
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+root@vmi2695527:/var/www/signage-app#
