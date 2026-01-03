@@ -1,0 +1,47 @@
+root@vmi2695527:/var/www/signage-app# pm2 logs meror --lines 20
+[TAILING] Tailing last 20 lines for [meror] process (change the value with --lines option)
+/root/.pm2/logs/meror-out.log last 20 lines:
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+
+/root/.pm2/logs/meror-error.log last 20 lines:
+0|meror    |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|meror    |     at async tz.maxAge (/var/www/signage-app/dist/index.cjs:78:112076)
+0|meror    |     at async kg (/var/www/signage-app/dist/index.cjs:78:114588)
+0|meror    |     at async BA (/var/www/signage-app/dist/index.cjs:295:26224)
+0|meror    |     at async /var/www/signage-app/dist/index.cjs:296:17588 {
+0|meror    |   code: 'ERR_INVALID_ARG_TYPE',
+0|meror    |   [cause]: undefined
+0|meror    | }
+0|meror    | TypeError: "clientId" must be a non-empty string
+0|meror    |     at CodedTypeError (file:///var/www/signage-app/node_modules/openid-client/build/index.js:89:17)
+0|meror    |     at new Configuration (file:///var/www/signage-app/node_modules/openid-client/build/index.js:463:19)
+0|meror    |     at Object.discovery (file:///var/www/signage-app/node_modules/openid-client/build/index.js:244:22)
+0|meror    |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|meror    |     at async tz.maxAge (/var/www/signage-app/dist/index.cjs:78:112076)
+0|meror    |     at async kg (/var/www/signage-app/dist/index.cjs:78:114588)
+0|meror    |     at async BA (/var/www/signage-app/dist/index.cjs:295:26224)
+0|meror    |     at async /var/www/signage-app/dist/index.cjs:296:17588 {
+0|meror    |   code: 'ERR_INVALID_ARG_TYPE',
+0|meror    |   [cause]: undefined
+0|meror    | }
+
+
