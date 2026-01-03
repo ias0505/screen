@@ -1,0 +1,45 @@
+root@vmi2695527:/var/www/signage-app# pm2 delete meror
+pm2 start dist/index.cjs --name meror --env-file .env
+[PM2] Applying action deleteProcessId on app [meror](ids: [ 0 ])
+[PM2] [meror](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+
+  error: unknown option `--env-file'
+
+root@vmi2695527:/var/www/signage-app# cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [{
+    name: "meror",
+    script: "dist/index.cjs",
+    env: {
+      DATABASE_URL: "postgresql://signage_user:YOUR_PASSWORD@localhost:5432/signage_db",
+      SESSION_SECRET: "meror-secret-key-2025",
+      NODE_ENV: "production"
+    }
+  }]
+}
+EOF
+
+pm2 delete meror
+pm2 start ecosystem.config.js
+pm2 save
+[PM2][ERROR] Process or Namespace meror not found
+[PM2][ERROR] File ecosystem.config.js malformated
+ReferenceError: module is not defined in ES module scope
+This file is being treated as an ES module because it has a '.js' file extension and '/var/www/signage-app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+    at file:///var/www/signage-app/ecosystem.config.js:1:1
+    at ModuleJobSync.runSync (node:internal/modules/esm/module_job:437:37)
+    at ModuleLoader.importSyncForRequire (node:internal/modules/esm/loader:389:47)
+    at loadESMFromCJS (node:internal/modules/cjs/loader:1363:24)
+    at Module._compile (node:internal/modules/cjs/loader:1503:5)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+[PM2] Saving current process list...
+[PM2][WARN] PM2 is not managing any process, skipping save...
+[PM2][WARN] To force saving use: pm2 save --force
+root@vmi2695527:/var/www/signage-app#
