@@ -25,7 +25,7 @@ export default function Login() {
   });
 
   if (!isLoading && user) {
-    return <Redirect to="/" />;
+    return <Redirect to="/dashboard" />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

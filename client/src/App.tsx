@@ -31,6 +31,7 @@ import Settings from "@/pages/Settings";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import InvoiceView from "@/pages/InvoiceView";
+import LandingPage from "@/pages/LandingPage";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -42,6 +43,21 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   if (!user) {
     return <Redirect to="/login" />;
+  }
+
+  return <Component />;
+}
+
+// Redirect logged-in users from public pages to dashboard
+function PublicRoute({ component: Component }: { component: React.ComponentType }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+  }
+
+  if (user) {
+    return <Redirect to="/dashboard" />;
   }
 
   return <Component />;
@@ -82,11 +98,12 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       
       {/* Public Routes */}
+      <Route path="/" component={LandingPage} />
       <Route path="/player/:id" component={Player} />
       <Route path="/activate" component={Activate} />
 
-      {/* Protected Admin Routes */}
-      <Route path="/">
+      {/* Protected Routes */}
+      <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
       </Route>
       <Route path="/screens">

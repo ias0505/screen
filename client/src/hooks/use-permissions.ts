@@ -13,7 +13,6 @@ export interface PermissionConfig {
 
 const allMenus = [
   '/dashboard',
-  '/',
   '/screens',
   '/groups',
   '/media',
@@ -25,9 +24,9 @@ const allMenus = [
 ];
 
 const menuPermissions: Record<Permission, string[]> = {
-  viewer: ['/', '/screens', '/groups', '/media', '/schedule'],
-  editor: ['/', '/screens', '/groups', '/media', '/schedule'],
-  manager: ['/', '/screens', '/groups', '/media', '/schedule', '/subscriptions', '/team', '/settings'],
+  viewer: ['/dashboard', '/screens', '/groups', '/media', '/schedule'],
+  editor: ['/dashboard', '/screens', '/groups', '/media', '/schedule'],
+  manager: ['/dashboard', '/screens', '/groups', '/media', '/schedule', '/subscriptions', '/team', '/settings'],
   owner: allMenus,
 };
 

@@ -40,7 +40,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   });
 
   const allNavItems = [
-    { href: "/", label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
     { href: "/screens", label: t.nav.screens, icon: Monitor },
     { href: "/groups", label: t.nav.groups, icon: Layers },
     { href: "/media", label: t.nav.media, icon: ImageIcon },
