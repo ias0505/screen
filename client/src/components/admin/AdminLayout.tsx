@@ -99,7 +99,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
 
         <div className="p-3 border-t space-y-2">
-          <Link href="/">
+          <Link href="/dashboard">
             <Button 
               variant="ghost" 
               className="w-full justify-start gap-3 text-muted-foreground"
