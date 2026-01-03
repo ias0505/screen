@@ -1,6 +1,7 @@
 import { useScreens } from "@/hooks/use-screens";
 import { useMedia } from "@/hooks/use-media";
 import { useQuery } from "@tanstack/react-query";
+import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
 import { Monitor, Image as ImageIcon, MonitorCheck, PlayCircle } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -9,8 +10,8 @@ import { Link } from "wouter";
 export default function Dashboard() {
   const { data: screens = [], isLoading: loadingScreens } = useScreens();
   const { data: media = [], isLoading: loadingMedia } = useMedia();
+  const { t, language } = useLanguage();
   
-  // Fetch available screen slots
   const { data: slotsData } = useQuery<{ availableSlots: number }>({
     queryKey: ['/api/subscriptions/available-slots'],
   });
@@ -22,7 +23,7 @@ export default function Dashboard() {
 
   const stats = [
     {
-      title: "الشاشات النشطة",
+      title: t.dashboard.activeScreens,
       value: `${activeScreens} / ${totalScreens}`,
       icon: Monitor,
       color: "text-emerald-500",
@@ -30,7 +31,7 @@ export default function Dashboard() {
       href: "/screens"
     },
     {
-      title: "مكتبة الوسائط",
+      title: t.dashboard.mediaLibrary,
       value: totalMedia,
       icon: ImageIcon,
       color: "text-blue-500",
@@ -38,7 +39,7 @@ export default function Dashboard() {
       href: "/media"
     },
     {
-      title: "شاشات متاحة",
+      title: t.dashboard.availableScreens,
       value: availableSlots,
       icon: MonitorCheck,
       color: "text-purple-500",
@@ -62,6 +63,11 @@ export default function Dashboard() {
     show: { y: 0, opacity: 1 }
   };
 
+  const formatDate = (date: string | Date) => {
+    const locale = language === 'ar' ? 'ar-EG' : 'en-US';
+    return new Date(date).toLocaleDateString(locale);
+  };
+
   if (loadingScreens || loadingMedia) {
     return (
       <Layout>
@@ -76,8 +82,8 @@ export default function Dashboard() {
     <Layout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">لوحة التحكم</h1>
-          <p className="text-muted-foreground mt-2">نظرة عامة على أداء الشاشات والمحتوى</p>
+          <h1 className="text-3xl font-bold text-foreground">{t.dashboard.title}</h1>
+          <p className="text-muted-foreground mt-2">{t.dashboard.overview}</p>
         </div>
 
         <motion.div 
@@ -108,14 +114,14 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <motion.div 
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: language === 'ar' ? 20 : -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
             className="bg-card rounded-2xl border border-border/50 shadow-sm p-6"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold">آخر الشاشات المضافة</h3>
-              <Link href="/screens" className="text-sm text-primary hover:underline">عرض الكل</Link>
+            <div className="flex items-center justify-between gap-2 mb-6">
+              <h3 className="text-xl font-bold">{t.dashboard.recentScreens}</h3>
+              <Link href="/screens" className="text-sm text-primary hover:underline">{t.viewAll}</Link>
             </div>
             <div className="space-y-4">
               {screens.slice(0, 5).map((screen) => (
@@ -126,33 +132,33 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <p className="font-semibold text-foreground">{screen.name}</p>
-                      <p className="text-xs text-muted-foreground">{screen.location || 'بدون موقع'}</p>
+                      <p className="text-xs text-muted-foreground">{screen.location || (language === 'ar' ? 'بدون موقع' : 'No location')}</p>
                     </div>
                   </div>
                   <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    screen.status === 'online' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'
+                    screen.status === 'online' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                   }`}>
-                    {screen.status === 'online' ? 'متصل' : 'غير متصل'}
+                    {screen.status === 'online' ? t.online : t.offline}
                   </div>
                 </div>
               ))}
               {screens.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
-                  لا توجد شاشات مضافة
+                  {t.screens.noScreens}
                 </div>
               )}
             </div>
           </motion.div>
 
           <motion.div 
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: language === 'ar' ? -20 : 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
             className="bg-card rounded-2xl border border-border/50 shadow-sm p-6"
           >
-             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold">أحدث الوسائط</h3>
-              <Link href="/media" className="text-sm text-primary hover:underline">عرض الكل</Link>
+             <div className="flex items-center justify-between gap-2 mb-6">
+              <h3 className="text-xl font-bold">{t.dashboard.recentMedia}</h3>
+              <Link href="/media" className="text-sm text-primary hover:underline">{t.viewAll}</Link>
             </div>
             <div className="space-y-4">
               {media.slice(0, 5).map((item) => (
@@ -168,13 +174,13 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(item.createdAt!).toLocaleDateString('ar-EG')}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(item.createdAt!)}</p>
                   </div>
                 </div>
               ))}
               {media.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
-                  المكتبة فارغة، ابدأ برفع المحتوى
+                  {t.media.noMedia}
                 </div>
               )}
             </div>
