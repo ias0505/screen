@@ -1,0 +1,92 @@
+root@vmi2695527:/var/www/signage-app# pm2 logs signage-app --lines 50
+[TAILING] Tailing last 50 lines for [signage-app] process (change the value with --lines option)
+/root/.pm2/logs/signage-app-error.log last 50 lines:
+0|signage- |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|signage- |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+0|signage- |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+0|signage- |     at cjsLoader (node:internal/modules/esm/translators:298:15)
+0|signage- |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:240:7) {
+0|signage- |   code: 'MODULE_NOT_FOUND',
+0|signage- |   requireStack: [ '/var/www/signage-app/dist/index.cjs' ]
+0|signage- | }
+0|signage- | Error: Cannot find module 'passport-google-oauth20'
+0|signage- | Require stack:
+0|signage- | - /var/www/signage-app/dist/index.cjs
+0|signage- |     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+0|signage- |     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+0|signage- |     at require (node:internal/modules/helpers:182:18)
+0|signage- |     at Object.<anonymous> (/var/www/signage-app/dist/index.cjs:72:73516)
+0|signage- |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+0|signage- |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|signage- |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+0|signage- |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+0|signage- |     at cjsLoader (node:internal/modules/esm/translators:298:15)
+0|signage- |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:240:7) {
+0|signage- |   code: 'MODULE_NOT_FOUND',
+0|signage- |   requireStack: [ '/var/www/signage-app/dist/index.cjs' ]
+0|signage- | }
+0|signage- | Error: Cannot find module 'passport-google-oauth20'
+0|signage- | Require stack:
+0|signage- | - /var/www/signage-app/dist/index.cjs
+0|signage- |     at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+0|signage- |     at Hook._require.Module.require (/usr/lib/node_modules/pm2/node_modules/require-in-the-middle/index.js:81:25)
+0|signage- |     at require (node:internal/modules/helpers:182:18)
+0|signage- |     at Object.<anonymous> (/var/www/signage-app/dist/index.cjs:72:73516)
+0|signage- |     at Module._compile (node:internal/modules/cjs/loader:1521:14)
+0|signage- |     at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+0|signage- |     at Module.load (node:internal/modules/cjs/loader:1266:32)
+0|signage- |     at Module._load (node:internal/modules/cjs/loader:1091:12)
+0|signage- |     at cjsLoader (node:internal/modules/esm/translators:298:15)
+0|signage- |     at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:240:7) {
+0|signage- |   code: 'MODULE_NOT_FOUND',
+0|signage- |   requireStack: [ '/var/www/signage-app/dist/index.cjs' ]
+0|signage- | }
+0|signage- | Error sending subscription email: {
+0|signage- |   statusCode: 403,
+0|signage- |   message: 'The screen.com domain is not verified. Please, add and verify your domain on https://resend.com/domains',
+0|signage- |   name: 'validation_error'
+0|signage- | }
+0|signage- | Error: ENOENT: no such file or directory, stat '/var/www/signage-app/dist/public/index.html'
+0|signage- | Error: ENOENT: no such file or directory, stat '/var/www/signage-app/dist/public/index.html'
+0|signage- | Error: ENOENT: no such file or directory, stat '/var/www/signage-app/dist/public/index.html'
+0|signage- | Error: ENOENT: no such file or directory, stat '/var/www/signage-app/dist/public/index.html'
+0|signage- | Error: ENOENT: no such file or directory, stat '/var/www/signage-app/dist/public/index.html'
+
+/root/.pm2/logs/signage-app-out.log last 50 lines:
+0|signage- | :22.675Z"}]
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/11/screens-count 304 in 57ms :: {"count":0}
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/10/invoices 304 in 54ms :: [{"id":6,"invoiceNumber":"INV-20260102-0006","subscriptionId":10,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"pending","paymentMethod":null,"paidAt":null,"notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T00:55:04.323Z"}]
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/10/screens-count 304 in 69ms :: {"count":0}
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/9/invoices 304 in 13ms :: [{"id":5,"invoiceNumber":"INV-20260102-0005","subscriptionId":9,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"pending","paymentMethod":null,"paidAt":null,"notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T00:53:03.213Z"}]
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/8/screens-count 304 in 10ms :: {"count":0}
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/8/invoices 304 in 11ms :: [{"id":4,"invoiceNumber":"INV-20260102-0004","subscriptionId":8,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"pending","paymentMethod":null,"paidAt":null,"notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T00:50:52.934Z"}]
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/7/screens-count 304 in 14ms :: {"count":0}
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/7/invoices 304 in 14ms :: [{"id":3,"invoiceNumber":"INV-20260102-0003","subscriptionId":7,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"pending","paymentMethod":null,"paidAt":null,"notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T00:28:40.664Z"}]
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/6/screens-count 304 in 9ms :: {"count":0}
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/6/invoices 304 in 9ms :: [{"id":2,"invoiceNumber":"INV-20260102-0002","subscriptionId":6,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"pending","paymentMethod":null,"paidAt":null,"notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T00:04:56.860Z"}]
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/5/screens-count 304 in 7ms :: {"count":0}
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/5/invoices 304 in 8ms :: [{"id":1,"invoiceNumber":"INV-20251231-0001","subscriptionId":5,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"paid","paymentMethod":"online","paidAt":"2025-12-31T00:50:17.568Z","notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2025-12-31T01:49:38.644Z"}]
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/4/screens-count 304 in 12ms :: {"count":0}
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/4/invoices 304 in 12ms :: []
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/3/screens-count 304 in 8ms :: {"count":0}
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/3/invoices 304 in 9ms :: []
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/2/screens-count 304 in 9ms :: {"count":0}
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/2/invoices 304 in 8ms :: []
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/1/screens-count 304 in 8ms :: {"count":1}
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/1/invoices 304 in 10ms :: []
+0|signage- | 1:14:02 AM [express] GET /api/subscriptions/13/screens-count 304 in 10ms :: {"count":0}
+0|signage- | 1:14:03 AM [express] GET /api/subscriptions/13/invoices 304 in 7ms :: [{"id":9,"invoiceNumber":"INV-20260103-0009","subscriptionId":13,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"pending","paymentMethod":null,"paidAt":null,"notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T01:01:07.523Z"}]
+0|signage- | 1:14:03 AM [express] GET /api/subscriptions/available-slots 200 in 14ms :: {"availableSlots":16}
+0|signage- | 1:14:03 AM [express] GET /api/subscriptions/17/screens-count 200 in 7ms :: {"count":0}
+0|signage- | 1:14:03 AM [express] GET /api/subscriptions/17/invoices 200 in 7ms :: [{"id":13,"invoiceNumber":"INV-20260103-0013","subscriptionId":17,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"pending","paymentMethod":null,"paidAt":null,"notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T01:14:02.221Z"}]
+0|signage- | 1:14:03 AM [express] GET /api/subscriptions/16/screens-count 304 in 6ms :: {"count":0}
+0|signage- | 1:14:03 AM [express] GET /api/subscriptions/16/invoices 304 in 7ms :: [{"id":12,"invoiceNumber":"INV-20260103-0012","subscriptionId":16,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"pending","paymentMethod":null,"paidAt":null,"notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T01:05:53.804Z"}]
+0|signage- | 1:14:03 AM [express] GET /api/subscriptions/15/screens-count 304 in 8ms :: {"count":0}
+0|signage- | 1:14:03 AM [express] GET /api/subscriptions/15/invoices 304 in 11ms :: [{"id":11,"invoiceNumber":"INV-20260103-0011","subscriptionId":15,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"pending","paymentMethod":null,"paidAt":null,"notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T01:03:10.259Z"}]
+0|signage- | 1:14:03 AM [express] GET /api/subscriptions/14/screens-count 304 in 8ms :: {"count":0}
+0|signage- | 1:14:03 AM [express] GET /api/subscriptions/14/invoices 304 in 8ms :: [{"id":10,"invoiceNumber":"INV-20260103-0010","subscriptionId":14,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","amount":115,"baseAmount":100,"taxRate":15,"taxAmount":15,"status":"pending","paymentMethod":null,"paidAt":null,"notes":null,"createdBy":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-03T01:02:26.867Z"}]
+0|signage- | 1:14:08 AM [express] POST /api/screens/1/heartbeat 200 in 13ms :: {"success":true}
+0|signage- | 1:14:20 AM [express] GET /api/screens/1/schedules 304 in 34ms :: [{"id":7,"screenId":null,"screenGroupId":1,"mediaItemId":2,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":2,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-01T23:24:36.168Z","mediaItem":{"id":2,"title":"فريك ام تركي لفتره محدودة 2","type":"image","url":"/uploads/file-1767102127923-896018769.png","duration":10,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2025-12-30T14:42:08.051Z"}},{"id":9,"screenId":null,"screenGroupId":1,"mediaItemId":3,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":3,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-02T12:38:46.622Z","mediaItem":{"id":3,"title":"شكشوكة","type":"image","url":"/uploads/file-1767303153055-887211536.png","duration":10,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-01T22:32:33.185Z"}},{"id":12,"screenId":null,"screenGroupId":1,"mediaItemId":5,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":10,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-02T12:57:22.354Z","mediaItem":{"id":5,"title":"Comp 1","type":"video","url":"/uploads/file-1767355027183-492298169.mp4","duration":10,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-02T12:57:07.315Z"}},{"id":8,"screenId":null,"screenGroupId":1,"mediaItemId":1,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":2,"displayOrder":1,"isActive":true,"priority":1,"createdAt":"2026-01-01T23:25:03.121Z","mediaItem":{"id":1,"title":"اعلان دجاج كريمة 2","type":"image","url":"/uploads/file-1767101871206-870638658.png","duration":10,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2025-12-30T14:37:51.337Z"}}]
+0|signage- | 1:14:39 AM [express] POST /api/screens/1/heartbeat 200 in 35ms :: {"success":true}
+0|signage- | 1:14:50 AM [express] GET /api/screens/1/schedules 304 in 33ms :: [{"id":7,"screenId":null,"screenGroupId":1,"mediaItemId":2,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":2,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-01T23:24:36.168Z","mediaItem":{"id":2,"title":"فريك ام تركي لفتره محدودة 2","type":"image","url":"/uploads/file-1767102127923-896018769.png","duration":10,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2025-12-30T14:42:08.051Z"}},{"id":9,"screenId":null,"screenGroupId":1,"mediaItemId":3,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":3,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-02T12:38:46.622Z","mediaItem":{"id":3,"title":"شكشوكة","type":"image","url":"/uploads/file-1767303153055-887211536.png","duration":10,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-01T22:32:33.185Z"}},{"id":12,"screenId":null,"screenGroupId":1,"mediaItemId":5,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":10,"displayOrder":0,"isActive":true,"priority":1,"createdAt":"2026-01-02T12:57:22.354Z","mediaItem":{"id":5,"title":"Comp 1","type":"video","url":"/uploads/file-1767355027183-492298169.mp4","duration":10,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2026-01-02T12:57:07.315Z"}},{"id":8,"screenId":null,"screenGroupId":1,"mediaItemId":1,"mediaGroupId":null,"startTime":null,"endTime":null,"duration":2,"displayOrder":1,"isActive":true,"priority":1,"createdAt":"2026-01-01T23:25:03.121Z","mediaItem":{"id":1,"title":"اعلان دجاج كريمة 2","type":"image","url":"/uploads/file-1767101871206-870638658.png","duration":10,"groupId":null,"userId":"1efc1b27-9a07-4edf-9e94-bb860b032af3","createdAt":"2025-12-30T14:37:51.337Z"}}]
+
