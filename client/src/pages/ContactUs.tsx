@@ -144,7 +144,10 @@ export default function ContactUs() {
                     inputMode="tel"
                     dir={language === 'ar' ? 'rtl' : 'ltr'}
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9+]/g, '');
+                      setForm({ ...form, phone: value });
+                    }}
                     placeholder={language === 'ar' ? 'أدخل رقم جوالك' : 'Enter your phone number'}
                     required
                     data-testid="input-phone"

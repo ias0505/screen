@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Users, 
   Monitor, 
@@ -17,6 +19,11 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
 
+interface ContactMessage {
+  id: number;
+  isRead: boolean;
+}
+
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
@@ -25,6 +32,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const { language } = useLanguage();
+
+  const { data: messages } = useQuery<ContactMessage[]>({
+    queryKey: ['/api/admin/contact-messages'],
+    refetchInterval: 30000,
+  });
+
+  const unreadCount = messages?.filter(m => !m.isRead).length || 0;
 
   const adminNavItems = [
     { title: language === 'ar' ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, href: "/admin" },
@@ -36,7 +50,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { title: language === 'ar' ? "المديرين" : "Admins", icon: Shield, href: "/admin/admins" },
     { title: language === 'ar' ? "الخطط" : "Plans", icon: Package, href: "/admin/plans" },
     { title: language === 'ar' ? "أكواد الخصم" : "Discount Codes", icon: Tag, href: "/admin/discount-codes" },
-    { title: language === 'ar' ? "رسائل التواصل" : "Messages", icon: MessageSquare, href: "/admin/messages" },
+    { title: language === 'ar' ? "رسائل التواصل" : "Messages", icon: MessageSquare, href: "/admin/messages", badge: unreadCount },
   ];
 
   const isActive = (href: string) => {
@@ -72,7 +86,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   data-testid={`link-admin-${item.href.split('/').pop() || 'dashboard'}`}
                 >
                   <item.icon className="w-4 h-4" />
-                  <span>{item.title}</span>
+                  <span className="flex-1 text-start">{item.title}</span>
+                  {item.badge && item.badge > 0 && (
+                    <Badge variant="destructive" className="text-xs px-1.5 py-0.5 min-w-[1.25rem] text-center">
+                      {item.badge}
+                    </Badge>
+                  )}
                 </Button>
               </Link>
             );
