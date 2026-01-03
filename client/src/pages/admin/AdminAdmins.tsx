@@ -29,9 +29,10 @@ import {
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useLanguage } from "@/hooks/use-language";
 import { Shield, ArrowRight, Plus, Trash2, UserPlus } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 
 interface Admin {
   id: number;
@@ -55,6 +56,7 @@ interface User {
 }
 
 export default function AdminAdmins() {
+  const { language } = useLanguage();
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRole, setSelectedRole] = useState("admin");
@@ -76,13 +78,13 @@ export default function AdminAdmins() {
       });
     },
     onSuccess: () => {
-      toast({ title: "تمت إضافة المدير بنجاح" });
+      toast({ title: language === 'ar' ? "تمت إضافة المدير بنجاح" : "Admin added successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/admins'] });
       setShowAddAdmin(false);
       setSelectedUserId("");
     },
     onError: (error: any) => {
-      toast({ title: error.message || "حدث خطأ", variant: "destructive" });
+      toast({ title: error.message || (language === 'ar' ? "حدث خطأ" : "An error occurred"), variant: "destructive" });
     }
   });
 
@@ -91,15 +93,18 @@ export default function AdminAdmins() {
       return await apiRequest("DELETE", `/api/admin/admins/${userId}`);
     },
     onSuccess: () => {
-      toast({ title: "تمت إزالة المدير بنجاح" });
+      toast({ title: language === 'ar' ? "تمت إزالة المدير بنجاح" : "Admin removed successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/admins'] });
     },
     onError: (error: any) => {
-      toast({ title: error.message || "حدث خطأ", variant: "destructive" });
+      toast({ title: error.message || (language === 'ar' ? "حدث خطأ" : "An error occurred"), variant: "destructive" });
     }
   });
 
   const nonAdminUsers = users?.filter(u => !admins?.some(a => a.userId === u.id));
+
+  const dateLocale = language === 'ar' ? ar : enUS;
+  const noName = language === 'ar' ? 'بدون اسم' : 'No name';
 
   return (
     <div className="p-6 space-y-6">
@@ -112,7 +117,7 @@ export default function AdminAdmins() {
           </Link>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Shield className="w-6 h-6" />
-            إدارة المدراء
+            {language === 'ar' ? "إدارة المدراء" : "Admin Management"}
           </h1>
         </div>
 
@@ -120,19 +125,23 @@ export default function AdminAdmins() {
           <DialogTrigger asChild>
             <Button className="gap-2" data-testid="button-add-admin">
               <UserPlus className="w-4 h-4" />
-              إضافة مدير
+              {language === 'ar' ? "إضافة مدير" : "Add Admin"}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>إضافة مدير جديد</DialogTitle>
+              <DialogTitle>
+                {language === 'ar' ? "إضافة مدير جديد" : "Add New Admin"}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
-                <label className="text-sm font-medium">اختر المستخدم</label>
+                <label className="text-sm font-medium">
+                  {language === 'ar' ? "اختر المستخدم" : "Select User"}
+                </label>
                 <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                   <SelectTrigger data-testid="select-user-for-admin">
-                    <SelectValue placeholder="اختر مستخدماً" />
+                    <SelectValue placeholder={language === 'ar' ? "اختر مستخدماً" : "Select a user"} />
                   </SelectTrigger>
                   <SelectContent>
                     {nonAdminUsers?.map(user => (
@@ -146,14 +155,16 @@ export default function AdminAdmins() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium">الدور</label>
+                <label className="text-sm font-medium">
+                  {language === 'ar' ? "الدور" : "Role"}
+                </label>
                 <Select value={selectedRole} onValueChange={setSelectedRole}>
                   <SelectTrigger data-testid="select-admin-role">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="super_admin">مدير عام</SelectItem>
-                    <SelectItem value="admin">مدير</SelectItem>
+                    <SelectItem value="super_admin">{language === 'ar' ? "مدير عام" : "Super Admin"}</SelectItem>
+                    <SelectItem value="admin">{language === 'ar' ? "مدير" : "Admin"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -163,7 +174,9 @@ export default function AdminAdmins() {
                 className="w-full"
                 data-testid="button-confirm-add-admin"
               >
-                {addAdminMutation.isPending ? "جاري الإضافة..." : "إضافة كمدير"}
+                {addAdminMutation.isPending 
+                  ? (language === 'ar' ? "جاري الإضافة..." : "Adding...")
+                  : (language === 'ar' ? "إضافة كمدير" : "Add as Admin")}
               </Button>
             </div>
           </DialogContent>
@@ -172,7 +185,9 @@ export default function AdminAdmins() {
 
       <Card>
         <CardHeader>
-          <CardTitle>قائمة المدراء ({admins?.length || 0})</CardTitle>
+          <CardTitle>
+            {language === 'ar' ? `قائمة المدراء (${admins?.length || 0})` : `Admin List (${admins?.length || 0})`}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -181,17 +196,17 @@ export default function AdminAdmins() {
             </div>
           ) : admins?.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              لا يوجد مدراء
+              {language === 'ar' ? "لا يوجد مدراء" : "No admins"}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">المدير</TableHead>
-                  <TableHead className="text-right">البريد الإلكتروني</TableHead>
-                  <TableHead className="text-right">الدور</TableHead>
-                  <TableHead className="text-right">تاريخ الإضافة</TableHead>
-                  <TableHead className="text-right">إجراءات</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "المدير" : "Admin"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "البريد الإلكتروني" : "Email"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الدور" : "Role"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "تاريخ الإضافة" : "Added Date"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "إجراءات" : "Actions"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -200,16 +215,18 @@ export default function AdminAdmins() {
                     <TableCell>
                       {admin.user.firstName || admin.user.lastName 
                         ? `${admin.user.firstName || ''} ${admin.user.lastName || ''}`.trim()
-                        : 'بدون اسم'}
+                        : noName}
                     </TableCell>
                     <TableCell>{admin.user.email || '-'}</TableCell>
                     <TableCell>
                       <Badge variant={admin.role === 'super_admin' ? 'default' : 'secondary'}>
-                        {admin.role === 'super_admin' ? 'مدير عام' : 'مدير'}
+                        {admin.role === 'super_admin' 
+                          ? (language === 'ar' ? 'مدير عام' : 'Super Admin')
+                          : (language === 'ar' ? 'مدير' : 'Admin')}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {format(new Date(admin.createdAt), 'dd MMM yyyy', { locale: ar })}
+                      {format(new Date(admin.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
                     </TableCell>
                     <TableCell>
                       <Button 

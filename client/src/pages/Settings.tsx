@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 import { Lock, Eye, EyeOff, User, Building2, Mail, Save } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User as UserType } from "@shared/schema";
 
 export default function Settings() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   
   const { data: profile, isLoading } = useQuery<UserType>({
     queryKey: ['/api/user/profile'],
@@ -51,17 +53,17 @@ export default function Settings() {
       const res = await apiRequest("PATCH", "/api/user/profile", data);
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "حدث خطأ");
+        throw new Error(error.message || t.messages.error);
       }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      toast({ title: "تم حفظ التغييرات بنجاح" });
+      toast({ title: t.settings.savedSuccessfully });
     },
     onError: (error: Error) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: t.settings.error, description: error.message, variant: "destructive" });
     },
   });
 
@@ -70,16 +72,16 @@ export default function Settings() {
       const res = await apiRequest("POST", "/api/auth/change-password", data);
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "حدث خطأ");
+        throw new Error(error.message || t.messages.error);
       }
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "تم تغيير كلمة المرور بنجاح" });
+      toast({ title: t.settings.passwordChangedSuccessfully });
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     },
     onError: (error: Error) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: t.settings.error, description: error.message, variant: "destructive" });
     },
   });
 
@@ -92,12 +94,12 @@ export default function Settings() {
     e.preventDefault();
     
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({ title: "خطأ", description: "كلمة المرور الجديدة غير متطابقة", variant: "destructive" });
+      toast({ title: t.settings.error, description: t.settings.passwordMismatch, variant: "destructive" });
       return;
     }
 
     if (passwordForm.newPassword.length < 6) {
-      toast({ title: "خطأ", description: "كلمة المرور يجب أن تكون 6 أحرف على الأقل", variant: "destructive" });
+      toast({ title: t.settings.error, description: t.settings.passwordMinLength, variant: "destructive" });
       return;
     }
 
@@ -121,25 +123,25 @@ export default function Settings() {
     <Layout>
       <div className="space-y-8 max-w-2xl">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">الإعدادات</h1>
-          <p className="text-muted-foreground mt-1">إدارة بيانات حسابك والأمان</p>
+          <h1 className="text-3xl font-bold text-foreground">{t.settings.title}</h1>
+          <p className="text-muted-foreground mt-1">{t.settings.accountSecurity}</p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
-              المعلومات الشخصية
+              {t.settings.personalInfo}
             </CardTitle>
             <CardDescription>
-              تعديل بياناتك الشخصية ومعلومات الشركة
+              {t.settings.editPersonalInfo}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleProfileSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">الاسم الأول</Label>
+                  <Label htmlFor="firstName">{t.auth.firstName}</Label>
                   <Input
                     id="firstName"
                     value={profileForm.firstName}
@@ -151,7 +153,7 @@ export default function Settings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">الاسم الأخير</Label>
+                  <Label htmlFor="lastName">{t.auth.lastName}</Label>
                   <Input
                     id="lastName"
                     value={profileForm.lastName}
@@ -165,7 +167,7 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label htmlFor="companyName" className="flex items-center gap-2">
                   <Building2 className="w-4 h-4" />
-                  اسم الشركة
+                  {t.settings.companyName}
                 </Label>
                 <Input
                   id="companyName"
@@ -181,7 +183,7 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label htmlFor="email" className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  البريد الإلكتروني
+                  {t.auth.email}
                 </Label>
                 <Input
                   id="email"
@@ -201,7 +203,7 @@ export default function Settings() {
                 data-testid="button-save-profile"
               >
                 <Save className="w-4 h-4" />
-                {updateProfileMutation.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+                {updateProfileMutation.isPending ? t.settings.saving : t.settings.saveChanges}
               </Button>
             </form>
           </CardContent>
@@ -211,16 +213,16 @@ export default function Settings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lock className="w-5 h-5" />
-              تغيير كلمة المرور
+              {t.settings.changePassword}
             </CardTitle>
             <CardDescription>
-              قم بتحديث كلمة المرور الخاصة بك للحفاظ على أمان حسابك
+              {t.settings.changePasswordDesc}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="currentPassword">كلمة المرور الحالية</Label>
+                <Label htmlFor="currentPassword">{t.settings.currentPassword}</Label>
                 <div className="relative">
                   <Input
                     id="currentPassword"
@@ -246,7 +248,7 @@ export default function Settings() {
               <Separator />
 
               <div className="space-y-2">
-                <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
+                <Label htmlFor="newPassword">{t.settings.newPassword}</Label>
                 <div className="relative">
                   <Input
                     id="newPassword"
@@ -271,7 +273,7 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">تأكيد كلمة المرور الجديدة</Label>
+                <Label htmlFor="confirmPassword">{t.settings.confirmNewPassword}</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -301,7 +303,7 @@ export default function Settings() {
                 disabled={changePasswordMutation.isPending}
                 data-testid="button-change-password"
               >
-                {changePasswordMutation.isPending ? "جاري التغيير..." : "تغيير كلمة المرور"}
+                {changePasswordMutation.isPending ? t.settings.changing : t.settings.changePassword}
               </Button>
             </form>
           </CardContent>

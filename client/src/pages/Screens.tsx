@@ -4,6 +4,7 @@ import { useScreenGroups } from "@/hooks/use-groups";
 import { useAvailableSlots } from "@/hooks/use-subscriptions";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useLanguage } from "@/hooks/use-language";
 import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -58,11 +59,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 
 export default function Screens() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const { canAdd, canEdit, canDelete } = usePermissions();
   const { data: screens = [], isLoading } = useScreens();
   const { data: groups = [] } = useScreenGroups();
@@ -70,6 +72,8 @@ export default function Screens() {
   const createScreen = useCreateScreen();
   const deleteScreen = useDeleteScreen();
   const updateScreen = useUpdateScreen();
+  
+  const dateLocale = language === 'ar' ? ar : enUS;
   
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ name: "", location: "", groupId: "", orientation: "landscape" });
@@ -92,7 +96,6 @@ export default function Screens() {
 
   const availableSlots = slotsData?.availableSlots || 0;
 
-  // Generate activation code mutation
   const generateCodeMutation = useMutation({
     mutationFn: async (screenId: number) => {
       const response = await apiRequest("POST", `/api/screens/${screenId}/activation-codes`);
@@ -101,26 +104,26 @@ export default function Screens() {
     onSuccess: (data) => {
       setGeneratedCode({ code: data.code, expiresAt: new Date(data.expiresAt) });
       toast({
-        title: "تم إنشاء رمز التفعيل",
-        description: `الرمز: ${data.code} (ينتهي خلال ساعة)`,
+        title: language === 'ar' ? "تم إنشاء رمز التفعيل" : "Activation code created",
+        description: language === 'ar' 
+          ? `الرمز: ${data.code} (ينتهي خلال ساعة)` 
+          : `Code: ${data.code} (expires in 1 hour)`,
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "خطأ",
+        title: language === 'ar' ? "خطأ" : "Error",
         description: error.message,
         variant: "destructive"
       });
     }
   });
 
-  // Fetch device bindings for a screen
   const { data: deviceBindings = [] } = useQuery<any[]>({
     queryKey: ['/api/screens', deviceDialogScreen, 'devices'],
     enabled: deviceDialogScreen !== null,
   });
 
-  // Revoke device binding mutation
   const revokeBindingMutation = useMutation({
     mutationFn: async (bindingId: number) => {
       await apiRequest("DELETE", `/api/device-bindings/${bindingId}`);
@@ -128,26 +131,25 @@ export default function Screens() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/screens', deviceDialogScreen, 'devices'] });
       toast({
-        title: "تم إلغاء الربط",
-        description: "تم إلغاء ربط الجهاز بنجاح",
+        title: language === 'ar' ? "تم إلغاء الربط" : "Binding revoked",
+        description: language === 'ar' ? "تم إلغاء ربط الجهاز بنجاح" : "Device binding revoked successfully",
       });
     }
   });
 
-  // Scan QR and activate mutation (uses authenticated admin endpoint) - for SCREEN: format
   const scanActivateMutation = useMutation({
     mutationFn: async ({ code, screenId }: { code: string; screenId: number }) => {
       const response = await apiRequest("POST", "/api/admin/screens/activate-by-scan", { code, screenId });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "فشل التفعيل");
+        throw new Error(error.message || (language === 'ar' ? "فشل التفعيل" : "Activation failed"));
       }
       return response.json();
     },
     onSuccess: (data) => {
       toast({
-        title: "تم التفعيل بنجاح",
-        description: `تم تفعيل الشاشة: ${data.screenName}`,
+        title: language === 'ar' ? "تم التفعيل بنجاح" : "Activated successfully",
+        description: language === 'ar' ? `تم تفعيل الشاشة: ${data.screenName}` : `Screen activated: ${data.screenName}`,
       });
       setScannerOpen(false);
       setScanning(false);
@@ -155,7 +157,7 @@ export default function Screens() {
     },
     onError: (error: Error) => {
       toast({
-        title: "خطأ في التفعيل",
+        title: language === 'ar' ? "خطأ في التفعيل" : "Activation error",
         description: error.message,
         variant: "destructive",
       });
@@ -163,20 +165,19 @@ export default function Screens() {
     },
   });
 
-  // Bind device mutation - for DEVICE: format
   const bindDeviceMutation = useMutation({
     mutationFn: async ({ deviceId, screenId }: { deviceId: string; screenId: number }) => {
       const response = await apiRequest("POST", `/api/screens/${screenId}/bind-device`, { deviceId });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "فشل الربط");
+        throw new Error(error.message || (language === 'ar' ? "فشل الربط" : "Binding failed"));
       }
       return response.json();
     },
     onSuccess: (data) => {
       toast({
-        title: "تم الربط بنجاح",
-        description: data.message || `تم ربط الجهاز بالشاشة: ${data.screenName}`,
+        title: language === 'ar' ? "تم الربط بنجاح" : "Bound successfully",
+        description: data.message || (language === 'ar' ? `تم ربط الجهاز بالشاشة: ${data.screenName}` : `Device bound to screen: ${data.screenName}`),
       });
       setScannerOpen(false);
       setScanning(false);
@@ -186,7 +187,7 @@ export default function Screens() {
     },
     onError: (error: Error) => {
       toast({
-        title: "خطأ في الربط",
+        title: language === 'ar' ? "خطأ في الربط" : "Binding error",
         description: error.message,
         variant: "destructive",
       });
@@ -197,12 +198,10 @@ export default function Screens() {
   const handleScanResult = (decodedText: string) => {
     if (scanning) return;
     
-    // Parse QR code format: DEVICE:deviceId (new device-centric format)
     const deviceMatch = decodedText.match(/DEVICE:([A-Z0-9]{8})/i);
     if (deviceMatch) {
       const scannedId = deviceMatch[1].toUpperCase();
       
-      // If screen is preselected, bind directly
       if (preselectedScreenId) {
         setScanning(true);
         bindDeviceMutation.mutate({ 
@@ -210,13 +209,11 @@ export default function Screens() {
           screenId: preselectedScreenId 
         });
       } else {
-        // Otherwise show screen selection
         setScannedDeviceId(scannedId);
       }
       return;
     }
     
-    // Parse QR code format: SCREEN:screenId:code (legacy format)
     const screenMatch = decodedText.match(/SCREEN:(\d+):([A-Z0-9]{6})/);
     if (screenMatch) {
       setScanning(true);
@@ -227,8 +224,8 @@ export default function Screens() {
     }
     
     toast({
-      title: "رمز غير صالح",
-      description: "يرجى مسح رمز QR صحيح من الجهاز",
+      title: language === 'ar' ? "رمز غير صالح" : "Invalid code",
+      description: language === 'ar' ? "يرجى مسح رمز QR صحيح من الجهاز" : "Please scan a valid QR code from the device",
       variant: "destructive",
     });
   };
@@ -284,15 +281,15 @@ export default function Screens() {
       setForm({ name: "", location: "", groupId: "", orientation: "landscape" });
     } catch (err: any) {
       toast({
-        title: "خطأ",
-        description: err.message || "حدث خطأ أثناء إضافة الشاشة",
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: err.message || (language === 'ar' ? "حدث خطأ أثناء إضافة الشاشة" : "An error occurred while adding the screen"),
         variant: "destructive"
       });
     }
   };
 
   const handleDelete = async (id: number) => {
-    const confirmed = window.confirm("هل أنت متأكد من حذف هذه الشاشة؟");
+    const confirmed = window.confirm(language === 'ar' ? "هل أنت متأكد من حذف هذه الشاشة؟" : "Are you sure you want to delete this screen?");
     if (confirmed) {
       await deleteScreen.mutateAsync(id);
     }
@@ -325,8 +322,8 @@ export default function Screens() {
       setEditingScreen(null);
     } catch (err: any) {
       toast({
-        title: "خطأ",
-        description: err.message || "حدث خطأ أثناء تحديث الشاشة",
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: err.message || (language === 'ar' ? "حدث خطأ أثناء تحديث الشاشة" : "An error occurred while updating the screen"),
         variant: "destructive"
       });
     }
@@ -338,9 +335,7 @@ export default function Screens() {
     return group?.name;
   };
 
-  // Filter screens based on search query and filters
   const filteredScreens = screens.filter((screen: any) => {
-    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       const matchesSearch = (
@@ -351,17 +346,14 @@ export default function Screens() {
       if (!matchesSearch) return false;
     }
     
-    // Orientation filter
     if (filterOrientation !== "all" && screen.orientation !== filterOrientation) {
       return false;
     }
     
-    // Status filter
     if (filterStatus !== "all" && screen.status !== filterStatus) {
       return false;
     }
     
-    // Group filter
     if (filterGroup !== "all") {
       if (filterGroup === "none" && screen.groupId !== null) return false;
       if (filterGroup !== "none" && screen.groupId?.toString() !== filterGroup) return false;
@@ -384,14 +376,14 @@ export default function Screens() {
       <div className="space-y-8">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">الشاشات</h1>
-            <p className="text-muted-foreground mt-1">إدارة شاشات العرض</p>
+            <h1 className="text-3xl font-bold text-foreground">{t.screens.title}</h1>
+            <p className="text-muted-foreground mt-1">{t.screens.subtitle}</p>
           </div>
           
           <div className="flex items-center gap-3 flex-wrap">
             <Badge variant="outline" className="gap-1 py-1.5 px-3">
               <Monitor className="w-4 h-4" />
-              متاح: {availableSlots} شاشة
+              {language === 'ar' ? `متاح: ${availableSlots} شاشة` : `Available: ${availableSlots} screens`}
             </Badge>
             
             {canAdd && (
@@ -403,60 +395,59 @@ export default function Screens() {
                     data-testid="button-add-screen"
                   >
                     <Plus className="w-5 h-5" />
-                    <span>إضافة شاشة</span>
+                    <span>{t.screens.addScreen}</span>
                   </Button>
                 </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>إضافة شاشة جديدة</DialogTitle>
+                  <DialogTitle>{language === 'ar' ? "إضافة شاشة جديدة" : "Add New Screen"}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label>اسم الشاشة</Label>
+                    <Label>{t.screens.screenName}</Label>
                     <Input
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="مثال: شاشة الاستقبال"
+                      placeholder={language === 'ar' ? "مثال: شاشة الاستقبال" : "Example: Reception Screen"}
                       required
                       className="rounded-xl"
                       data-testid="input-screen-name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>الموقع</Label>
+                    <Label>{t.screens.location}</Label>
                     <Input
                       value={form.location}
                       onChange={(e) => setForm({ ...form, location: e.target.value })}
-                      placeholder="مثال: الفرع الرئيسي"
+                      placeholder={language === 'ar' ? "مثال: الفرع الرئيسي" : "Example: Main Branch"}
                       className="rounded-xl"
                       data-testid="input-screen-location"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>اتجاه الشاشة</Label>
+                    <Label>{t.screens.orientation}</Label>
                     <Select 
                       value={form.orientation} 
                       onValueChange={(v) => setForm({...form, orientation: v})}
                     >
                       <SelectTrigger className="rounded-xl" data-testid="select-screen-orientation">
-                        <SelectValue placeholder="اختر الاتجاه" />
+                        <SelectValue placeholder={language === 'ar' ? "اختر الاتجاه" : "Select orientation"} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="landscape">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-4 border-2 border-current rounded-sm" />
-                            <span>عرضي (أفقي)</span>
+                            <span>{language === 'ar' ? "عرضي (أفقي)" : "Landscape (Horizontal)"}</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="portrait">
                           <div className="flex items-center gap-2">
                             <div className="w-4 h-6 border-2 border-current rounded-sm" />
-                            <span>طولي (رأسي)</span>
+                            <span>{language === 'ar' ? "طولي (رأسي)" : "Portrait (Vertical)"}</span>
                           </div>
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                    {/* معاينة الاتجاه */}
                     <div className="flex justify-center pt-2">
                       <div 
                         className={`border-2 border-primary/50 rounded-lg bg-muted/50 flex items-center justify-center transition-all duration-300 ${
@@ -469,20 +460,22 @@ export default function Screens() {
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground text-center">
-                      {form.orientation === 'portrait' ? 'الشاشة ستعرض المحتوى بشكل عمودي' : 'الشاشة ستعرض المحتوى بشكل أفقي'}
+                      {form.orientation === 'portrait' 
+                        ? (language === 'ar' ? 'الشاشة ستعرض المحتوى بشكل عمودي' : 'Screen will display content vertically')
+                        : (language === 'ar' ? 'الشاشة ستعرض المحتوى بشكل أفقي' : 'Screen will display content horizontally')}
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label>المجموعة (اختياري)</Label>
+                    <Label>{language === 'ar' ? "المجموعة (اختياري)" : "Group (optional)"}</Label>
                     <Select 
                       value={form.groupId || "none"} 
                       onValueChange={(v) => setForm({...form, groupId: v === "none" ? "" : v})}
                     >
                       <SelectTrigger className="rounded-xl" data-testid="select-screen-group">
-                        <SelectValue placeholder="بدون مجموعة" />
+                        <SelectValue placeholder={t.screens.noGroup} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">بدون مجموعة</SelectItem>
+                        <SelectItem value="none">{t.screens.noGroup}</SelectItem>
                         {groups.map(g => (
                           <SelectItem key={g.id} value={g.id.toString()}>
                             {g.name}
@@ -493,7 +486,7 @@ export default function Screens() {
                   </div>
                   <div className="flex justify-end gap-2 pt-4">
                     <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="rounded-xl">
-                      إلغاء
+                      {t.cancel}
                     </Button>
                     <Button 
                       type="submit" 
@@ -501,7 +494,9 @@ export default function Screens() {
                       className="bg-primary rounded-xl" 
                       data-testid="button-save-screen"
                     >
-                      {createScreen.isPending ? "جاري الإضافة..." : "حفظ الشاشة"}
+                      {createScreen.isPending 
+                        ? (language === 'ar' ? "جاري الإضافة..." : "Adding...") 
+                        : (language === 'ar' ? "حفظ الشاشة" : "Save Screen")}
                     </Button>
                   </div>
                 </form>
@@ -511,12 +506,11 @@ export default function Screens() {
           </div>
         </div>
 
-        {/* Filter Bar */}
         {screens.length > 0 && (
           <div className="flex items-center gap-3 flex-wrap bg-muted/30 p-3 rounded-xl">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Filter className="w-4 h-4" />
-              <span className="text-sm font-medium">تصفية:</span>
+              <span className="text-sm font-medium">{language === 'ar' ? "تصفية:" : "Filter:"}</span>
             </div>
             
             <div className="relative flex-1 min-w-[200px] max-w-xs">
@@ -524,7 +518,7 @@ export default function Screens() {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="بحث بالاسم أو الموقع..."
+                placeholder={language === 'ar' ? "بحث بالاسم أو الموقع..." : "Search by name or location..."}
                 className="pr-10 rounded-xl"
                 data-testid="input-search-screens"
               />
@@ -532,33 +526,33 @@ export default function Screens() {
             
             <Select value={filterOrientation} onValueChange={setFilterOrientation}>
               <SelectTrigger className="w-36 rounded-xl" data-testid="select-filter-orientation">
-                <SelectValue placeholder="الاتجاه" />
+                <SelectValue placeholder={t.screens.orientation} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">كل الاتجاهات</SelectItem>
-                <SelectItem value="landscape">أفقي</SelectItem>
-                <SelectItem value="portrait">عمودي</SelectItem>
+                <SelectItem value="all">{language === 'ar' ? "كل الاتجاهات" : "All orientations"}</SelectItem>
+                <SelectItem value="landscape">{t.screens.horizontal}</SelectItem>
+                <SelectItem value="portrait">{t.screens.vertical}</SelectItem>
               </SelectContent>
             </Select>
             
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-36 rounded-xl" data-testid="select-filter-status">
-                <SelectValue placeholder="الحالة" />
+                <SelectValue placeholder={t.screens.status} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">كل الحالات</SelectItem>
-                <SelectItem value="online">متصل</SelectItem>
-                <SelectItem value="offline">غير متصل</SelectItem>
+                <SelectItem value="all">{language === 'ar' ? "كل الحالات" : "All statuses"}</SelectItem>
+                <SelectItem value="online">{t.online}</SelectItem>
+                <SelectItem value="offline">{t.offline}</SelectItem>
               </SelectContent>
             </Select>
             
             <Select value={filterGroup} onValueChange={setFilterGroup}>
               <SelectTrigger className="w-40 rounded-xl" data-testid="select-filter-group">
-                <SelectValue placeholder="المجموعة" />
+                <SelectValue placeholder={t.screens.group} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">كل المجموعات</SelectItem>
-                <SelectItem value="none">بدون مجموعة</SelectItem>
+                <SelectItem value="all">{language === 'ar' ? "كل المجموعات" : "All groups"}</SelectItem>
+                <SelectItem value="none">{t.screens.noGroup}</SelectItem>
                 {groups.map(g => (
                   <SelectItem key={g.id} value={g.id.toString()}>
                     {g.name}
@@ -576,12 +570,12 @@ export default function Screens() {
                 data-testid="button-clear-filters"
               >
                 <X className="w-4 h-4" />
-                مسح الفلاتر
+                {language === 'ar' ? "مسح الفلاتر" : "Clear filters"}
               </Button>
             )}
             
             <Badge variant="secondary" className="mr-auto">
-              {filteredScreens.length} من {screens.length}
+              {filteredScreens.length} {language === 'ar' ? "من" : "of"} {screens.length}
             </Badge>
           </div>
         )}
@@ -592,7 +586,9 @@ export default function Screens() {
               <div className="flex items-center gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-500" />
                 <p className="text-sm">
-                  لا توجد شاشات متاحة. يرجى <Link href="/subscriptions" className="text-primary underline">إضافة اشتراك</Link> للحصول على شاشات.
+                  {language === 'ar' 
+                    ? <>لا توجد شاشات متاحة. يرجى <Link href="/subscriptions" className="text-primary underline">إضافة اشتراك</Link> للحصول على شاشات.</>
+                    : <>No screens available. Please <Link href="/subscriptions" className="text-primary underline">add a subscription</Link> to get screens.</>}
                 </p>
               </div>
             </CardContent>
@@ -610,26 +606,32 @@ export default function Screens() {
             <div className="p-6 bg-background rounded-full shadow-sm mb-4">
               <Monitor className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-bold text-foreground">لا توجد شاشات</h3>
-            <p className="text-muted-foreground mt-2 mb-6">أضف شاشات لبدء عرض المحتوى</p>
+            <h3 className="text-xl font-bold text-foreground">{t.screens.noScreens}</h3>
+            <p className="text-muted-foreground mt-2 mb-6">
+              {language === 'ar' ? "أضف شاشات لبدء عرض المحتوى" : "Add screens to start displaying content"}
+            </p>
             {availableSlots > 0 && (
               <Button onClick={() => setIsOpen(true)} className="bg-primary rounded-xl" data-testid="button-create-first-screen">
-                إضافة شاشة جديدة
+                {language === 'ar' ? "إضافة شاشة جديدة" : "Add New Screen"}
               </Button>
             )}
           </div>
         ) : filteredScreens.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 bg-muted/10 border-2 border-dashed border-border rounded-3xl">
             <Filter className="w-10 h-10 text-muted-foreground mb-3" />
-            <h3 className="text-lg font-bold text-foreground">لا توجد نتائج</h3>
-            <p className="text-muted-foreground mt-1">لم يتم العثور على شاشات تطابق الفلاتر المحددة</p>
+            <h3 className="text-lg font-bold text-foreground">
+              {language === 'ar' ? "لا توجد نتائج" : "No results"}
+            </h3>
+            <p className="text-muted-foreground mt-1">
+              {language === 'ar' ? "لم يتم العثور على شاشات تطابق الفلاتر المحددة" : "No screens match the selected filters"}
+            </p>
             <Button 
               variant="outline" 
               className="mt-4 gap-2 rounded-xl"
               onClick={clearAllFilters}
             >
               <X className="w-4 h-4" />
-              مسح جميع الفلاتر
+              {language === 'ar' ? "مسح جميع الفلاتر" : "Clear all filters"}
             </Button>
           </div>
         ) : (
@@ -671,7 +673,7 @@ export default function Screens() {
                               <DropdownMenuItem asChild>
                                 <Link href={`/player/${screen.id}`} target="_blank" className="flex items-center">
                                   <ExternalLink className="w-4 h-4 ml-2" />
-                                  فتح العرض
+                                  {language === 'ar' ? "فتح العرض" : "Open Display"}
                                 </Link>
                               </DropdownMenuItem>
                               {canEdit && (
@@ -682,7 +684,7 @@ export default function Screens() {
                                     data-testid={`button-edit-screen-${screen.id}`}
                                   >
                                     <Pencil className="w-4 h-4 ml-2" />
-                                    تعديل الشاشة
+                                    {language === 'ar' ? "تعديل الشاشة" : "Edit Screen"}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => {
@@ -692,14 +694,14 @@ export default function Screens() {
                                     data-testid={`button-generate-code-${screen.id}`}
                                   >
                                     <Key className="w-4 h-4 ml-2" />
-                                    إنشاء رمز تفعيل
+                                    {language === 'ar' ? "إنشاء رمز تفعيل" : "Generate Activation Code"}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => openScannerForScreen(screen)}
                                     data-testid={`button-scan-qr-${screen.id}`}
                                   >
                                     <Camera className="w-4 h-4 ml-2" />
-                                    مسح QR جهاز
+                                    {language === 'ar' ? "مسح QR جهاز" : "Scan Device QR"}
                                   </DropdownMenuItem>
                                 </>
                               )}
@@ -708,7 +710,7 @@ export default function Screens() {
                                 data-testid={`button-view-devices-${screen.id}`}
                               >
                                 <Smartphone className="w-4 h-4 ml-2" />
-                                الأجهزة المرتبطة
+                                {language === 'ar' ? "الأجهزة المرتبطة" : "Linked Devices"}
                               </DropdownMenuItem>
                               {canDelete && (
                                 <>
@@ -719,7 +721,7 @@ export default function Screens() {
                                     data-testid={`button-delete-screen-${screen.id}`}
                                   >
                                     <Trash2 className="w-4 h-4 ml-2" />
-                                    حذف الشاشة
+                                    {language === 'ar' ? "حذف الشاشة" : "Delete Screen"}
                                   </DropdownMenuItem>
                                 </>
                               )}
@@ -730,11 +732,11 @@ export default function Screens() {
                       <CardContent>
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant={screen.status === 'online' ? 'default' : 'secondary'}>
-                            {screen.status === 'online' ? 'متصل' : 'غير متصل'}
+                            {screen.status === 'online' ? t.online : t.offline}
                           </Badge>
                           <Badge variant="outline" className="gap-1">
                             <MonitorSmartphone className="w-3 h-3" />
-                            {screen.orientation === 'portrait' ? 'عمودي' : 'أفقي'}
+                            {screen.orientation === 'portrait' ? t.screens.vertical : t.screens.horizontal}
                           </Badge>
                           {groupName && (
                             <Badge variant="outline" className="gap-1">
@@ -752,33 +754,36 @@ export default function Screens() {
           </div>
         )}
 
-        {/* Activation Code Dialog */}
         <Dialog open={activationDialogScreen !== null} onOpenChange={(open) => !open && setActivationDialogScreen(null)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Key className="w-5 h-5 text-primary" />
-                إنشاء رمز تفعيل
+                {language === 'ar' ? "إنشاء رمز تفعيل" : "Generate Activation Code"}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <p className="text-muted-foreground text-sm">
-                أنشئ رمز تفعيل لربط جهاز بهذه الشاشة. الرمز صالح لمدة ساعة واحدة ويستخدم مرة واحدة فقط.
+                {language === 'ar' 
+                  ? "أنشئ رمز تفعيل لربط جهاز بهذه الشاشة. الرمز صالح لمدة ساعة واحدة ويستخدم مرة واحدة فقط."
+                  : "Generate an activation code to link a device to this screen. The code is valid for one hour and can only be used once."}
               </p>
               
               {generatedCode ? (
                 <div className="space-y-4">
                   <div className="bg-muted p-6 rounded-xl text-center">
-                    <p className="text-sm text-muted-foreground mb-2">رمز التفعيل</p>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {language === 'ar' ? "رمز التفعيل" : "Activation Code"}
+                    </p>
                     <p className="text-4xl font-mono font-bold tracking-widest">
                       {generatedCode.code}
                     </p>
                     <p className="text-sm text-muted-foreground mt-3">
-                      ينتهي: {format(generatedCode.expiresAt, 'HH:mm', { locale: ar })}
+                      {language === 'ar' ? "ينتهي:" : "Expires:"} {format(generatedCode.expiresAt, 'HH:mm', { locale: dateLocale })}
                     </p>
                   </div>
                   <p className="text-center text-sm text-muted-foreground">
-                    أدخل هذا الرمز في صفحة التفعيل على الجهاز
+                    {language === 'ar' ? "أدخل هذا الرمز في صفحة التفعيل على الجهاز" : "Enter this code on the device activation page"}
                   </p>
                   <Button 
                     onClick={copyCode} 
@@ -787,7 +792,9 @@ export default function Screens() {
                     data-testid="button-copy-code"
                   >
                     {codeCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {codeCopied ? 'تم النسخ' : 'نسخ الرمز'}
+                    {codeCopied 
+                      ? (language === 'ar' ? 'تم النسخ' : 'Copied') 
+                      : (language === 'ar' ? 'نسخ الرمز' : 'Copy Code')}
                   </Button>
                 </div>
               ) : (
@@ -797,40 +804,45 @@ export default function Screens() {
                   className="w-full"
                   data-testid="button-create-activation-code"
                 >
-                  {generateCodeMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء رمز جديد'}
+                  {generateCodeMutation.isPending 
+                    ? (language === 'ar' ? 'جاري الإنشاء...' : 'Generating...') 
+                    : (language === 'ar' ? 'إنشاء رمز جديد' : 'Generate New Code')}
                 </Button>
               )}
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Device Bindings Dialog */}
         <Dialog open={deviceDialogScreen !== null} onOpenChange={(open) => !open && setDeviceDialogScreen(null)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Smartphone className="w-5 h-5 text-primary" />
-                الأجهزة المرتبطة
+                {language === 'ar' ? "الأجهزة المرتبطة" : "Linked Devices"}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               {deviceBindings.length === 0 ? (
                 <div className="text-center py-8">
                   <Smartphone className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-                  <p className="text-muted-foreground">لا توجد أجهزة مرتبطة بهذه الشاشة</p>
+                  <p className="text-muted-foreground">
+                    {language === 'ar' ? "لا توجد أجهزة مرتبطة بهذه الشاشة" : "No devices linked to this screen"}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {deviceBindings.map((binding: any) => (
                     <div key={binding.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
                       <div className="space-y-1">
-                        <p className="text-sm font-medium">جهاز مرتبط</p>
+                        <p className="text-sm font-medium">
+                          {language === 'ar' ? "جهاز مرتبط" : "Linked Device"}
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                          تم التفعيل: {format(new Date(binding.activatedAt), 'yyyy/MM/dd HH:mm', { locale: ar })}
+                          {language === 'ar' ? "تم التفعيل:" : "Activated:"} {format(new Date(binding.activatedAt), 'yyyy/MM/dd HH:mm', { locale: dateLocale })}
                         </p>
                         {binding.lastSeenAt && (
                           <p className="text-xs text-muted-foreground">
-                            آخر ظهور: {format(new Date(binding.lastSeenAt), 'yyyy/MM/dd HH:mm', { locale: ar })}
+                            {language === 'ar' ? "آخر ظهور:" : "Last seen:"} {format(new Date(binding.lastSeenAt), 'yyyy/MM/dd HH:mm', { locale: dateLocale })}
                           </p>
                         )}
                       </div>
@@ -839,7 +851,7 @@ export default function Screens() {
                           variant="ghost" 
                           size="icon"
                           onClick={() => {
-                            if (window.confirm('هل أنت متأكد من إلغاء ربط هذا الجهاز؟')) {
+                            if (window.confirm(language === 'ar' ? 'هل أنت متأكد من إلغاء ربط هذا الجهاز؟' : 'Are you sure you want to unlink this device?')) {
                               revokeBindingMutation.mutate(binding.id);
                             }
                           }}
@@ -856,62 +868,60 @@ export default function Screens() {
           </DialogContent>
         </Dialog>
 
-        {/* Edit Screen Dialog */}
         <Dialog open={editingScreen !== null} onOpenChange={(open) => !open && setEditingScreen(null)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-primary" />
-                تعديل الشاشة
+                {language === 'ar' ? "تعديل الشاشة" : "Edit Screen"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleEditSubmit} className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label>اسم الشاشة</Label>
+                <Label>{t.screens.screenName}</Label>
                 <Input
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  placeholder="مثال: شاشة الاستقبال"
+                  placeholder={language === 'ar' ? "مثال: شاشة الاستقبال" : "Example: Reception Screen"}
                   required
                   className="rounded-xl"
                   data-testid="input-edit-screen-name"
                 />
               </div>
               <div className="space-y-2">
-                <Label>الموقع</Label>
+                <Label>{t.screens.location}</Label>
                 <Input
                   value={editForm.location}
                   onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                  placeholder="مثال: الفرع الرئيسي"
+                  placeholder={language === 'ar' ? "مثال: الفرع الرئيسي" : "Example: Main Branch"}
                   className="rounded-xl"
                   data-testid="input-edit-screen-location"
                 />
               </div>
               <div className="space-y-2">
-                <Label>اتجاه الشاشة</Label>
+                <Label>{t.screens.orientation}</Label>
                 <Select 
                   value={editForm.orientation} 
                   onValueChange={(v) => setEditForm({...editForm, orientation: v})}
                 >
                   <SelectTrigger className="rounded-xl" data-testid="select-edit-screen-orientation">
-                    <SelectValue placeholder="اختر الاتجاه" />
+                    <SelectValue placeholder={language === 'ar' ? "اختر الاتجاه" : "Select orientation"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="landscape">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-4 border-2 border-current rounded-sm" />
-                        <span>عرضي (أفقي)</span>
+                        <span>{language === 'ar' ? "عرضي (أفقي)" : "Landscape (Horizontal)"}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="portrait">
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-6 border-2 border-current rounded-sm" />
-                        <span>طولي (عمودي)</span>
+                        <span>{language === 'ar' ? "طولي (عمودي)" : "Portrait (Vertical)"}</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                {/* معاينة الاتجاه */}
                 <div className="flex justify-center pt-2">
                   <div 
                     className={`border-2 border-primary/50 rounded-lg bg-muted/50 flex items-center justify-center transition-all duration-300 ${
@@ -924,20 +934,22 @@ export default function Screens() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  {editForm.orientation === 'portrait' ? 'الشاشة ستعرض المحتوى بشكل عمودي' : 'الشاشة ستعرض المحتوى بشكل أفقي'}
+                  {editForm.orientation === 'portrait' 
+                    ? (language === 'ar' ? 'الشاشة ستعرض المحتوى بشكل عمودي' : 'Screen will display content vertically')
+                    : (language === 'ar' ? 'الشاشة ستعرض المحتوى بشكل أفقي' : 'Screen will display content horizontally')}
                 </p>
               </div>
               <div className="space-y-2">
-                <Label>المجموعة (اختياري)</Label>
+                <Label>{language === 'ar' ? "المجموعة (اختياري)" : "Group (optional)"}</Label>
                 <Select 
                   value={editForm.groupId} 
                   onValueChange={(v) => setEditForm({...editForm, groupId: v === "none" ? "" : v})}
                 >
                   <SelectTrigger className="rounded-xl" data-testid="select-edit-screen-group">
-                    <SelectValue placeholder="بدون مجموعة" />
+                    <SelectValue placeholder={t.screens.noGroup} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">بدون مجموعة</SelectItem>
+                    <SelectItem value="none">{t.screens.noGroup}</SelectItem>
                     {groups.map((group) => (
                       <SelectItem key={group.id} value={group.id.toString()}>
                         {group.name}
@@ -948,7 +960,7 @@ export default function Screens() {
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setEditingScreen(null)} className="rounded-xl">
-                  إلغاء
+                  {t.cancel}
                 </Button>
                 <Button 
                   type="submit" 
@@ -956,14 +968,15 @@ export default function Screens() {
                   className="bg-primary rounded-xl" 
                   data-testid="button-save-edit-screen"
                 >
-                  {updateScreen.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+                  {updateScreen.isPending 
+                    ? (language === 'ar' ? "جاري الحفظ..." : "Saving...") 
+                    : (language === 'ar' ? "حفظ التغييرات" : "Save Changes")}
                 </Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
 
-        {/* QR Scanner Dialog */}
         <Dialog open={scannerOpen} onOpenChange={(open) => {
           if (!open) closeScannerDialog();
         }}>
@@ -971,14 +984,18 @@ export default function Screens() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Camera className="w-5 h-5 text-primary" />
-                {preselectedScreenName ? `مسح QR - ${preselectedScreenName}` : "مسح رمز QR"}
+                {preselectedScreenName 
+                  ? (language === 'ar' ? `مسح QR - ${preselectedScreenName}` : `Scan QR - ${preselectedScreenName}`) 
+                  : (language === 'ar' ? "مسح رمز QR" : "Scan QR Code")}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               {preselectedScreenId && (
                 <div className="bg-primary/10 p-3 rounded-xl text-center">
                   <p className="text-sm text-primary font-medium">
-                    سيتم ربط الجهاز بشاشة: {preselectedScreenName}
+                    {language === 'ar' 
+                      ? `سيتم ربط الجهاز بشاشة: ${preselectedScreenName}` 
+                      : `Device will be linked to screen: ${preselectedScreenName}`}
                   </p>
                 </div>
               )}
@@ -986,7 +1003,9 @@ export default function Screens() {
               {!scannedDeviceId && !scanning ? (
                 <>
                   <p className="text-sm text-muted-foreground text-center">
-                    وجه الكاميرا نحو رمز QR الظاهر على جهاز العرض
+                    {language === 'ar' 
+                      ? "وجه الكاميرا نحو رمز QR الظاهر على جهاز العرض" 
+                      : "Point the camera at the QR code displayed on the device"}
                   </p>
                   
                   {scannerOpen && (
@@ -995,29 +1014,34 @@ export default function Screens() {
                       onError={(error) => {
                         console.error("Scanner error:", error);
                       }}
+                      language={language}
                     />
                   )}
                 </>
               ) : scanning ? (
                 <div className="flex items-center justify-center gap-2 py-8">
                   <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-primary"></div>
-                  <span className="text-muted-foreground">جاري الربط...</span>
+                  <span className="text-muted-foreground">
+                    {language === 'ar' ? "جاري الربط..." : "Binding..."}
+                  </span>
                 </div>
               ) : scannedDeviceId && !preselectedScreenId ? (
                 <div className="space-y-4">
                   <div className="bg-muted p-4 rounded-xl text-center">
-                    <p className="text-sm text-muted-foreground mb-1">رقم تعريف الجهاز</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {language === 'ar' ? "رقم تعريف الجهاز" : "Device ID"}
+                    </p>
                     <p className="text-2xl font-mono font-bold tracking-wider">{scannedDeviceId}</p>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>اختر الشاشة للربط</Label>
+                    <Label>{language === 'ar' ? "اختر الشاشة للربط" : "Select screen to link"}</Label>
                     <Select 
                       value={selectedScreenForDevice} 
                       onValueChange={setSelectedScreenForDevice}
                     >
                       <SelectTrigger className="rounded-xl" data-testid="select-screen-for-device">
-                        <SelectValue placeholder="اختر شاشة..." />
+                        <SelectValue placeholder={language === 'ar' ? "اختر شاشة..." : "Select a screen..."} />
                       </SelectTrigger>
                       <SelectContent>
                         {screens.map((screen) => (
@@ -1038,7 +1062,7 @@ export default function Screens() {
                         setSelectedScreenForDevice("");
                       }}
                     >
-                      مسح جهاز آخر
+                      {language === 'ar' ? "مسح جهاز آخر" : "Scan Another Device"}
                     </Button>
                     <Button 
                       className="flex-1 rounded-xl"
@@ -1046,7 +1070,7 @@ export default function Screens() {
                       onClick={handleBindDevice}
                       data-testid="button-bind-device"
                     >
-                      ربط الجهاز
+                      {language === 'ar' ? "ربط الجهاز" : "Link Device"}
                     </Button>
                   </div>
                 </div>
@@ -1059,8 +1083,7 @@ export default function Screens() {
   );
 }
 
-// QR Scanner Component using html5-qrcode
-function QRScanner({ onScan, onError }: { onScan: (text: string) => void; onError?: (error: string) => void }) {
+function QRScanner({ onScan, onError, language }: { onScan: (text: string) => void; onError?: (error: string) => void; language: string }) {
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<any>(null);
 
@@ -1086,7 +1109,7 @@ function QRScanner({ onScan, onError }: { onScan: (text: string) => void; onErro
         );
       } catch (err: any) {
         console.error("Failed to start scanner:", err);
-        onError?.(err.message || "فشل في بدء الكاميرا");
+        onError?.(err.message || (language === 'ar' ? "فشل في بدء الكاميرا" : "Failed to start camera"));
       }
     };
 
@@ -1097,7 +1120,7 @@ function QRScanner({ onScan, onError }: { onScan: (text: string) => void; onErro
         html5QrCodeRef.current.stop().catch(() => {});
       }
     };
-  }, [onScan, onError]);
+  }, [onScan, onError, language]);
 
   return (
     <div className="relative">

@@ -2,18 +2,17 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Loader2, CheckCircle, QrCode, Keyboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import logoImage from "@assets/Meror_logo_v.1_1767180225600.png";
 
-// Generate or retrieve persistent device ID
 function getDeviceId(): string {
   const storageKey = 'signage_device_id';
   let deviceId = localStorage.getItem(storageKey);
   
   if (!deviceId) {
-    // Generate a unique device ID (8 characters)
     deviceId = crypto.randomUUID().replace(/-/g, '').substring(0, 8).toUpperCase();
     localStorage.setItem(storageKey, deviceId);
   }
@@ -21,13 +20,11 @@ function getDeviceId(): string {
   return deviceId;
 }
 
-// Save bound screen info
 function saveScreenBinding(screenId: number, deviceToken: string): void {
   localStorage.setItem('bound_screen_id', screenId.toString());
   localStorage.setItem(`screen_device_token_${screenId}`, deviceToken);
 }
 
-// Get bound screen
 function getBoundScreen(): number | null {
   const screenId = localStorage.getItem('bound_screen_id');
   return screenId ? parseInt(screenId) : null;
@@ -36,6 +33,7 @@ function getBoundScreen(): number | null {
 export default function Activate() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const [deviceId] = useState(() => getDeviceId());
   const [isChecking, setIsChecking] = useState(true);
   const [isActivated, setIsActivated] = useState(false);
@@ -43,13 +41,13 @@ export default function Activate() {
   const [manualCode, setManualCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check if device is already bound on mount
+  const dir = language === 'ar' ? 'rtl' : 'ltr';
+
   useEffect(() => {
     const boundScreenId = getBoundScreen();
     if (boundScreenId) {
       const token = localStorage.getItem(`screen_device_token_${boundScreenId}`);
       if (token) {
-        // Verify binding is still valid
         fetch("/api/player/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -60,7 +58,6 @@ export default function Activate() {
             if (data.bound) {
               setLocation(`/player/${boundScreenId}`);
             } else {
-              // Clear invalid binding
               localStorage.removeItem('bound_screen_id');
               localStorage.removeItem(`screen_device_token_${boundScreenId}`);
               setIsChecking(false);
@@ -75,7 +72,6 @@ export default function Activate() {
     }
   }, [setLocation]);
 
-  // Poll for device binding status (only in QR mode)
   useEffect(() => {
     if (isChecking || isActivated || activationMode !== 'qr') return;
     
@@ -90,8 +86,8 @@ export default function Activate() {
           saveScreenBinding(data.screenId, data.deviceToken);
           
           toast({
-            title: "تم ربط الجهاز بنجاح",
-            description: `تم ربط هذا الجهاز بالشاشة رقم ${data.screenId}`,
+            title: t.activation.deviceBindingSuccess,
+            description: `${t.activation.deviceBoundToScreen} ${data.screenId}`,
           });
           
           setTimeout(() => {
@@ -104,14 +100,13 @@ export default function Activate() {
     }, 3000);
     
     return () => clearInterval(pollInterval);
-  }, [deviceId, isChecking, isActivated, activationMode, setLocation, toast]);
+  }, [deviceId, isChecking, isActivated, activationMode, setLocation, toast, t]);
 
-  // Handle manual code activation
   const handleManualActivation = async () => {
     if (!manualCode.trim() || manualCode.length !== 6) {
       toast({
-        title: "رمز غير صالح",
-        description: "يرجى إدخال رمز من 6 أحرف",
+        title: t.activation.invalidCode,
+        description: t.activation.enterSixChars,
         variant: "destructive",
       });
       return;
@@ -128,15 +123,15 @@ export default function Activate() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || "فشل التفعيل");
+        throw new Error(data.message || t.activation.activationError);
       }
       
       setIsActivated(true);
       saveScreenBinding(data.screenId, data.deviceToken);
       
       toast({
-        title: "تم التفعيل بنجاح",
-        description: `تم تفعيل الشاشة: ${data.screenName}`,
+        title: t.activation.activationSuccess,
+        description: `${t.activation.screenActivated} ${data.screenName}`,
       });
       
       setTimeout(() => {
@@ -144,8 +139,8 @@ export default function Activate() {
       }, 1500);
     } catch (error: any) {
       toast({
-        title: "خطأ في التفعيل",
-        description: error.message || "رمز غير صالح أو منتهي الصلاحية",
+        title: t.activation.activationError,
+        description: error.message || t.activation.invalidOrExpiredCode,
         variant: "destructive",
       });
     } finally {
@@ -167,13 +162,12 @@ export default function Activate() {
 
   if (isActivated) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden" dir="rtl">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden" dir={dir}>
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
           <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
         </div>
         <div className="text-center z-10">
-          {/* Logo */}
           <img 
             src={logoImage} 
             alt="Meror" 
@@ -183,8 +177,8 @@ export default function Activate() {
           <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-12 h-12 text-green-500" />
           </div>
-          <h1 className="text-3xl font-bold mb-2">تم الربط بنجاح</h1>
-          <p className="text-muted-foreground">جاري تحويلك لصفحة العرض...</p>
+          <h1 className="text-3xl font-bold mb-2" data-testid="text-binding-success">{t.activation.bindingSuccess}</h1>
+          <p className="text-muted-foreground" data-testid="text-redirecting">{t.activation.redirectingToPlayer}</p>
           <Loader2 className="w-6 h-6 animate-spin mx-auto mt-4 text-primary" />
         </div>
       </div>
@@ -192,25 +186,23 @@ export default function Activate() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden" dir={dir}>
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
         <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
       <div className="text-center max-w-lg px-4 z-10">
-        {/* Logo */}
         <img 
           src={logoImage} 
           alt="Meror" 
           className="h-16 mx-auto mb-8"
         />
         
-        <h1 className="text-4xl font-bold mb-2">تفعيل الشاشة</h1>
-        <p className="text-muted-foreground text-lg mb-6">
-          اختر طريقة التفعيل المناسبة
+        <h1 className="text-4xl font-bold mb-2" data-testid="text-activation-title">{t.activation.title}</h1>
+        <p className="text-muted-foreground text-lg mb-6" data-testid="text-activation-subtitle">
+          {t.activation.chooseActivationMethod}
         </p>
         
-        {/* Mode Toggle */}
         <div className="flex gap-2 justify-center mb-8">
           <Button
             variant={activationMode === 'qr' ? 'default' : 'outline'}
@@ -219,7 +211,7 @@ export default function Activate() {
             data-testid="button-mode-qr"
           >
             <QrCode className="w-4 h-4" />
-            رمز QR
+            {t.activation.qrCode}
           </Button>
           <Button
             variant={activationMode === 'code' ? 'default' : 'outline'}
@@ -228,15 +220,15 @@ export default function Activate() {
             data-testid="button-mode-code"
           >
             <Keyboard className="w-4 h-4" />
-            إدخال الرمز
+            {t.activation.enterCodeManual}
           </Button>
         </div>
         
         <div className="space-y-6">
           {activationMode === 'qr' ? (
             <>
-              <p className="text-sm text-muted-foreground">
-                امسح هذا الرمز من لوحة التحكم لربط الجهاز بشاشة
+              <p className="text-sm text-muted-foreground" data-testid="text-scan-instruction">
+                {t.activation.scanFromDashboard}
               </p>
               <div className="bg-white p-6 rounded-2xl inline-block shadow-lg">
                 <QRCodeSVG 
@@ -248,27 +240,27 @@ export default function Activate() {
               </div>
               
               <div className="bg-card border p-6 rounded-xl">
-                <p className="text-sm text-muted-foreground mb-2">رقم تعريف الجهاز</p>
-                <p className="text-4xl font-mono font-bold tracking-[0.2em]">
+                <p className="text-sm text-muted-foreground mb-2" data-testid="text-device-id-label">{t.activation.deviceId}</p>
+                <p className="text-4xl font-mono font-bold tracking-[0.2em]" data-testid="text-device-id">
                   {deviceId}
                 </p>
               </div>
               
               <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>في انتظار الربط من لوحة التحكم...</span>
+                <span data-testid="text-waiting">{t.activation.waitingForBinding}</span>
               </div>
             </>
           ) : (
             <>
-              <p className="text-sm text-muted-foreground">
-                أدخل رمز التفعيل المكون من 6 أحرف الذي تم إنشاؤه من لوحة التحكم
+              <p className="text-sm text-muted-foreground" data-testid="text-enter-code-instruction">
+                {t.activation.enterSixDigitCode}
               </p>
               <div className="bg-card border p-6 rounded-xl space-y-4">
                 <Input
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value.toUpperCase().slice(0, 6))}
-                  placeholder="أدخل الرمز"
+                  placeholder={t.activation.enterCodePlaceholder}
                   className="text-center text-3xl font-mono tracking-[0.3em] h-16"
                   maxLength={6}
                   data-testid="input-activation-code"
@@ -281,17 +273,17 @@ export default function Activate() {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin ml-2" />
-                      جاري التفعيل...
+                      <Loader2 className={`w-5 h-5 animate-spin ${language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                      {t.activation.activating}
                     </>
                   ) : (
-                    "تفعيل"
+                    t.activation.activate
                   )}
                 </Button>
               </div>
               
-              <p className="text-xs text-muted-foreground">
-                يمكنك الحصول على رمز التفعيل من صفحة الشاشات في لوحة التحكم
+              <p className="text-xs text-muted-foreground" data-testid="text-get-code-hint">
+                {t.activation.getCodeFromScreensPage}
               </p>
             </>
           )}

@@ -18,6 +18,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useWorkContext } from "@/hooks/use-work-context";
+import { useLanguage } from "@/hooks/use-language";
 import type { TeamMember, User as UserType } from "@shared/schema";
 
 interface AcceptedTeam {
@@ -28,6 +29,7 @@ interface AcceptedTeam {
 
 export function WorkContextSwitcher() {
   const { context, switchToPersonal, switchToCompany, setAvailableCompanies } = useWorkContext();
+  const { t, language } = useLanguage();
 
   const { data: acceptedTeams = [] } = useQuery<(TeamMember & { owner: UserType })[]>({
     queryKey: ['/api/team/accepted'],
@@ -49,7 +51,7 @@ export function WorkContextSwitcher() {
     const fullName = `${firstName} ${lastName}`.trim();
     return {
       ownerId: t.ownerId,
-      ownerName: t.owner?.companyName || fullName || 'شركة',
+      ownerName: t.owner?.companyName || fullName || (language === 'ar' ? 'شركة' : 'Company'),
       permission: t.permission,
     };
   });
@@ -74,7 +76,7 @@ export function WorkContextSwitcher() {
           {context.type === 'personal' ? (
             <>
               <User className="w-4 h-4" />
-              <span className="flex-1 text-right">حسابي الشخصي</span>
+              <span className="flex-1 text-right">{t.workContext.myPersonalAccount}</span>
             </>
           ) : (
             <>
@@ -91,7 +93,7 @@ export function WorkContextSwitcher() {
           data-testid="menu-switch-personal"
         >
           <User className="w-4 h-4 ml-2" />
-          <span className="flex-1">حسابي الشخصي</span>
+          <span className="flex-1">{t.workContext.myPersonalAccount}</span>
           {context.type === 'personal' && <Check className="w-4 h-4" />}
         </DropdownMenuItem>
         
@@ -124,6 +126,7 @@ interface ContextChoiceDialogProps {
 
 export function ContextChoiceDialog({ open, onOpenChange, companyName, ownerId }: ContextChoiceDialogProps) {
   const { switchToPersonal, switchToCompany } = useWorkContext();
+  const { t, language } = useLanguage();
 
   const handlePersonal = () => {
     switchToPersonal();
@@ -137,13 +140,17 @@ export function ContextChoiceDialog({ open, onOpenChange, companyName, ownerId }
     onOpenChange(false);
   };
 
+  const dialogDescription = language === 'ar' 
+    ? `${t.workContext.invitationAcceptedFrom} ${companyName}. ${t.workContext.chooseWhereToWork}`
+    : `${t.workContext.invitationAcceptedFrom} ${companyName} ${t.workContext.chooseWhereToWork}`;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>اختر سياق العمل</DialogTitle>
+          <DialogTitle>{t.workContext.chooseWorkContext}</DialogTitle>
           <DialogDescription>
-            تم قبول دعوتك من {companyName}. اختر أين تريد العمل الآن:
+            {dialogDescription}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 mt-4">
@@ -155,8 +162,8 @@ export function ContextChoiceDialog({ open, onOpenChange, companyName, ownerId }
           >
             <User className="w-6 h-6 text-muted-foreground" />
             <div className="text-right">
-              <div className="font-medium">حسابي الشخصي</div>
-              <div className="text-sm text-muted-foreground">عرض وإدارة شاشاتي ومحتواي الخاص</div>
+              <div className="font-medium">{t.workContext.myPersonalAccount}</div>
+              <div className="text-sm text-muted-foreground">{t.workContext.viewAndManagePersonal}</div>
             </div>
           </Button>
           <Button
@@ -168,7 +175,7 @@ export function ContextChoiceDialog({ open, onOpenChange, companyName, ownerId }
             <Building2 className="w-6 h-6" />
             <div className="text-right">
               <div className="font-medium">{companyName}</div>
-              <div className="text-sm opacity-80">الانتقال لإدارة محتوى الشركة</div>
+              <div className="text-sm opacity-80">{t.workContext.switchToCompanyContent}</div>
             </div>
           </Button>
         </div>

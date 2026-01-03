@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useScreenGroups, useCreateScreenGroup, useDeleteScreenGroup } from "@/hooks/use-groups";
 import { useScreens, useUpdateScreen } from "@/hooks/use-screens";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useLanguage } from "@/hooks/use-language";
 import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -36,6 +37,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Groups() {
+  const { t, language } = useLanguage();
   const { canAdd, canEdit, canDelete } = usePermissions();
   const { data: groups = [], isLoading } = useScreenGroups();
   const { data: screens = [] } = useScreens();
@@ -56,7 +58,7 @@ export default function Groups() {
   };
 
   const handleDelete = async (id: number) => {
-    const confirmed = window.confirm("هل أنت متأكد من حذف هذه المجموعة؟");
+    const confirmed = window.confirm(t.groups.deleteConfirm);
     if (confirmed) {
       await deleteGroup.mutateAsync(id);
     }
@@ -66,20 +68,27 @@ export default function Groups() {
     const newGroupId = currentGroupId === targetGroupId ? null : targetGroupId;
     await updateScreen.mutateAsync({ id: screenId, data: { groupId: newGroupId } });
     toast({
-      title: newGroupId ? "تمت الإضافة" : "تمت الإزالة",
-      description: newGroupId ? "تمت إضافة الشاشة للمجموعة" : "تمت إزالة الشاشة من المجموعة",
+      title: newGroupId ? t.groups.added : t.groups.removed,
+      description: newGroupId ? t.groups.screenAddedToGroup : t.groups.screenRemovedFromGroup,
     });
   };
 
   const manageGroup = groups.find(g => g.id === manageGroupId);
+
+  const getScreenCountText = (count: number) => {
+    if (language === 'en') {
+      return `${count} ${count === 1 ? t.groups.screen : t.groups.screens}`;
+    }
+    return `${count} ${t.groups.screen}`;
+  };
 
   return (
     <Layout>
       <div className="space-y-8">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">المجموعات</h1>
-            <p className="text-muted-foreground mt-1">تنظيم الشاشات في مجموعات لتسهيل جدولة المحتوى</p>
+            <h1 className="text-3xl font-bold text-foreground">{t.groups.title}</h1>
+            <p className="text-muted-foreground mt-1">{t.groups.subtitle}</p>
           </div>
           
           {canAdd && (
@@ -87,38 +96,38 @@ export default function Groups() {
               <DialogTrigger asChild>
                 <Button className="gap-2 bg-primary rounded-xl px-6" data-testid="button-add-group">
                   <Plus className="w-5 h-5" />
-                  <span>مجموعة جديدة</span>
+                  <span>{t.groups.newGroup}</span>
                 </Button>
               </DialogTrigger>
               <DialogContent>
               <DialogHeader>
-                <DialogTitle>إنشاء مجموعة جديدة</DialogTitle>
-                <DialogDescription>أدخل اسم ووصف المجموعة</DialogDescription>
+                <DialogTitle>{t.groups.createNewGroup}</DialogTitle>
+                <DialogDescription>{t.groups.enterGroupDetails}</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                 <div className="space-y-2">
-                  <Label>اسم المجموعة</Label>
+                  <Label>{t.groups.groupName}</Label>
                   <Input 
                     value={form.name} 
                     onChange={(e) => setForm({...form, name: e.target.value})}
-                    placeholder="مثال: فرع الرياض"
+                    placeholder={t.groups.groupNamePlaceholder}
                     required
                     className="rounded-xl"
                     data-testid="input-group-name"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>الوصف (اختياري)</Label>
+                  <Label>{t.groups.descriptionOptional}</Label>
                   <Input 
                     value={form.description} 
                     onChange={(e) => setForm({...form, description: e.target.value})}
-                    placeholder="وصف المجموعة"
+                    placeholder={t.groups.groupDescriptionPlaceholder}
                     className="rounded-xl"
                     data-testid="input-group-description"
                   />
                 </div>
                 <Button type="submit" disabled={createGroup.isPending} className="w-full bg-primary rounded-xl" data-testid="button-save-group">
-                  {createGroup.isPending ? "جاري الحفظ..." : "حفظ المجموعة"}
+                  {createGroup.isPending ? t.groups.saving : t.groups.saveGroup}
                 </Button>
               </form>
             </DialogContent>
@@ -137,10 +146,10 @@ export default function Groups() {
             <div className="p-6 bg-background rounded-full shadow-sm mb-4">
               <Layers className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-bold text-foreground">لا توجد مجموعات</h3>
-            <p className="text-muted-foreground mt-2 mb-6">أنشئ مجموعة لتنظيم الشاشات</p>
+            <h3 className="text-xl font-bold text-foreground">{t.groups.noGroups}</h3>
+            <p className="text-muted-foreground mt-2 mb-6">{t.groups.createGroupToOrganize}</p>
             <Button onClick={() => setIsOpen(true)} className="bg-primary rounded-xl" data-testid="button-create-first-group">
-              إنشاء مجموعة جديدة
+              {t.groups.createNewGroup}
             </Button>
           </div>
         ) : (
@@ -181,8 +190,8 @@ export default function Groups() {
                                   onClick={() => setManageGroupId(group.id)}
                                   data-testid={`button-manage-screens-${group.id}`}
                                 >
-                                  <Monitor className="w-4 h-4 ml-2" />
-                                  إدارة الشاشات
+                                  <Monitor className={`w-4 h-4 ${language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                                  {t.groups.manageScreens}
                                 </DropdownMenuItem>
                               )}
                               {canDelete && (
@@ -191,8 +200,8 @@ export default function Groups() {
                                   className="text-destructive"
                                   data-testid={`button-delete-group-${group.id}`}
                                 >
-                                  <Trash2 className="w-4 h-4 ml-2" />
-                                  حذف المجموعة
+                                  <Trash2 className={`w-4 h-4 ${language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                                  {t.groups.deleteGroup}
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
@@ -203,7 +212,7 @@ export default function Groups() {
                         <div className="flex items-center gap-2">
                           <Badge variant="secondary" className="gap-1">
                             <Monitor className="w-3 h-3" />
-                            {groupScreens.length} شاشة
+                            {getScreenCountText(groupScreens.length)}
                           </Badge>
                         </div>
                         {groupScreens.length > 0 && (
@@ -218,7 +227,7 @@ export default function Groups() {
                                 {canEdit && (
                                   <button
                                     onClick={() => handleToggleScreen(screen.id, screen.groupId, group.id)}
-                                    className="mr-1 text-muted-foreground hover:text-destructive"
+                                    className={`${language === 'ar' ? 'mr-1' : 'ml-1'} text-muted-foreground hover:text-destructive`}
                                     data-testid={`button-remove-screen-${screen.id}-from-group-${group.id}`}
                                   >
                                     <X className="w-3 h-3" />
@@ -237,7 +246,7 @@ export default function Groups() {
                             data-testid={`button-add-screens-to-group-${group.id}`}
                           >
                             <Plus className="w-4 h-4" />
-                            إضافة شاشات
+                            {t.groups.addScreens}
                           </Button>
                         )}
                       </CardContent>
@@ -253,14 +262,14 @@ export default function Groups() {
       <Dialog open={!!manageGroupId} onOpenChange={(open) => !open && setManageGroupId(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>إدارة شاشات المجموعة</DialogTitle>
+            <DialogTitle>{t.groups.manageGroupScreens}</DialogTitle>
             <DialogDescription>
-              {manageGroup?.name} - اختر الشاشات التي تريد إضافتها أو إزالتها
+              {manageGroup?.name} - {t.groups.selectScreensToAddOrRemove}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 max-h-80 overflow-y-auto py-4">
             {screens.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">لا توجد شاشات متاحة</p>
+              <p className="text-center text-muted-foreground py-8">{t.groups.noScreensAvailable}</p>
             ) : (
               screens.map(screen => {
                 const isInGroup = screen.groupId === manageGroupId;
@@ -284,7 +293,7 @@ export default function Groups() {
                           <p className="text-xs text-muted-foreground">{screen.location}</p>
                         )}
                         {otherGroupName && (
-                          <p className="text-xs text-amber-600">في مجموعة: {otherGroupName}</p>
+                          <p className="text-xs text-amber-600">{t.groups.inGroup} {otherGroupName}</p>
                         )}
                       </div>
                     </div>
@@ -300,7 +309,7 @@ export default function Groups() {
             className="w-full"
             data-testid="button-close-manage-screens"
           >
-            إغلاق
+            {t.close}
           </Button>
         </DialogContent>
       </Dialog>

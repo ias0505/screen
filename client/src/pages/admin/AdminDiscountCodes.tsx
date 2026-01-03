@@ -31,9 +31,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
+import { useLanguage } from "@/hooks/use-language";
 import { Tag, ArrowRight, Plus, Pencil, Trash2, CheckCircle, XCircle, Copy } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,6 +55,7 @@ interface DiscountCode {
 }
 
 export default function AdminDiscountCodes() {
+  const { language } = useLanguage();
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<DiscountCode | null>(null);
@@ -81,10 +83,10 @@ export default function AdminDiscountCodes() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/discount-codes'] });
       setIsCreateOpen(false);
       resetForm();
-      toast({ title: "تم إنشاء كود الخصم بنجاح" });
+      toast({ title: language === 'ar' ? "تم إنشاء كود الخصم بنجاح" : "Discount code created successfully" });
     },
     onError: (error: any) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: language === 'ar' ? "خطأ" : "Error", description: error.message, variant: "destructive" });
     }
   });
 
@@ -96,10 +98,10 @@ export default function AdminDiscountCodes() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/discount-codes'] });
       setEditingCode(null);
       resetForm();
-      toast({ title: "تم تحديث كود الخصم بنجاح" });
+      toast({ title: language === 'ar' ? "تم تحديث كود الخصم بنجاح" : "Discount code updated successfully" });
     },
     onError: (error: any) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: language === 'ar' ? "خطأ" : "Error", description: error.message, variant: "destructive" });
     }
   });
 
@@ -109,10 +111,10 @@ export default function AdminDiscountCodes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/discount-codes'] });
-      toast({ title: "تم حذف كود الخصم بنجاح" });
+      toast({ title: language === 'ar' ? "تم حذف كود الخصم بنجاح" : "Discount code deleted successfully" });
     },
     onError: (error: any) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: language === 'ar' ? "خطأ" : "Error", description: error.message, variant: "destructive" });
     }
   });
 
@@ -162,7 +164,7 @@ export default function AdminDiscountCodes() {
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast({ title: "تم نسخ الكود" });
+    toast({ title: language === 'ar' ? "تم نسخ الكود" : "Code copied" });
   };
 
   const generateRandomCode = () => {
@@ -187,6 +189,8 @@ export default function AdminDiscountCodes() {
   const activeCount = codes?.filter(c => c.isActive && !isCodeExpired(c) && !isCodeUsedUp(c)).length || 0;
   const totalUsage = codes?.reduce((sum, c) => sum + (c.usedCount || 0), 0) || 0;
 
+  const dateLocale = language === 'ar' ? ar : enUS;
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-2">
@@ -198,19 +202,21 @@ export default function AdminDiscountCodes() {
           </Link>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Tag className="w-6 h-6" />
-            أكواد الخصم
+            {language === 'ar' ? "أكواد الخصم" : "Discount Codes"}
           </h1>
         </div>
         <Button onClick={() => setIsCreateOpen(true)} data-testid="button-add-code">
           <Plus className="w-4 h-4 ml-2" />
-          إضافة كود
+          {language === 'ar' ? "إضافة كود" : "Add Code"}
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">إجمالي الأكواد</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "إجمالي الأكواد" : "Total Codes"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{codes?.length || 0}</p>
@@ -218,7 +224,9 @@ export default function AdminDiscountCodes() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">الأكواد النشطة</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "الأكواد النشطة" : "Active Codes"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">{activeCount}</p>
@@ -226,7 +234,9 @@ export default function AdminDiscountCodes() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">المنتهية/المستنفذة</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "المنتهية/المستنفذة" : "Expired/Used Up"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-muted-foreground">{(codes?.length || 0) - activeCount}</p>
@@ -234,7 +244,9 @@ export default function AdminDiscountCodes() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">إجمالي الاستخدام</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "إجمالي الاستخدام" : "Total Usage"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-blue-600">{totalUsage}</p>
@@ -250,18 +262,18 @@ export default function AdminDiscountCodes() {
             </div>
           ) : codes?.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              لا توجد أكواد خصم
+              {language === 'ar' ? "لا توجد أكواد خصم" : "No discount codes"}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">الكود</TableHead>
-                  <TableHead className="text-right">الخصم</TableHead>
-                  <TableHead className="text-right">الاستخدام</TableHead>
-                  <TableHead className="text-right">الصلاحية</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الكود" : "Code"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الخصم" : "Discount"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الاستخدام" : "Usage"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الصلاحية" : "Validity"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الحالة" : "Status"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الإجراءات" : "Actions"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -284,7 +296,7 @@ export default function AdminDiscountCodes() {
                       <Badge variant="outline">
                         {code.discountType === 'percentage' 
                           ? `${code.discountValue}%`
-                          : `${code.discountValue} ريال`
+                          : `${code.discountValue} ${language === 'ar' ? 'ريال' : 'SAR'}`
                         }
                       </Badge>
                     </TableCell>
@@ -294,26 +306,28 @@ export default function AdminDiscountCodes() {
                     <TableCell className="text-sm">
                       {code.validUntil ? (
                         <span className={isCodeExpired(code) ? "text-red-500" : ""}>
-                          حتى {format(new Date(code.validUntil), "d MMM yyyy", { locale: ar })}
+                          {language === 'ar' ? 'حتى' : 'Until'} {format(new Date(code.validUntil), "d MMM yyyy", { locale: dateLocale })}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground">دائم</span>
+                        <span className="text-muted-foreground">
+                          {language === 'ar' ? "دائم" : "Permanent"}
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
                       {!code.isActive ? (
                         <Badge variant="secondary">
                           <XCircle className="w-3 h-3 ml-1" />
-                          غير نشط
+                          {language === 'ar' ? "غير نشط" : "Inactive"}
                         </Badge>
                       ) : isCodeExpired(code) ? (
-                        <Badge variant="destructive">منتهي</Badge>
+                        <Badge variant="destructive">{language === 'ar' ? "منتهي" : "Expired"}</Badge>
                       ) : isCodeUsedUp(code) ? (
-                        <Badge variant="secondary">مستنفذ</Badge>
+                        <Badge variant="secondary">{language === 'ar' ? "مستنفذ" : "Used Up"}</Badge>
                       ) : (
                         <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
                           <CheckCircle className="w-3 h-3 ml-1" />
-                          نشط
+                          {language === 'ar' ? "نشط" : "Active"}
                         </Badge>
                       )}
                     </TableCell>
@@ -354,11 +368,15 @@ export default function AdminDiscountCodes() {
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingCode ? "تعديل كود الخصم" : "إضافة كود خصم جديد"}</DialogTitle>
+            <DialogTitle>
+              {editingCode 
+                ? (language === 'ar' ? "تعديل كود الخصم" : "Edit Discount Code")
+                : (language === 'ar' ? "إضافة كود خصم جديد" : "Add New Discount Code")}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="code">كود الخصم</Label>
+              <Label htmlFor="code">{language === 'ar' ? "كود الخصم" : "Discount Code"}</Label>
               <div className="flex gap-2">
                 <Input
                   id="code"
@@ -369,23 +387,23 @@ export default function AdminDiscountCodes() {
                   data-testid="input-code"
                 />
                 <Button type="button" variant="outline" onClick={generateRandomCode} data-testid="button-generate-code">
-                  توليد
+                  {language === 'ar' ? "توليد" : "Generate"}
                 </Button>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">الوصف</Label>
+              <Label htmlFor="description">{language === 'ar' ? "الوصف" : "Description"}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="وصف الخصم..."
+                placeholder={language === 'ar' ? "وصف الخصم..." : "Discount description..."}
                 data-testid="input-code-description"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="discountType">نوع الخصم</Label>
+                <Label htmlFor="discountType">{language === 'ar' ? "نوع الخصم" : "Discount Type"}</Label>
                 <Select
                   value={formData.discountType}
                   onValueChange={(value) => setFormData({ ...formData, discountType: value as "percentage" | "fixed" })}
@@ -394,14 +412,16 @@ export default function AdminDiscountCodes() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percentage">نسبة مئوية</SelectItem>
-                    <SelectItem value="fixed">مبلغ ثابت</SelectItem>
+                    <SelectItem value="percentage">{language === 'ar' ? "نسبة مئوية" : "Percentage"}</SelectItem>
+                    <SelectItem value="fixed">{language === 'ar' ? "مبلغ ثابت" : "Fixed Amount"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="discountValue">
-                  {formData.discountType === 'percentage' ? 'النسبة %' : 'المبلغ (ريال)'}
+                  {formData.discountType === 'percentage' 
+                    ? (language === 'ar' ? 'النسبة %' : 'Percentage %')
+                    : (language === 'ar' ? 'المبلغ (ريال)' : 'Amount (SAR)')}
                 </Label>
                 <Input
                   id="discountValue"
@@ -416,7 +436,7 @@ export default function AdminDiscountCodes() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="minScreens">الحد الأدنى للشاشات</Label>
+                <Label htmlFor="minScreens">{language === 'ar' ? "الحد الأدنى للشاشات" : "Min Screens"}</Label>
                 <Input
                   id="minScreens"
                   type="number"
@@ -427,21 +447,21 @@ export default function AdminDiscountCodes() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxUses">الحد الأقصى للاستخدام</Label>
+                <Label htmlFor="maxUses">{language === 'ar' ? "الحد الأقصى للاستخدام" : "Max Uses"}</Label>
                 <Input
                   id="maxUses"
                   type="number"
                   min={1}
                   value={formData.maxUses}
                   onChange={(e) => setFormData({ ...formData, maxUses: e.target.value })}
-                  placeholder="غير محدود"
+                  placeholder={language === 'ar' ? "غير محدود" : "Unlimited"}
                   data-testid="input-max-uses"
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="validFrom">تاريخ البداية</Label>
+                <Label htmlFor="validFrom">{language === 'ar' ? "تاريخ البداية" : "Start Date"}</Label>
                 <Input
                   id="validFrom"
                   type="date"
@@ -451,7 +471,7 @@ export default function AdminDiscountCodes() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="validUntil">تاريخ الانتهاء</Label>
+                <Label htmlFor="validUntil">{language === 'ar' ? "تاريخ الانتهاء" : "End Date"}</Label>
                 <Input
                   id="validUntil"
                   type="date"
@@ -468,7 +488,7 @@ export default function AdminDiscountCodes() {
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 data-testid="switch-code-active"
               />
-              <Label htmlFor="isActive">نشط</Label>
+              <Label htmlFor="isActive">{language === 'ar' ? "نشط" : "Active"}</Label>
             </div>
           </div>
           <DialogFooter>
@@ -477,7 +497,11 @@ export default function AdminDiscountCodes() {
               disabled={!formData.code || !formData.discountValue || createMutation.isPending || updateMutation.isPending}
               data-testid="button-submit-code"
             >
-              {createMutation.isPending || updateMutation.isPending ? "جاري الحفظ..." : editingCode ? "حفظ التغييرات" : "إنشاء الكود"}
+              {createMutation.isPending || updateMutation.isPending 
+                ? (language === 'ar' ? "جاري الحفظ..." : "Saving...")
+                : editingCode 
+                  ? (language === 'ar' ? "حفظ التغييرات" : "Save Changes")
+                  : (language === 'ar' ? "إنشاء الكود" : "Create Code")}
             </Button>
           </DialogFooter>
         </DialogContent>

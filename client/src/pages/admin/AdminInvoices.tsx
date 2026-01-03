@@ -28,9 +28,10 @@ import {
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useLanguage } from "@/hooks/use-language";
 import { FileText, ArrowRight, CheckCircle, Clock, XCircle, Eye } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 
 interface Invoice {
   id: number;
@@ -56,6 +57,7 @@ interface Invoice {
 }
 
 export default function AdminInvoices() {
+  const { language } = useLanguage();
   const [filter, setFilter] = useState<string>("all");
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
@@ -75,14 +77,14 @@ export default function AdminInvoices() {
       });
     },
     onSuccess: () => {
-      toast({ title: "تم تحديث الفاتورة بنجاح" });
+      toast({ title: language === 'ar' ? "تم تحديث الفاتورة بنجاح" : "Invoice updated successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/invoices'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
       setShowUpdateDialog(false);
       setSelectedInvoice(null);
     },
     onError: () => {
-      toast({ title: "حدث خطأ", variant: "destructive" });
+      toast({ title: language === 'ar' ? "حدث خطأ" : "An error occurred", variant: "destructive" });
     }
   });
 
@@ -90,14 +92,17 @@ export default function AdminInvoices() {
     filter === "all" || inv.status === filter
   );
 
+  const dateLocale = language === 'ar' ? ar : enUS;
+  const noName = language === 'ar' ? 'بدون اسم' : 'No name';
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 ml-1" />مدفوعة</Badge>;
+        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 ml-1" />{language === 'ar' ? "مدفوعة" : "Paid"}</Badge>;
       case 'pending':
-        return <Badge variant="secondary" className="bg-orange-500 text-white"><Clock className="w-3 h-3 ml-1" />معلقة</Badge>;
+        return <Badge variant="secondary" className="bg-orange-500 text-white"><Clock className="w-3 h-3 ml-1" />{language === 'ar' ? "معلقة" : "Pending"}</Badge>;
       case 'cancelled':
-        return <Badge variant="destructive"><XCircle className="w-3 h-3 ml-1" />ملغاة</Badge>;
+        return <Badge variant="destructive"><XCircle className="w-3 h-3 ml-1" />{language === 'ar' ? "ملغاة" : "Cancelled"}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -116,30 +121,36 @@ export default function AdminInvoices() {
         </Link>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <FileText className="w-6 h-6" />
-          الفواتير
+          {language === 'ar' ? "الفواتير" : "Invoices"}
         </h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">إجمالي المدفوع</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "إجمالي المدفوع" : "Total Paid"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600">{totalPaid} ريال</p>
+            <p className="text-2xl font-bold text-green-600">{totalPaid} {language === 'ar' ? "ريال" : "SAR"}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">إجمالي المعلق</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "إجمالي المعلق" : "Total Pending"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-orange-600">{totalPending} ريال</p>
+            <p className="text-2xl font-bold text-orange-600">{totalPending} {language === 'ar' ? "ريال" : "SAR"}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">عدد الفواتير</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "عدد الفواتير" : "Invoice Count"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{invoices?.length || 0}</p>
@@ -150,13 +161,13 @@ export default function AdminInvoices() {
       <div className="flex items-center gap-4">
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-48" data-testid="select-invoice-filter">
-            <SelectValue placeholder="تصفية" />
+            <SelectValue placeholder={language === 'ar' ? "تصفية" : "Filter"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع الفواتير</SelectItem>
-            <SelectItem value="pending">المعلقة</SelectItem>
-            <SelectItem value="paid">المدفوعة</SelectItem>
-            <SelectItem value="cancelled">الملغاة</SelectItem>
+            <SelectItem value="all">{language === 'ar' ? "جميع الفواتير" : "All Invoices"}</SelectItem>
+            <SelectItem value="pending">{language === 'ar' ? "المعلقة" : "Pending"}</SelectItem>
+            <SelectItem value="paid">{language === 'ar' ? "المدفوعة" : "Paid"}</SelectItem>
+            <SelectItem value="cancelled">{language === 'ar' ? "الملغاة" : "Cancelled"}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -169,19 +180,19 @@ export default function AdminInvoices() {
             </div>
           ) : filteredInvoices?.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              لا توجد فواتير
+              {language === 'ar' ? "لا توجد فواتير" : "No invoices"}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">رقم الفاتورة</TableHead>
-                  <TableHead className="text-right">المستخدم</TableHead>
-                  <TableHead className="text-right">الاشتراك</TableHead>
-                  <TableHead className="text-right">المبلغ</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">التاريخ</TableHead>
-                  <TableHead className="text-right">إجراءات</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "رقم الفاتورة" : "Invoice #"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "المستخدم" : "User"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الاشتراك" : "Subscription"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "المبلغ" : "Amount"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الحالة" : "Status"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "التاريخ" : "Date"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "إجراءات" : "Actions"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -191,15 +202,15 @@ export default function AdminInvoices() {
                     <TableCell>
                       {invoice.user.firstName || invoice.user.lastName 
                         ? `${invoice.user.firstName || ''} ${invoice.user.lastName || ''}`.trim()
-                        : invoice.user.email || 'بدون اسم'}
+                        : invoice.user.email || noName}
                     </TableCell>
                     <TableCell>
-                      {invoice.subscription.screenCount} شاشة / {invoice.subscription.durationYears} سنة
+                      {invoice.subscription.screenCount} {language === 'ar' ? "شاشة" : "screens"} / {invoice.subscription.durationYears} {language === 'ar' ? "سنة" : "year(s)"}
                     </TableCell>
-                    <TableCell className="font-semibold">{invoice.amount} ريال</TableCell>
+                    <TableCell className="font-semibold">{invoice.amount} {language === 'ar' ? "ريال" : "SAR"}</TableCell>
                     <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                     <TableCell>
-                      {format(new Date(invoice.createdAt), 'dd MMM yyyy', { locale: ar })}
+                      {format(new Date(invoice.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -223,7 +234,7 @@ export default function AdminInvoices() {
                           }}
                           data-testid={`button-update-invoice-${invoice.id}`}
                         >
-                          تحديث
+                          {language === 'ar' ? "تحديث" : "Update"}
                         </Button>
                       </div>
                     </TableCell>
@@ -238,33 +249,35 @@ export default function AdminInvoices() {
       <Dialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تحديث حالة الفاتورة #{selectedInvoice?.id}</DialogTitle>
+            <DialogTitle>
+              {language === 'ar' ? `تحديث حالة الفاتورة #${selectedInvoice?.id}` : `Update Invoice #${selectedInvoice?.id} Status`}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium">الحالة</label>
+              <label className="text-sm font-medium">{language === 'ar' ? "الحالة" : "Status"}</label>
               <Select value={newStatus} onValueChange={setNewStatus}>
                 <SelectTrigger data-testid="select-new-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">معلقة</SelectItem>
-                  <SelectItem value="paid">مدفوعة</SelectItem>
-                  <SelectItem value="cancelled">ملغاة</SelectItem>
+                  <SelectItem value="pending">{language === 'ar' ? "معلقة" : "Pending"}</SelectItem>
+                  <SelectItem value="paid">{language === 'ar' ? "مدفوعة" : "Paid"}</SelectItem>
+                  <SelectItem value="cancelled">{language === 'ar' ? "ملغاة" : "Cancelled"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {newStatus === 'paid' && (
               <div>
-                <label className="text-sm font-medium">طريقة الدفع</label>
+                <label className="text-sm font-medium">{language === 'ar' ? "طريقة الدفع" : "Payment Method"}</label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                   <SelectTrigger data-testid="select-payment-method">
-                    <SelectValue placeholder="اختر طريقة الدفع" />
+                    <SelectValue placeholder={language === 'ar' ? "اختر طريقة الدفع" : "Select payment method"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cash">نقداً</SelectItem>
-                    <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
-                    <SelectItem value="online">دفع إلكتروني</SelectItem>
+                    <SelectItem value="cash">{language === 'ar' ? "نقداً" : "Cash"}</SelectItem>
+                    <SelectItem value="bank_transfer">{language === 'ar' ? "تحويل بنكي" : "Bank Transfer"}</SelectItem>
+                    <SelectItem value="online">{language === 'ar' ? "دفع إلكتروني" : "Online Payment"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -275,7 +288,9 @@ export default function AdminInvoices() {
               className="w-full"
               data-testid="button-confirm-update-invoice"
             >
-              {updateInvoiceMutation.isPending ? "جاري التحديث..." : "تحديث الفاتورة"}
+              {updateInvoiceMutation.isPending 
+                ? (language === 'ar' ? "جاري التحديث..." : "Updating...")
+                : (language === 'ar' ? "تحديث الفاتورة" : "Update Invoice")}
             </Button>
           </div>
         </DialogContent>

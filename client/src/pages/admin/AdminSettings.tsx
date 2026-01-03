@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 import { Settings, Save, DollarSign } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminSettings() {
+  const { language } = useLanguage();
   const { toast } = useToast();
   const [pricePerScreen, setPricePerScreen] = useState("");
 
@@ -28,23 +30,27 @@ export default function AdminSettings() {
       const res = await apiRequest("PATCH", "/api/admin/settings", { key, value });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "حدث خطأ");
+        throw new Error(error.message || (language === 'ar' ? "حدث خطأ" : "An error occurred"));
       }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/settings'] });
-      toast({ title: "تم حفظ الإعدادات بنجاح" });
+      toast({ title: language === 'ar' ? "تم حفظ الإعدادات بنجاح" : "Settings saved successfully" });
     },
     onError: (error: Error) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: language === 'ar' ? "خطأ" : "Error", description: error.message, variant: "destructive" });
     },
   });
 
   const handleSavePrice = () => {
     const price = parseInt(pricePerScreen, 10);
     if (isNaN(price) || price < 1) {
-      toast({ title: "خطأ", description: "يرجى إدخال سعر صالح", variant: "destructive" });
+      toast({ 
+        title: language === 'ar' ? "خطأ" : "Error", 
+        description: language === 'ar' ? "يرجى إدخال سعر صالح" : "Please enter a valid price", 
+        variant: "destructive" 
+      });
       return;
     }
     updateSettingMutation.mutate({ key: "price_per_screen", value: String(price) });
@@ -55,8 +61,12 @@ export default function AdminSettings() {
       <div className="flex items-center gap-3">
         <Settings className="w-6 h-6 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">إعدادات النظام</h1>
-          <p className="text-muted-foreground">تحكم في إعدادات التطبيق العامة</p>
+          <h1 className="text-2xl font-bold">
+            {language === 'ar' ? "إعدادات النظام" : "System Settings"}
+          </h1>
+          <p className="text-muted-foreground">
+            {language === 'ar' ? "تحكم في إعدادات التطبيق العامة" : "Manage general application settings"}
+          </p>
         </div>
       </div>
 
@@ -64,10 +74,10 @@ export default function AdminSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="w-5 h-5" />
-            إعدادات الأسعار
+            {language === 'ar' ? "إعدادات الأسعار" : "Pricing Settings"}
           </CardTitle>
           <CardDescription>
-            تحكم في أسعار الاشتراكات
+            {language === 'ar' ? "تحكم في أسعار الاشتراكات" : "Manage subscription pricing"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -78,7 +88,9 @@ export default function AdminSettings() {
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="pricePerScreen">سعر الشاشة الواحدة (ريال سعودي / سنة)</Label>
+                <Label htmlFor="pricePerScreen">
+                  {language === 'ar' ? "سعر الشاشة الواحدة (ريال سعودي / سنة)" : "Price per Screen (SAR / year)"}
+                </Label>
                 <div className="flex gap-2">
                   <Input
                     id="pricePerScreen"
@@ -96,20 +108,38 @@ export default function AdminSettings() {
                     data-testid="button-save-price"
                   >
                     <Save className="w-4 h-4 ml-2" />
-                    {updateSettingMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+                    {updateSettingMutation.isPending 
+                      ? (language === 'ar' ? "جاري الحفظ..." : "Saving...")
+                      : (language === 'ar' ? "حفظ" : "Save")}
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  السعر الحالي: {settings?.price_per_screen || "50"} ريال لكل شاشة في السنة
+                  {language === 'ar' 
+                    ? `السعر الحالي: ${settings?.price_per_screen || "50"} ريال لكل شاشة في السنة`
+                    : `Current price: ${settings?.price_per_screen || "50"} SAR per screen per year`}
                 </p>
               </div>
 
               <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-medium mb-2">أمثلة على حساب السعر:</h4>
+                <h4 className="font-medium mb-2">
+                  {language === 'ar' ? "أمثلة على حساب السعر:" : "Price calculation examples:"}
+                </h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>شاشة واحدة لمدة سنة = {pricePerScreen || "50"} ريال</li>
-                  <li>5 شاشات لمدة سنة = {(parseInt(pricePerScreen) || 50) * 5} ريال</li>
-                  <li>5 شاشات لمدة سنتين = {(parseInt(pricePerScreen) || 50) * 5 * 2} ريال</li>
+                  <li>
+                    {language === 'ar' 
+                      ? `شاشة واحدة لمدة سنة = ${pricePerScreen || "50"} ريال`
+                      : `1 screen for 1 year = ${pricePerScreen || "50"} SAR`}
+                  </li>
+                  <li>
+                    {language === 'ar' 
+                      ? `5 شاشات لمدة سنة = ${(parseInt(pricePerScreen) || 50) * 5} ريال`
+                      : `5 screens for 1 year = ${(parseInt(pricePerScreen) || 50) * 5} SAR`}
+                  </li>
+                  <li>
+                    {language === 'ar' 
+                      ? `5 شاشات لمدة سنتين = ${(parseInt(pricePerScreen) || 50) * 5 * 2} ريال`
+                      : `5 screens for 2 years = ${(parseInt(pricePerScreen) || 50) * 5 * 2} SAR`}
+                  </li>
                 </ul>
               </div>
             </div>

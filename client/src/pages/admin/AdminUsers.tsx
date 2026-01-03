@@ -23,6 +23,7 @@ import {
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useLanguage } from "@/hooks/use-language";
 import {
   Select,
   SelectContent,
@@ -42,7 +43,7 @@ import {
   X
 } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 
 interface User {
   id: string;
@@ -59,6 +60,7 @@ interface UserWithStats extends User {
 }
 
 export default function AdminUsers() {
+  const { language } = useLanguage();
   const [search, setSearch] = useState("");
   const [filterScreens, setFilterScreens] = useState<string>("all");
   const [filterSubscriptions, setFilterSubscriptions] = useState<string>("all");
@@ -88,14 +90,14 @@ export default function AdminUsers() {
       });
     },
     onSuccess: () => {
-      toast({ title: "تمت إضافة الشاشة بنجاح" });
+      toast({ title: language === 'ar' ? "تمت إضافة الشاشة بنجاح" : "Screen added successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users', selectedUser?.id] });
       setShowAddScreen(false);
       setScreenName("");
       setScreenLocation("");
     },
     onError: () => {
-      toast({ title: "حدث خطأ", variant: "destructive" });
+      toast({ title: language === 'ar' ? "حدث خطأ" : "An error occurred", variant: "destructive" });
     }
   });
 
@@ -107,7 +109,7 @@ export default function AdminUsers() {
       });
     },
     onSuccess: () => {
-      toast({ title: "تم إضافة الاشتراك بنجاح" });
+      toast({ title: language === 'ar' ? "تم إضافة الاشتراك بنجاح" : "Subscription added successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users', selectedUser?.id] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
       setShowAddSubscription(false);
@@ -115,12 +117,11 @@ export default function AdminUsers() {
       setDurationYears(1);
     },
     onError: () => {
-      toast({ title: "حدث خطأ", variant: "destructive" });
+      toast({ title: language === 'ar' ? "حدث خطأ" : "An error occurred", variant: "destructive" });
     }
   });
 
   const filteredUsers = users?.filter(user => {
-    // Search filter
     if (search.trim()) {
       const query = search.toLowerCase();
       const matchesSearch = (
@@ -131,7 +132,6 @@ export default function AdminUsers() {
       if (!matchesSearch) return false;
     }
     
-    // Screen filter
     if (filterScreens === "with" && (!user.screenCount || user.screenCount === 0)) {
       return false;
     }
@@ -139,7 +139,6 @@ export default function AdminUsers() {
       return false;
     }
     
-    // Subscription filter
     if (filterSubscriptions === "with" && (!user.subscriptionCount || user.subscriptionCount === 0)) {
       return false;
     }
@@ -161,6 +160,9 @@ export default function AdminUsers() {
   const usersWithScreens = users?.filter(u => u.screenCount && u.screenCount > 0).length || 0;
   const usersWithSubscriptions = users?.filter(u => u.subscriptionCount && u.subscriptionCount > 0).length || 0;
 
+  const dateLocale = language === 'ar' ? ar : enUS;
+  const noName = language === 'ar' ? 'بدون اسم' : 'No name';
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-2">
@@ -171,15 +173,16 @@ export default function AdminUsers() {
         </Link>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Users className="w-6 h-6" />
-          إدارة المستخدمين
+          {language === 'ar' ? "إدارة المستخدمين" : "User Management"}
         </h1>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">إجمالي المستخدمين</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "إجمالي المستخدمين" : "Total Users"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{users?.length || 0}</p>
@@ -187,7 +190,9 @@ export default function AdminUsers() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">لديهم شاشات</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "لديهم شاشات" : "With Screens"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">{usersWithScreens}</p>
@@ -195,7 +200,9 @@ export default function AdminUsers() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">لديهم اشتراكات</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "لديهم اشتراكات" : "With Subscriptions"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-blue-600">{usersWithSubscriptions}</p>
@@ -203,7 +210,9 @@ export default function AdminUsers() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">بدون شاشات</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "بدون شاشات" : "Without Screens"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-gray-500">{(users?.length || 0) - usersWithScreens}</p>
@@ -211,12 +220,11 @@ export default function AdminUsers() {
         </Card>
       </div>
 
-      {/* Filter Bar */}
       {users && users.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap bg-muted/30 p-3 rounded-xl">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Filter className="w-4 h-4" />
-            <span className="text-sm font-medium">تصفية:</span>
+            <span className="text-sm font-medium">{language === 'ar' ? "تصفية:" : "Filter:"}</span>
           </div>
           
           <div className="relative flex-1 min-w-[200px] max-w-xs">
@@ -224,7 +232,7 @@ export default function AdminUsers() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="بحث بالاسم أو البريد..."
+              placeholder={language === 'ar' ? "بحث بالاسم أو البريد..." : "Search by name or email..."}
               className="pr-10 rounded-xl"
               data-testid="input-search-users"
             />
@@ -232,23 +240,23 @@ export default function AdminUsers() {
           
           <Select value={filterScreens} onValueChange={setFilterScreens}>
             <SelectTrigger className="w-36 rounded-xl" data-testid="select-filter-screens">
-              <SelectValue placeholder="الشاشات" />
+              <SelectValue placeholder={language === 'ar' ? "الشاشات" : "Screens"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">كل المستخدمين</SelectItem>
-              <SelectItem value="with">لديهم شاشات</SelectItem>
-              <SelectItem value="without">بدون شاشات</SelectItem>
+              <SelectItem value="all">{language === 'ar' ? "كل المستخدمين" : "All Users"}</SelectItem>
+              <SelectItem value="with">{language === 'ar' ? "لديهم شاشات" : "With Screens"}</SelectItem>
+              <SelectItem value="without">{language === 'ar' ? "بدون شاشات" : "Without Screens"}</SelectItem>
             </SelectContent>
           </Select>
           
           <Select value={filterSubscriptions} onValueChange={setFilterSubscriptions}>
             <SelectTrigger className="w-40 rounded-xl" data-testid="select-filter-subscriptions">
-              <SelectValue placeholder="الاشتراكات" />
+              <SelectValue placeholder={language === 'ar' ? "الاشتراكات" : "Subscriptions"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">الكل</SelectItem>
-              <SelectItem value="with">لديهم اشتراك</SelectItem>
-              <SelectItem value="without">بدون اشتراك</SelectItem>
+              <SelectItem value="all">{language === 'ar' ? "الكل" : "All"}</SelectItem>
+              <SelectItem value="with">{language === 'ar' ? "لديهم اشتراك" : "With Subscription"}</SelectItem>
+              <SelectItem value="without">{language === 'ar' ? "بدون اشتراك" : "Without Subscription"}</SelectItem>
             </SelectContent>
           </Select>
           
@@ -261,12 +269,12 @@ export default function AdminUsers() {
               data-testid="button-clear-filters"
             >
               <X className="w-4 h-4" />
-              مسح الفلاتر
+              {language === 'ar' ? "مسح الفلاتر" : "Clear Filters"}
             </Button>
           )}
           
           <Badge variant="secondary" className="mr-auto">
-            {filteredUsers.length} من {users.length}
+            {filteredUsers.length} {language === 'ar' ? "من" : "of"} {users.length}
           </Badge>
         </div>
       )}
@@ -275,7 +283,9 @@ export default function AdminUsers() {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>قائمة المستخدمين ({filteredUsers?.length || 0})</CardTitle>
+              <CardTitle>
+                {language === 'ar' ? `قائمة المستخدمين (${filteredUsers?.length || 0})` : `User List (${filteredUsers?.length || 0})`}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -284,16 +294,18 @@ export default function AdminUsers() {
                 </div>
               ) : filteredUsers.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
-                  {users && users.length > 0 ? "لا توجد نتائج تطابق البحث" : "لا يوجد مستخدمين"}
+                  {users && users.length > 0 
+                    ? (language === 'ar' ? "لا توجد نتائج تطابق البحث" : "No results match your search")
+                    : (language === 'ar' ? "لا يوجد مستخدمين" : "No users")}
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-right">المستخدم</TableHead>
-                      <TableHead className="text-right">البريد الإلكتروني</TableHead>
-                      <TableHead className="text-right">تاريخ التسجيل</TableHead>
-                      <TableHead className="text-right">إجراءات</TableHead>
+                      <TableHead className="text-right">{language === 'ar' ? "المستخدم" : "User"}</TableHead>
+                      <TableHead className="text-right">{language === 'ar' ? "البريد الإلكتروني" : "Email"}</TableHead>
+                      <TableHead className="text-right">{language === 'ar' ? "تاريخ التسجيل" : "Registration Date"}</TableHead>
+                      <TableHead className="text-right">{language === 'ar' ? "إجراءات" : "Actions"}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -307,11 +319,11 @@ export default function AdminUsers() {
                         <TableCell>
                           {user.firstName || user.lastName 
                             ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                            : 'بدون اسم'}
+                            : noName}
                         </TableCell>
                         <TableCell>{user.email || '-'}</TableCell>
                         <TableCell>
-                          {format(new Date(user.createdAt), 'dd MMM yyyy', { locale: ar })}
+                          {format(new Date(user.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
                         </TableCell>
                         <TableCell>
                           <Button 
@@ -338,45 +350,49 @@ export default function AdminUsers() {
           {selectedUser ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">تفاصيل المستخدم</CardTitle>
+                <CardTitle className="text-lg">
+                  {language === 'ar' ? "تفاصيل المستخدم" : "User Details"}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">الاسم</p>
+                  <p className="text-sm text-muted-foreground">{language === 'ar' ? "الاسم" : "Name"}</p>
                   <p className="font-medium">
                     {selectedUser.firstName || selectedUser.lastName 
                       ? `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim()
-                      : 'بدون اسم'}
+                      : noName}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">البريد الإلكتروني</p>
+                  <p className="text-sm text-muted-foreground">{language === 'ar' ? "البريد الإلكتروني" : "Email"}</p>
                   <p className="font-medium">{selectedUser.email || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">تاريخ التسجيل</p>
+                  <p className="text-sm text-muted-foreground">{language === 'ar' ? "تاريخ التسجيل" : "Registration Date"}</p>
                   <p className="font-medium">
-                    {format(new Date(selectedUser.createdAt), 'dd MMMM yyyy', { locale: ar })}
+                    {format(new Date(selectedUser.createdAt), 'dd MMMM yyyy', { locale: dateLocale })}
                   </p>
                 </div>
 
                 <div className="pt-4 space-y-2">
-                  <p className="text-sm font-medium">الاشتراكات</p>
+                  <p className="text-sm font-medium">{language === 'ar' ? "الاشتراكات" : "Subscriptions"}</p>
                   {(userDetails as any)?.subscriptions?.length > 0 ? (
                     <div className="space-y-1">
                       {(userDetails as any).subscriptions.map((sub: any) => (
                         <Badge key={sub.id} variant={sub.status === 'active' ? 'default' : 'secondary'}>
-                          {sub.screenCount} شاشة - {sub.durationYears} سنة
+                          {sub.screenCount} {language === 'ar' ? "شاشة" : "screens"} - {sub.durationYears} {language === 'ar' ? "سنة" : "year(s)"}
                         </Badge>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">لا توجد اشتراكات</p>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'ar' ? "لا توجد اشتراكات" : "No subscriptions"}
+                    </p>
                   )}
                 </div>
 
                 <div className="pt-2 space-y-2">
-                  <p className="text-sm font-medium">الشاشات</p>
+                  <p className="text-sm font-medium">{language === 'ar' ? "الشاشات" : "Screens"}</p>
                   {(userDetails as any)?.screens?.length > 0 ? (
                     <div className="space-y-1">
                       {(userDetails as any).screens.map((screen: any) => (
@@ -386,7 +402,9 @@ export default function AdminUsers() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">لا توجد شاشات</p>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'ar' ? "لا توجد شاشات" : "No screens"}
+                    </p>
                   )}
                 </div>
 
@@ -395,29 +413,35 @@ export default function AdminUsers() {
                     <DialogTrigger asChild>
                       <Button variant="outline" className="w-full gap-2" data-testid="button-add-screen-to-user">
                         <Monitor className="w-4 h-4" />
-                        إضافة شاشة (بدون اشتراك)
+                        {language === 'ar' ? "إضافة شاشة (بدون اشتراك)" : "Add Screen (No Subscription)"}
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>إضافة شاشة للمستخدم</DialogTitle>
+                        <DialogTitle>
+                          {language === 'ar' ? "إضافة شاشة للمستخدم" : "Add Screen to User"}
+                        </DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div>
-                          <label className="text-sm font-medium">اسم الشاشة</label>
+                          <label className="text-sm font-medium">
+                            {language === 'ar' ? "اسم الشاشة" : "Screen Name"}
+                          </label>
                           <Input
                             value={screenName}
                             onChange={(e) => setScreenName(e.target.value)}
-                            placeholder="شاشة المدخل"
+                            placeholder={language === 'ar' ? "شاشة المدخل" : "Entrance Screen"}
                             data-testid="input-screen-name"
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium">الموقع (اختياري)</label>
+                          <label className="text-sm font-medium">
+                            {language === 'ar' ? "الموقع (اختياري)" : "Location (Optional)"}
+                          </label>
                           <Input
                             value={screenLocation}
                             onChange={(e) => setScreenLocation(e.target.value)}
-                            placeholder="الطابق الأول"
+                            placeholder={language === 'ar' ? "الطابق الأول" : "First Floor"}
                             data-testid="input-screen-location"
                           />
                         </div>
@@ -427,7 +451,9 @@ export default function AdminUsers() {
                           className="w-full"
                           data-testid="button-confirm-add-screen"
                         >
-                          {addScreenMutation.isPending ? "جاري الإضافة..." : "إضافة الشاشة"}
+                          {addScreenMutation.isPending 
+                            ? (language === 'ar' ? "جاري الإضافة..." : "Adding...")
+                            : (language === 'ar' ? "إضافة الشاشة" : "Add Screen")}
                         </Button>
                       </div>
                     </DialogContent>
@@ -437,16 +463,20 @@ export default function AdminUsers() {
                     <DialogTrigger asChild>
                       <Button className="w-full gap-2" data-testid="button-add-subscription-to-user">
                         <CreditCard className="w-4 h-4" />
-                        إضافة اشتراك
+                        {language === 'ar' ? "إضافة اشتراك" : "Add Subscription"}
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>إضافة اشتراك للمستخدم</DialogTitle>
+                        <DialogTitle>
+                          {language === 'ar' ? "إضافة اشتراك للمستخدم" : "Add Subscription to User"}
+                        </DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div>
-                          <label className="text-sm font-medium">عدد الشاشات</label>
+                          <label className="text-sm font-medium">
+                            {language === 'ar' ? "عدد الشاشات" : "Number of Screens"}
+                          </label>
                           <Input
                             type="number"
                             min={1}
@@ -457,7 +487,9 @@ export default function AdminUsers() {
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium">مدة الاشتراك (سنوات)</label>
+                          <label className="text-sm font-medium">
+                            {language === 'ar' ? "مدة الاشتراك (سنوات)" : "Subscription Duration (Years)"}
+                          </label>
                           <Input
                             type="number"
                             min={1}
@@ -468,7 +500,9 @@ export default function AdminUsers() {
                           />
                         </div>
                         <div className="p-3 bg-muted rounded-md">
-                          <p className="text-sm">المبلغ: <span className="font-bold">{screenCount * 50 * durationYears} ريال</span></p>
+                          <p className="text-sm">
+                            {language === 'ar' ? "المبلغ:" : "Amount:"} <span className="font-bold">{screenCount * 50 * durationYears} {language === 'ar' ? "ريال" : "SAR"}</span>
+                          </p>
                         </div>
                         <Button 
                           onClick={() => addSubscriptionMutation.mutate()}
@@ -476,7 +510,9 @@ export default function AdminUsers() {
                           className="w-full"
                           data-testid="button-confirm-add-subscription"
                         >
-                          {addSubscriptionMutation.isPending ? "جاري الإضافة..." : "إضافة الاشتراك"}
+                          {addSubscriptionMutation.isPending 
+                            ? (language === 'ar' ? "جاري الإضافة..." : "Adding...")
+                            : (language === 'ar' ? "إضافة الاشتراك" : "Add Subscription")}
                         </Button>
                       </div>
                     </DialogContent>
@@ -488,7 +524,7 @@ export default function AdminUsers() {
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>اختر مستخدماً لعرض التفاصيل</p>
+                <p>{language === 'ar' ? "اختر مستخدماً لعرض التفاصيل" : "Select a user to view details"}</p>
               </CardContent>
             </Card>
           )}

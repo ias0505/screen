@@ -21,9 +21,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Link } from "wouter";
+import { useLanguage } from "@/hooks/use-language";
 import { Monitor, ArrowRight, Wifi, WifiOff, Trash2, Search, Filter, X } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -45,6 +46,7 @@ interface Screen {
 }
 
 export default function AdminScreens() {
+  const { language } = useLanguage();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -59,21 +61,28 @@ export default function AdminScreens() {
       await apiRequest("DELETE", `/api/admin/screens/${screenId}`);
     },
     onSuccess: () => {
-      toast({ title: "تم حذف الشاشة بنجاح" });
+      toast({ title: language === 'ar' ? "تم حذف الشاشة بنجاح" : "Screen deleted successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/screens'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
     },
     onError: (error: Error) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: language === 'ar' ? "خطأ" : "Error", description: error.message, variant: "destructive" });
     }
   });
+
+  const noName = language === 'ar' ? 'بدون اسم' : 'No name';
+  const dateLocale = language === 'ar' ? ar : enUS;
 
   const handleDelete = (screen: Screen) => {
     const userName = screen.user.firstName || screen.user.lastName 
       ? `${screen.user.firstName || ''} ${screen.user.lastName || ''}`.trim()
-      : screen.user.email || 'بدون اسم';
+      : screen.user.email || noName;
     
-    if (window.confirm(`هل أنت متأكد من حذف شاشة "${screen.name}" للمستخدم "${userName}"؟`)) {
+    const confirmMessage = language === 'ar' 
+      ? `هل أنت متأكد من حذف شاشة "${screen.name}" للمستخدم "${userName}"؟`
+      : `Are you sure you want to delete screen "${screen.name}" for user "${userName}"?`;
+    
+    if (window.confirm(confirmMessage)) {
       deleteScreenMutation.mutate(screen.id);
     }
   };
@@ -86,7 +95,7 @@ export default function AdminScreens() {
   const getUserName = (screen: Screen) => {
     return screen.user.firstName || screen.user.lastName 
       ? `${screen.user.firstName || ''} ${screen.user.lastName || ''}`.trim()
-      : screen.user.email || 'بدون اسم';
+      : screen.user.email || noName;
   };
 
   const filteredScreens = screens?.filter(screen => {
@@ -133,14 +142,16 @@ export default function AdminScreens() {
         </Link>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Monitor className="w-6 h-6" />
-          جميع الشاشات
+          {language === 'ar' ? "جميع الشاشات" : "All Screens"}
         </h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">إجمالي الشاشات</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "إجمالي الشاشات" : "Total Screens"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{screens?.length || 0}</p>
@@ -148,7 +159,9 @@ export default function AdminScreens() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">متصلة</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "متصلة" : "Online"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">{onlineCount}</p>
@@ -156,7 +169,9 @@ export default function AdminScreens() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">غير متصلة</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "غير متصلة" : "Offline"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-gray-500">{offlineCount}</p>
@@ -164,7 +179,9 @@ export default function AdminScreens() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">بدون اشتراك</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "بدون اشتراك" : "Without Subscription"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-orange-600">{withoutSubscription}</p>
@@ -172,12 +189,11 @@ export default function AdminScreens() {
         </Card>
       </div>
 
-      {/* Filter Bar */}
       {screens && screens.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap bg-muted/30 p-3 rounded-xl">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Filter className="w-4 h-4" />
-            <span className="text-sm font-medium">تصفية:</span>
+            <span className="text-sm font-medium">{language === 'ar' ? "تصفية:" : "Filter:"}</span>
           </div>
           
           <div className="relative flex-1 min-w-[200px] max-w-xs">
@@ -185,7 +201,7 @@ export default function AdminScreens() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="بحث بالاسم أو المستخدم..."
+              placeholder={language === 'ar' ? "بحث بالاسم أو المستخدم..." : "Search by name or user..."}
               className="pr-10 rounded-xl"
               data-testid="input-search-screens"
             />
@@ -193,23 +209,23 @@ export default function AdminScreens() {
           
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-36 rounded-xl" data-testid="select-filter-status">
-              <SelectValue placeholder="الحالة" />
+              <SelectValue placeholder={language === 'ar' ? "الحالة" : "Status"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">كل الحالات</SelectItem>
-              <SelectItem value="online">متصل</SelectItem>
-              <SelectItem value="offline">غير متصل</SelectItem>
+              <SelectItem value="all">{language === 'ar' ? "كل الحالات" : "All Statuses"}</SelectItem>
+              <SelectItem value="online">{language === 'ar' ? "متصل" : "Online"}</SelectItem>
+              <SelectItem value="offline">{language === 'ar' ? "غير متصل" : "Offline"}</SelectItem>
             </SelectContent>
           </Select>
           
           <Select value={filterSubscription} onValueChange={setFilterSubscription}>
             <SelectTrigger className="w-40 rounded-xl" data-testid="select-filter-subscription">
-              <SelectValue placeholder="الاشتراك" />
+              <SelectValue placeholder={language === 'ar' ? "الاشتراك" : "Subscription"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">الكل</SelectItem>
-              <SelectItem value="with">مع اشتراك</SelectItem>
-              <SelectItem value="without">بدون اشتراك</SelectItem>
+              <SelectItem value="all">{language === 'ar' ? "الكل" : "All"}</SelectItem>
+              <SelectItem value="with">{language === 'ar' ? "مع اشتراك" : "With Subscription"}</SelectItem>
+              <SelectItem value="without">{language === 'ar' ? "بدون اشتراك" : "Without Subscription"}</SelectItem>
             </SelectContent>
           </Select>
           
@@ -222,12 +238,12 @@ export default function AdminScreens() {
               data-testid="button-clear-filters"
             >
               <X className="w-4 h-4" />
-              مسح الفلاتر
+              {language === 'ar' ? "مسح الفلاتر" : "Clear Filters"}
             </Button>
           )}
           
           <Badge variant="secondary" className="mr-auto">
-            {filteredScreens.length} من {screens.length}
+            {filteredScreens.length} {language === 'ar' ? "من" : "of"} {screens.length}
           </Badge>
         </div>
       )}
@@ -240,24 +256,24 @@ export default function AdminScreens() {
             </div>
           ) : screens?.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              لا توجد شاشات
+              {language === 'ar' ? "لا توجد شاشات" : "No screens"}
             </div>
           ) : filteredScreens.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              لا توجد نتائج تطابق البحث
+              {language === 'ar' ? "لا توجد نتائج تطابق البحث" : "No results match your search"}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">رقم</TableHead>
-                  <TableHead className="text-right">الاسم</TableHead>
-                  <TableHead className="text-right">الموقع</TableHead>
-                  <TableHead className="text-right">المستخدم</TableHead>
-                  <TableHead className="text-right">الاشتراك</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">تاريخ الإنشاء</TableHead>
-                  <TableHead className="text-right">إجراءات</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "رقم" : "#"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الاسم" : "Name"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الموقع" : "Location"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "المستخدم" : "User"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الاشتراك" : "Subscription"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الحالة" : "Status"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "تاريخ الإنشاء" : "Created Date"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "إجراءات" : "Actions"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -271,24 +287,24 @@ export default function AdminScreens() {
                       {screen.subscriptionId ? (
                         <Badge variant="outline">#{screen.subscriptionId}</Badge>
                       ) : (
-                        <Badge variant="secondary">بدون اشتراك</Badge>
+                        <Badge variant="secondary">{language === 'ar' ? "بدون اشتراك" : "No subscription"}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
                       {screen.status === 'online' ? (
                         <Badge className="bg-green-500">
                           <Wifi className="w-3 h-3 ml-1" />
-                          متصل
+                          {language === 'ar' ? "متصل" : "Online"}
                         </Badge>
                       ) : (
                         <Badge variant="secondary">
                           <WifiOff className="w-3 h-3 ml-1" />
-                          غير متصل
+                          {language === 'ar' ? "غير متصل" : "Offline"}
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(screen.createdAt), 'dd MMM yyyy', { locale: ar })}
+                      {format(new Date(screen.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
                     </TableCell>
                     <TableCell>
                       <Button

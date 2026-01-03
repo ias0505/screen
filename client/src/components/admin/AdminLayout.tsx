@@ -14,18 +14,7 @@ import {
   Home
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-
-const adminNavItems = [
-  { title: "لوحة التحكم", icon: LayoutDashboard, href: "/admin" },
-  { title: "المستخدمين", icon: Users, href: "/admin/users" },
-  { title: "الاشتراكات", icon: CreditCard, href: "/admin/subscriptions" },
-  { title: "الفواتير", icon: FileText, href: "/admin/invoices" },
-  { title: "الشاشات", icon: Monitor, href: "/admin/screens" },
-  { title: "سجل النشاطات", icon: Activity, href: "/admin/activity" },
-  { title: "المدراء", icon: Shield, href: "/admin/admins" },
-  { title: "خطط الاشتراك", icon: Package, href: "/admin/plans" },
-  { title: "أكواد الخصم", icon: Tag, href: "/admin/discount-codes" },
-];
+import { useLanguage } from "@/hooks/use-language";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -34,6 +23,19 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const { language } = useLanguage();
+
+  const adminNavItems = [
+    { title: language === 'ar' ? "لوحة التحكم" : "Dashboard", icon: LayoutDashboard, href: "/admin" },
+    { title: language === 'ar' ? "المستخدمين" : "Users", icon: Users, href: "/admin/users" },
+    { title: language === 'ar' ? "الاشتراكات" : "Subscriptions", icon: CreditCard, href: "/admin/subscriptions" },
+    { title: language === 'ar' ? "الفواتير" : "Invoices", icon: FileText, href: "/admin/invoices" },
+    { title: language === 'ar' ? "الشاشات" : "Screens", icon: Monitor, href: "/admin/screens" },
+    { title: language === 'ar' ? "سجل النشاط" : "Activity Log", icon: Activity, href: "/admin/activity" },
+    { title: language === 'ar' ? "المديرين" : "Admins", icon: Shield, href: "/admin/admins" },
+    { title: language === 'ar' ? "الخطط" : "Plans", icon: Package, href: "/admin/plans" },
+    { title: language === 'ar' ? "أكواد الخصم" : "Discount Codes", icon: Tag, href: "/admin/discount-codes" },
+  ];
 
   const isActive = (href: string) => {
     if (href === "/admin") {
@@ -51,8 +53,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Shield className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-bold text-sm">لوحة المدير</h2>
-              <p className="text-xs text-muted-foreground">إدارة النظام</p>
+              <h2 className="font-bold text-sm">{language === 'ar' ? "لوحة الإدارة" : "Admin Dashboard"}</h2>
+              <p className="text-xs text-muted-foreground">{language === 'ar' ? "إدارة النظام" : "System Management"}</p>
             </div>
           </div>
         </div>
@@ -83,7 +85,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               data-testid="link-back-to-app"
             >
               <Home className="w-4 h-4" />
-              <span>العودة للتطبيق</span>
+              <span>{language === 'ar' ? "العودة للمنصة" : "Back to Platform"}</span>
             </Button>
           </Link>
           
@@ -94,7 +96,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <Users className="w-4 h-4 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">مدير</p>
+                  <p className="text-sm font-medium truncate">{language === 'ar' ? "مدير" : "Admin"}</p>
                   <p className="text-xs text-muted-foreground truncate">{user.email || user.firstName}</p>
                 </div>
               </div>
@@ -108,7 +110,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             data-testid="button-admin-logout"
           >
             <LogOut className="w-4 h-4" />
-            <span>تسجيل خروج</span>
+            <span>{language === 'ar' ? "تسجيل خروج" : "Logout"}</span>
           </Button>
         </div>
       </div>

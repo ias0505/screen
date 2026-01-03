@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSubscriptions, useCreateSubscription, useAvailableSlots, useSubscriptionScreensCount } from "@/hooks/use-subscriptions";
 import Layout from "@/components/Layout";
+import { useLanguage } from "@/hooks/use-language";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 import { 
   CreditCard, 
   Plus, 
@@ -50,8 +51,10 @@ interface DiscountValidation {
 }
 
 function SubscriptionCard({ sub }: { sub: Subscription }) {
+  const { t, language } = useLanguage();
   const { data: screensData } = useSubscriptionScreensCount(sub.id);
   const usedScreens = screensData?.count || 0;
+  const dateLocale = language === 'ar' ? ar : enUS;
   
   const { data: invoicesList = [] } = useQuery<Invoice[]>({
     queryKey: ['/api/subscriptions', sub.id, 'invoices'],
@@ -65,30 +68,30 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Monitor className="w-5 h-5 text-primary" />
-            {sub.screenCount} شاشة
+            {sub.screenCount} {t.subscriptions.screens}
           </CardTitle>
-          <Badge variant="default" className="bg-green-500">فعّال</Badge>
+          <Badge variant="default" className="bg-green-500">{t.subscriptions.statusActive}</Badge>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">الشاشات المستخدمة</span>
+            <span className="text-muted-foreground">{t.subscriptions.usedScreens}</span>
             <Badge variant="outline">{usedScreens} / {sub.screenCount}</Badge>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4" />
-            <span>ينتهي: {format(new Date(sub.endDate), 'dd MMMM yyyy', { locale: ar })}</span>
+            <span>{t.subscriptions.expires}: {format(new Date(sub.endDate), 'dd MMMM yyyy', { locale: dateLocale })}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CreditCard className="w-4 h-4" />
-            <span>{sub.totalPrice} ريال ({sub.durationYears} سنة)</span>
+            <span>{sub.totalPrice} {t.currency.sar} ({sub.durationYears} {t.subscriptions.year})</span>
           </div>
           {latestInvoice && (
             <Link href={`/invoice/${latestInvoice.id}`}>
               <Button variant="outline" size="sm" className="w-full mt-2" data-testid={`button-view-invoice-${sub.id}`}>
                 <FileText className="w-4 h-4 ml-2" />
-                عرض الفاتورة
+                {t.subscriptions.viewInvoice}
               </Button>
             </Link>
           )}
@@ -108,10 +111,12 @@ function parseFeatures(features: string | null): string[] {
 }
 
 export default function Subscriptions() {
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const { data: subscriptions = [], isLoading } = useSubscriptions();
   const { data: slotsData } = useAvailableSlots();
   const createSubscription = useCreateSubscription();
+  const dateLocale = language === 'ar' ? ar : enUS;
   
   const { data: plans = [] } = useQuery<SubscriptionPlan[]>({
     queryKey: ['/api/subscription/plans'],
@@ -186,7 +191,7 @@ export default function Subscriptions() {
         toast({ title: result.message });
       }
     } catch (error: any) {
-      const errorData = await error.json?.() || { message: "خطأ في التحقق من الكود" };
+      const errorData = await error.json?.() || { message: t.subscriptions.codeValidationError };
       setDiscountResult({ valid: false, message: errorData.message });
       toast({ title: errorData.message, variant: "destructive" });
     } finally {
@@ -199,11 +204,11 @@ export default function Subscriptions() {
     
     const finalPrice = calculateFinalPrice();
     const confirmed = window.confirm(
-      `هل تريد إنشاء اشتراك جديد؟\n` +
-      `عدد الشاشات: ${form.screenCount}\n` +
-      `المدة: ${form.durationYears} سنة\n` +
-      `المبلغ: ${finalPrice} ريال` +
-      (discountResult?.valid ? `\n(بعد الخصم)` : '')
+      `${t.subscriptions.confirmCreateTitle}\n` +
+      `${t.subscriptions.confirmScreenCount}: ${form.screenCount}\n` +
+      `${t.subscriptions.confirmDuration}: ${form.durationYears} ${t.subscriptions.year}\n` +
+      `${t.subscriptions.confirmAmount}: ${finalPrice} ${t.currency.sar}` +
+      (discountResult?.valid ? `\n${t.subscriptions.afterDiscount}` : '')
     );
     
     if (confirmed) {
@@ -228,27 +233,21 @@ export default function Subscriptions() {
   };
 
   const findBestPlanForScreenCount = (count: number): SubscriptionPlan | null => {
-    // Sort plans by minScreens ascending to find the right tier
     const sortedPlans = [...plans].sort((a, b) => (a.minScreens || 1) - (b.minScreens || 1));
     
-    // Find exact match: plan where minScreens <= count <= maxScreens
     const exactMatch = sortedPlans.find(p => {
       const min = p.minScreens || 1;
       const max = p.maxScreens;
-      // Only match if maxScreens is defined and count is within range
       if (max !== null && max !== undefined) {
         return count >= min && count <= max;
       }
-      // If maxScreens is null/undefined, only match if count >= min (unlimited plan)
       return count >= min;
     });
     
     if (exactMatch) return exactMatch;
     
-    // If count exceeds all plans with defined maxScreens, return the highest tier
     const plansWithMax = sortedPlans.filter(p => p.maxScreens !== null && p.maxScreens !== undefined);
     if (plansWithMax.length > 0) {
-      // Return the plan with highest maxScreens
       return plansWithMax.reduce((highest, current) => 
         (current.maxScreens || 0) > (highest.maxScreens || 0) ? current : highest
       );
@@ -260,7 +259,6 @@ export default function Subscriptions() {
   const handleScreenCountChange = (newCount: number) => {
     setForm({ ...form, screenCount: newCount });
     
-    // Always find the best matching plan for this screen count
     const bestPlan = findBestPlanForScreenCount(newCount);
     if (bestPlan) {
       setSelectedPlan(bestPlan);
@@ -272,8 +270,8 @@ export default function Subscriptions() {
       <div className="space-y-8">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">الاشتراكات</h1>
-            <p className="text-muted-foreground mt-1">إدارة اشتراكات الشاشات</p>
+            <h1 className="text-3xl font-bold text-foreground">{t.subscriptions.title}</h1>
+            <p className="text-muted-foreground mt-1">{t.subscriptions.manageScreenSubscriptions}</p>
           </div>
           
           <Dialog open={isOpen} onOpenChange={(open) => {
@@ -294,19 +292,19 @@ export default function Subscriptions() {
                 data-testid="button-add-subscription"
               >
                 <Plus className="w-5 h-5" />
-                <span>اشتراك جديد</span>
+                <span>{t.subscriptions.newSubscription}</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>إنشاء اشتراك جديد</DialogTitle>
+                <DialogTitle>{t.subscriptions.createNewSubscription}</DialogTitle>
               </DialogHeader>
               
               {plans.length > 0 && (
                 <div className="space-y-3 pt-4">
                   <Label className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
-                    اختر خطة الاشتراك
+                    {t.subscriptions.selectPlan}
                   </Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[...plans].sort((a, b) => (a.minScreens || 1) - (b.minScreens || 1)).map((plan) => {
@@ -322,7 +320,7 @@ export default function Subscriptions() {
                             <div className="flex items-center justify-between gap-2">
                               <CardTitle className="text-base">{plan.name}</CardTitle>
                               {plan.isDefault && (
-                                <Badge variant="secondary" className="text-xs">موصى به</Badge>
+                                <Badge variant="secondary" className="text-xs">{t.subscriptions.recommended}</Badge>
                               )}
                               {selectedPlan?.id === plan.id && (
                                 <Check className="w-5 h-5 text-primary" />
@@ -332,11 +330,11 @@ export default function Subscriptions() {
                           <CardContent className="space-y-2">
                             <div className="flex items-baseline gap-1">
                               <span className="text-2xl font-bold">{plan.pricePerScreen}</span>
-                              <span className="text-muted-foreground text-sm">ريال/شاشة/سنة</span>
+                              <span className="text-muted-foreground text-sm">{t.subscriptions.pricePerScreenPerYear}</span>
                             </div>
                             {plan.discountPercentage && plan.discountPercentage > 0 && (
                               <Badge variant="outline" className="text-green-600">
-                                خصم {plan.discountPercentage}%
+                                {t.subscriptions.discount} {plan.discountPercentage}%
                               </Badge>
                             )}
                             {plan.description && (
@@ -363,7 +361,7 @@ export default function Subscriptions() {
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>عدد الشاشات</Label>
+                    <Label>{t.subscriptions.screenCount}</Label>
                     <Input 
                       type="number"
                       min={1}
@@ -373,11 +371,11 @@ export default function Subscriptions() {
                       data-testid="input-screen-count"
                     />
                     {selectedPlan?.minScreens && (
-                      <p className="text-xs text-muted-foreground">الحد الأدنى: {selectedPlan.minScreens} شاشة</p>
+                      <p className="text-xs text-muted-foreground">{t.subscriptions.minimumScreens}: {selectedPlan.minScreens} {t.subscriptions.screens}</p>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label>مدة الاشتراك</Label>
+                    <Label>{t.subscriptions.subscriptionDuration}</Label>
                     <Select 
                       value={form.durationYears.toString()} 
                       onValueChange={(v) => setForm({...form, durationYears: parseInt(v)})}
@@ -386,9 +384,9 @@ export default function Subscriptions() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">سنة واحدة</SelectItem>
-                        <SelectItem value="2">سنتان</SelectItem>
-                        <SelectItem value="3">3 سنوات</SelectItem>
+                        <SelectItem value="1">{t.subscriptions.oneYear}</SelectItem>
+                        <SelectItem value="2">{t.subscriptions.twoYears}</SelectItem>
+                        <SelectItem value="3">{t.subscriptions.threeYears}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -397,12 +395,12 @@ export default function Subscriptions() {
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Tag className="w-4 h-4" />
-                    كود الخصم (اختياري)
+                    {t.subscriptions.discountCodeOptional}
                   </Label>
                   <div className="flex gap-2">
                     <Input 
                       type="text"
-                      placeholder="أدخل كود الخصم"
+                      placeholder={t.subscriptions.enterDiscountCode}
                       value={discountCode}
                       onChange={(e) => {
                         setDiscountCode(e.target.value.toUpperCase());
@@ -418,7 +416,7 @@ export default function Subscriptions() {
                       disabled={isValidating || !discountCode.trim()}
                       data-testid="button-validate-code"
                     >
-                      {isValidating ? "..." : "تحقق"}
+                      {isValidating ? "..." : t.subscriptions.verify}
                     </Button>
                   </div>
                   {discountResult && (
@@ -431,39 +429,39 @@ export default function Subscriptions() {
                 <Card className="bg-muted/50">
                   <CardContent className="pt-4 space-y-2">
                     <div className="flex justify-between items-center text-sm text-muted-foreground">
-                      <span>السعر الأساسي:</span>
-                      <span>{form.screenCount * getPricePerScreen() * form.durationYears} ريال</span>
+                      <span>{t.subscriptions.basePrice}:</span>
+                      <span>{form.screenCount * getPricePerScreen() * form.durationYears} {t.currency.sar}</span>
                     </div>
                     {selectedPlan?.discountPercentage && selectedPlan.discountPercentage > 0 && (
                       <div className="flex justify-between items-center text-sm text-green-600">
-                        <span>خصم الخطة ({selectedPlan.discountPercentage}%):</span>
-                        <span>-{Math.round(form.screenCount * getPricePerScreen() * form.durationYears * selectedPlan.discountPercentage / 100)} ريال</span>
+                        <span>{t.subscriptions.planDiscount} ({selectedPlan.discountPercentage}%):</span>
+                        <span>-{Math.round(form.screenCount * getPricePerScreen() * form.durationYears * selectedPlan.discountPercentage / 100)} {t.currency.sar}</span>
                       </div>
                     )}
                     {discountResult?.valid && (
                       <div className="flex justify-between items-center text-sm text-green-600">
-                        <span>كود الخصم:</span>
+                        <span>{t.subscriptions.discountCodeLabel}:</span>
                         <span>
                           {discountResult.discountType === 'percentage' 
                             ? `-${discountResult.discountValue}%` 
-                            : `-${discountResult.discountValue} ريال`}
+                            : `-${discountResult.discountValue} ${t.currency.sar}`}
                         </span>
                       </div>
                     )}
                     <div className="border-t pt-2 flex justify-between items-center">
-                      <span className="font-medium">السعر الإجمالي:</span>
+                      <span className="font-medium">{t.subscriptions.totalPrice}:</span>
                       <span className="text-2xl font-bold text-primary">
-                        {calculateFinalPrice()} ريال
+                        {calculateFinalPrice()} {t.currency.sar}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {form.screenCount} شاشة × {getPricePerScreen()} ريال × {form.durationYears} سنة
+                      {form.screenCount} {t.subscriptions.screens} × {getPricePerScreen()} {t.currency.sar} × {form.durationYears} {t.subscriptions.year}
                     </p>
                   </CardContent>
                 </Card>
                 <Button type="submit" disabled={createSubscription.isPending} className="w-full bg-primary rounded-xl" data-testid="button-confirm-subscription">
                   <CreditCard className="w-4 h-4 ml-2" />
-                  {createSubscription.isPending ? "جاري الإنشاء..." : "تأكيد الاشتراك"}
+                  {createSubscription.isPending ? t.subscriptions.creating : t.subscriptions.confirmSubscription}
                 </Button>
               </form>
             </DialogContent>
@@ -477,7 +475,7 @@ export default function Subscriptions() {
                 <Monitor className="w-8 h-8 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">الشاشات المتاحة للإضافة</p>
+                <p className="text-sm text-muted-foreground">{t.subscriptions.availableScreensToAdd}</p>
                 <p className="text-3xl font-bold text-foreground">{slotsData?.availableSlots || 0}</p>
               </div>
             </div>
@@ -495,13 +493,13 @@ export default function Subscriptions() {
             <div className="p-6 bg-background rounded-full shadow-sm mb-4">
               <CreditCard className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-bold text-foreground">لا توجد اشتراكات</h3>
-            <p className="text-muted-foreground mt-2 mb-6">أنشئ اشتراكًا جديدًا لتتمكن من إضافة شاشات</p>
+            <h3 className="text-xl font-bold text-foreground">{t.subscriptions.noSubscriptions}</h3>
+            <p className="text-muted-foreground mt-2 mb-6">{t.subscriptions.createFirstSubscription}</p>
             <Button onClick={() => {
               setIsOpen(true);
               if (plans.length > 0) setSelectedPlan(plans[0]);
             }} className="bg-primary rounded-xl" data-testid="button-create-first-subscription">
-              إنشاء اشتراك جديد
+              {t.subscriptions.createNewSubscription}
             </Button>
           </div>
         ) : (
@@ -510,7 +508,7 @@ export default function Subscriptions() {
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-500" />
-                  الاشتراكات الفعّالة
+                  {t.subscriptions.activeSubscriptions}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <AnimatePresence>
@@ -533,7 +531,7 @@ export default function Subscriptions() {
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold flex items-center gap-2 text-muted-foreground">
                   <AlertCircle className="w-5 h-5" />
-                  الاشتراكات المنتهية
+                  {t.subscriptions.expiredSubscriptions}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {expiredSubscriptions.map((sub) => (
@@ -542,16 +540,16 @@ export default function Subscriptions() {
                         <div className="flex items-center justify-between gap-2">
                           <CardTitle className="text-lg flex items-center gap-2">
                             <Monitor className="w-5 h-5" />
-                            {sub.screenCount} شاشة
+                            {sub.screenCount} {t.subscriptions.screens}
                           </CardTitle>
-                          <Badge variant="destructive">منتهي</Badge>
+                          <Badge variant="destructive">{t.subscriptions.statusExpired}</Badge>
                         </div>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2 text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
-                            <span>انتهى: {format(new Date(sub.endDate), 'dd MMMM yyyy', { locale: ar })}</span>
+                            <span>{t.subscriptions.expired}: {format(new Date(sub.endDate), 'dd MMMM yyyy', { locale: dateLocale })}</span>
                           </div>
                         </div>
                       </CardContent>

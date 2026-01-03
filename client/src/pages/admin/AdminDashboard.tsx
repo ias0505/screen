@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
+import { useLanguage } from "@/hooks/use-language";
 import { 
   Users, 
   Monitor, 
@@ -41,6 +42,8 @@ function formatBytes(bytes: number): string {
 }
 
 export default function AdminDashboard() {
+  const { language } = useLanguage();
+  
   const { data: stats, isLoading } = useQuery<SystemStats>({
     queryKey: ['/api/admin/stats'],
   });
@@ -51,42 +54,42 @@ export default function AdminDashboard() {
 
   const statCards = [
     {
-      title: "المستخدمون",
+      title: language === 'ar' ? "المستخدمون" : "Users",
       value: stats?.totalUsers || 0,
       icon: Users,
       color: "text-blue-500",
       link: "/admin/users"
     },
     {
-      title: "الشاشات",
+      title: language === 'ar' ? "الشاشات" : "Screens",
       value: stats?.totalScreens || 0,
       icon: Monitor,
       color: "text-green-500",
       link: "/admin/screens"
     },
     {
-      title: "الاشتراكات النشطة",
+      title: language === 'ar' ? "الاشتراكات النشطة" : "Active Subscriptions",
       value: stats?.activeSubscriptions || 0,
       icon: CreditCard,
       color: "text-purple-500",
       link: "/admin/subscriptions"
     },
     {
-      title: "إجمالي الإيرادات",
-      value: `${stats?.totalRevenue || 0} ريال`,
+      title: language === 'ar' ? "إجمالي الإيرادات" : "Total Revenue",
+      value: language === 'ar' ? `${stats?.totalRevenue || 0} ريال` : `${stats?.totalRevenue || 0} SAR`,
       icon: TrendingUp,
       color: "text-emerald-500",
       link: "/admin/invoices"
     },
     {
-      title: "الفواتير المدفوعة",
+      title: language === 'ar' ? "الفواتير المدفوعة" : "Paid Invoices",
       value: stats?.paidInvoices || 0,
       icon: FileText,
       color: "text-teal-500",
       link: "/admin/invoices"
     },
     {
-      title: "الفواتير المعلقة",
+      title: language === 'ar' ? "الفواتير المعلقة" : "Pending Invoices",
       value: stats?.pendingInvoices || 0,
       icon: FileText,
       color: "text-orange-500",
@@ -100,9 +103,11 @@ export default function AdminDashboard() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Shield className="w-6 h-6" />
-            لوحة تحكم المدير
+            {language === 'ar' ? "لوحة تحكم المدير" : "Admin Dashboard"}
           </h1>
-          <p className="text-muted-foreground mt-1">نظرة عامة على النظام والإحصائيات</p>
+          <p className="text-muted-foreground mt-1">
+            {language === 'ar' ? "نظرة عامة على النظام والإحصائيات" : "System overview and statistics"}
+          </p>
         </div>
         <Badge variant="outline" className="text-sm">
           Super Admin
@@ -137,12 +142,14 @@ export default function AdminDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="w-5 h-5" />
-            ملخص سريع
+            {language === 'ar' ? "ملخص سريع" : "Quick Summary"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">إجمالي الاشتراكات</span>
+            <span className="text-muted-foreground">
+              {language === 'ar' ? "إجمالي الاشتراكات" : "Total Subscriptions"}
+            </span>
             {isLoading ? (
               <Skeleton className="h-5 w-16" />
             ) : (
@@ -150,7 +157,9 @@ export default function AdminDashboard() {
             )}
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">الاشتراكات النشطة</span>
+            <span className="text-muted-foreground">
+              {language === 'ar' ? "الاشتراكات النشطة" : "Active Subscriptions"}
+            </span>
             {isLoading ? (
               <Skeleton className="h-5 w-16" />
             ) : (
@@ -158,7 +167,9 @@ export default function AdminDashboard() {
             )}
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">الفواتير المعلقة</span>
+            <span className="text-muted-foreground">
+              {language === 'ar' ? "الفواتير المعلقة" : "Pending Invoices"}
+            </span>
             {isLoading ? (
               <Skeleton className="h-5 w-16" />
             ) : (
@@ -166,11 +177,15 @@ export default function AdminDashboard() {
             )}
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">إجمالي الإيرادات</span>
+            <span className="text-muted-foreground">
+              {language === 'ar' ? "إجمالي الإيرادات" : "Total Revenue"}
+            </span>
             {isLoading ? (
               <Skeleton className="h-5 w-24" />
             ) : (
-              <span className="font-semibold text-emerald-600">{stats?.totalRevenue || 0} ريال</span>
+              <span className="font-semibold text-emerald-600">
+                {language === 'ar' ? `${stats?.totalRevenue || 0} ريال` : `${stats?.totalRevenue || 0} SAR`}
+              </span>
             )}
           </div>
         </CardContent>
@@ -180,7 +195,7 @@ export default function AdminDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <HardDrive className="w-5 h-5" />
-            مساحة التخزين
+            {language === 'ar' ? "مساحة التخزين" : "Storage Space"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -190,7 +205,9 @@ export default function AdminDashboard() {
             <>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">المستخدم</span>
+                  <span className="text-muted-foreground">
+                    {language === 'ar' ? "المستخدم" : "Used"}
+                  </span>
                   <span className="font-semibold">{formatBytes(storageInfo.used)}</span>
                 </div>
                 <Progress 
@@ -198,32 +215,46 @@ export default function AdminDashboard() {
                   className={`h-3 ${storageInfo.usedPercent > 80 ? '[&>div]:bg-red-500' : storageInfo.usedPercent > 60 ? '[&>div]:bg-yellow-500' : ''}`}
                 />
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{storageInfo.usedPercent}% مستخدم</span>
-                  <span>المتاح: {formatBytes(storageInfo.available)}</span>
+                  <span>
+                    {language === 'ar' ? `${storageInfo.usedPercent}% مستخدم` : `${storageInfo.usedPercent}% used`}
+                  </span>
+                  <span>
+                    {language === 'ar' ? `المتاح: ${formatBytes(storageInfo.available)}` : `Available: ${formatBytes(storageInfo.available)}`}
+                  </span>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 pt-2 border-t">
                 <div className="text-center">
                   <p className="text-lg font-bold">{formatBytes(storageInfo.total)}</p>
-                  <p className="text-xs text-muted-foreground">الإجمالي</p>
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'ar' ? "الإجمالي" : "Total"}
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-bold text-blue-600">{formatBytes(storageInfo.used)}</p>
-                  <p className="text-xs text-muted-foreground">المستخدم</p>
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'ar' ? "المستخدم" : "Used"}
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-bold text-green-600">{formatBytes(storageInfo.available)}</p>
-                  <p className="text-xs text-muted-foreground">المتاح</p>
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'ar' ? "المتاح" : "Available"}
+                  </p>
                 </div>
               </div>
               {storageInfo.usedPercent > 80 && (
                 <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-600">
-                  تحذير: المساحة المتبقية منخفضة. يرجى تفريغ بعض الملفات لتجنب مشاكل في النظام.
+                  {language === 'ar' 
+                    ? "تحذير: المساحة المتبقية منخفضة. يرجى تفريغ بعض الملفات لتجنب مشاكل في النظام."
+                    : "Warning: Storage space is running low. Please free up some files to avoid system issues."}
                 </div>
               )}
             </>
           ) : (
-            <p className="text-muted-foreground">لا توجد بيانات متاحة</p>
+            <p className="text-muted-foreground">
+              {language === 'ar' ? "لا توجد بيانات متاحة" : "No data available"}
+            </p>
           )}
         </CardContent>
       </Card>

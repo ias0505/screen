@@ -24,9 +24,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
+import { useLanguage } from "@/hooks/use-language";
 import { Package, ArrowRight, Plus, Pencil, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -45,6 +46,7 @@ interface SubscriptionPlan {
 }
 
 export default function AdminPlans() {
+  const { language } = useLanguage();
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
@@ -72,10 +74,10 @@ export default function AdminPlans() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/plans'] });
       setIsCreateOpen(false);
       resetForm();
-      toast({ title: "تم إنشاء الخطة بنجاح" });
+      toast({ title: language === 'ar' ? "تم إنشاء الخطة بنجاح" : "Plan created successfully" });
     },
     onError: (error: any) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: language === 'ar' ? "خطأ" : "Error", description: error.message, variant: "destructive" });
     }
   });
 
@@ -87,10 +89,10 @@ export default function AdminPlans() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/plans'] });
       setEditingPlan(null);
       resetForm();
-      toast({ title: "تم تحديث الخطة بنجاح" });
+      toast({ title: language === 'ar' ? "تم تحديث الخطة بنجاح" : "Plan updated successfully" });
     },
     onError: (error: any) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: language === 'ar' ? "خطأ" : "Error", description: error.message, variant: "destructive" });
     }
   });
 
@@ -100,10 +102,10 @@ export default function AdminPlans() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/plans'] });
-      toast({ title: "تم حذف الخطة بنجاح" });
+      toast({ title: language === 'ar' ? "تم حذف الخطة بنجاح" : "Plan deleted successfully" });
     },
     onError: (error: any) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: language === 'ar' ? "خطأ" : "Error", description: error.message, variant: "destructive" });
     }
   });
 
@@ -185,19 +187,21 @@ export default function AdminPlans() {
           </Link>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Package className="w-6 h-6" />
-            خطط الاشتراك
+            {language === 'ar' ? "خطط الاشتراك" : "Subscription Plans"}
           </h1>
         </div>
         <Button onClick={() => setIsCreateOpen(true)} data-testid="button-add-plan">
           <Plus className="w-4 h-4 ml-2" />
-          إضافة خطة
+          {language === 'ar' ? "إضافة خطة" : "Add Plan"}
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">إجمالي الخطط</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "إجمالي الخطط" : "Total Plans"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{plans?.length || 0}</p>
@@ -205,7 +209,9 @@ export default function AdminPlans() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">الخطط النشطة</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "الخطط النشطة" : "Active Plans"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">{activeCount}</p>
@@ -213,7 +219,9 @@ export default function AdminPlans() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">الخطط غير النشطة</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">
+              {language === 'ar' ? "الخطط غير النشطة" : "Inactive Plans"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-muted-foreground">{(plans?.length || 0) - activeCount}</p>
@@ -229,18 +237,18 @@ export default function AdminPlans() {
             </div>
           ) : plans?.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              لا توجد خطط اشتراك
+              {language === 'ar' ? "لا توجد خطط اشتراك" : "No subscription plans"}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">اسم الخطة</TableHead>
-                  <TableHead className="text-right">سعر الشاشة</TableHead>
-                  <TableHead className="text-right">حدود الشاشات</TableHead>
-                  <TableHead className="text-right">الخصم</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "اسم الخطة" : "Plan Name"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "سعر الشاشة" : "Price per Screen"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "حدود الشاشات" : "Screen Limits"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الخصم" : "Discount"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الحالة" : "Status"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الإجراءات" : "Actions"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -250,11 +258,13 @@ export default function AdminPlans() {
                       <div className="flex flex-col">
                         <span className="font-medium">{plan.name}</span>
                         {plan.isDefault && (
-                          <Badge variant="secondary" className="w-fit mt-1">افتراضي</Badge>
+                          <Badge variant="secondary" className="w-fit mt-1">
+                            {language === 'ar' ? "افتراضي" : "Default"}
+                          </Badge>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>{plan.pricePerScreen} ريال</TableCell>
+                    <TableCell>{plan.pricePerScreen} {language === 'ar' ? "ريال" : "SAR"}</TableCell>
                     <TableCell>
                       {plan.minScreens || 1} - {plan.maxScreens || "∞"}
                     </TableCell>
@@ -267,12 +277,12 @@ export default function AdminPlans() {
                       {plan.isActive ? (
                         <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
                           <CheckCircle className="w-3 h-3 ml-1" />
-                          نشط
+                          {language === 'ar' ? "نشط" : "Active"}
                         </Badge>
                       ) : (
                         <Badge variant="secondary">
                           <XCircle className="w-3 h-3 ml-1" />
-                          غير نشط
+                          {language === 'ar' ? "غير نشط" : "Inactive"}
                         </Badge>
                       )}
                     </TableCell>
@@ -313,32 +323,38 @@ export default function AdminPlans() {
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingPlan ? "تعديل الخطة" : "إضافة خطة جديدة"}</DialogTitle>
+            <DialogTitle>
+              {editingPlan 
+                ? (language === 'ar' ? "تعديل الخطة" : "Edit Plan")
+                : (language === 'ar' ? "إضافة خطة جديدة" : "Add New Plan")}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">اسم الخطة</Label>
+              <Label htmlFor="name">{language === 'ar' ? "اسم الخطة" : "Plan Name"}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="مثال: الخطة الأساسية"
+                placeholder={language === 'ar' ? "مثال: الخطة الأساسية" : "e.g., Basic Plan"}
                 data-testid="input-plan-name"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">الوصف</Label>
+              <Label htmlFor="description">{language === 'ar' ? "الوصف" : "Description"}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="وصف الخطة..."
+                placeholder={language === 'ar' ? "وصف الخطة..." : "Plan description..."}
                 data-testid="input-plan-description"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="pricePerScreen">سعر الشاشة (ريال)</Label>
+                <Label htmlFor="pricePerScreen">
+                  {language === 'ar' ? "سعر الشاشة (ريال)" : "Price per Screen (SAR)"}
+                </Label>
                 <Input
                   id="pricePerScreen"
                   type="number"
@@ -348,7 +364,9 @@ export default function AdminPlans() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="discountPercentage">نسبة الخصم %</Label>
+                <Label htmlFor="discountPercentage">
+                  {language === 'ar' ? "نسبة الخصم %" : "Discount %"}
+                </Label>
                 <Input
                   id="discountPercentage"
                   type="number"
@@ -362,7 +380,7 @@ export default function AdminPlans() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="minScreens">الحد الأدنى</Label>
+                <Label htmlFor="minScreens">{language === 'ar' ? "الحد الأدنى" : "Minimum"}</Label>
                 <Input
                   id="minScreens"
                   type="number"
@@ -373,25 +391,27 @@ export default function AdminPlans() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxScreens">الحد الأقصى</Label>
+                <Label htmlFor="maxScreens">{language === 'ar' ? "الحد الأقصى" : "Maximum"}</Label>
                 <Input
                   id="maxScreens"
                   type="number"
                   min={1}
                   value={formData.maxScreens}
                   onChange={(e) => setFormData({ ...formData, maxScreens: e.target.value })}
-                  placeholder="غير محدود"
+                  placeholder={language === 'ar' ? "غير محدود" : "Unlimited"}
                   data-testid="input-plan-max"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="features">المميزات (سطر لكل ميزة)</Label>
+              <Label htmlFor="features">
+                {language === 'ar' ? "المميزات (سطر لكل ميزة)" : "Features (one per line)"}
+              </Label>
               <Textarea
                 id="features"
                 value={formData.features}
                 onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                placeholder="دعم فني 24/7&#10;تحديثات مجانية&#10;..."
+                placeholder={language === 'ar' ? "دعم فني 24/7\nتحديثات مجانية\n..." : "24/7 support\nFree updates\n..."}
                 rows={3}
                 data-testid="input-plan-features"
               />
@@ -404,7 +424,7 @@ export default function AdminPlans() {
                   onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                   data-testid="switch-plan-active"
                 />
-                <Label htmlFor="isActive">نشط</Label>
+                <Label htmlFor="isActive">{language === 'ar' ? "نشط" : "Active"}</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Switch
@@ -413,7 +433,7 @@ export default function AdminPlans() {
                   onCheckedChange={(checked) => setFormData({ ...formData, isDefault: checked })}
                   data-testid="switch-plan-default"
                 />
-                <Label htmlFor="isDefault">افتراضي</Label>
+                <Label htmlFor="isDefault">{language === 'ar' ? "افتراضي" : "Default"}</Label>
               </div>
             </div>
           </div>
@@ -423,7 +443,11 @@ export default function AdminPlans() {
               disabled={!formData.name || createMutation.isPending || updateMutation.isPending}
               data-testid="button-submit-plan"
             >
-              {createMutation.isPending || updateMutation.isPending ? "جاري الحفظ..." : editingPlan ? "حفظ التغييرات" : "إنشاء الخطة"}
+              {createMutation.isPending || updateMutation.isPending 
+                ? (language === 'ar' ? "جاري الحفظ..." : "Saving...")
+                : editingPlan 
+                  ? (language === 'ar' ? "حفظ التغييرات" : "Save Changes")
+                  : (language === 'ar' ? "إنشاء الخطة" : "Create Plan")}
             </Button>
           </DialogFooter>
         </DialogContent>

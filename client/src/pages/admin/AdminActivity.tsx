@@ -12,9 +12,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Link } from "wouter";
+import { useLanguage } from "@/hooks/use-language";
 import { Activity, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 
 interface ActivityLog {
   id: number;
@@ -27,26 +28,30 @@ interface ActivityLog {
   createdAt: string;
 }
 
-const actionLabels: Record<string, string> = {
-  'screen_added_to_user': 'إضافة شاشة لمستخدم',
-  'subscription_created': 'إنشاء اشتراك',
-  'invoice_updated': 'تحديث فاتورة',
-  'admin_created': 'إضافة مدير',
-  'admin_removed': 'إزالة مدير',
-};
-
-const targetTypeLabels: Record<string, string> = {
-  'screen': 'شاشة',
-  'subscription': 'اشتراك',
-  'invoice': 'فاتورة',
-  'admin': 'مدير',
-  'user': 'مستخدم',
-};
-
 export default function AdminActivity() {
+  const { language } = useLanguage();
+  
+  const actionLabels: Record<string, string> = {
+    'screen_added_to_user': language === 'ar' ? 'إضافة شاشة لمستخدم' : 'Screen added to user',
+    'subscription_created': language === 'ar' ? 'إنشاء اشتراك' : 'Subscription created',
+    'invoice_updated': language === 'ar' ? 'تحديث فاتورة' : 'Invoice updated',
+    'admin_created': language === 'ar' ? 'إضافة مدير' : 'Admin added',
+    'admin_removed': language === 'ar' ? 'إزالة مدير' : 'Admin removed',
+  };
+
+  const targetTypeLabels: Record<string, string> = {
+    'screen': language === 'ar' ? 'شاشة' : 'Screen',
+    'subscription': language === 'ar' ? 'اشتراك' : 'Subscription',
+    'invoice': language === 'ar' ? 'فاتورة' : 'Invoice',
+    'admin': language === 'ar' ? 'مدير' : 'Admin',
+    'user': language === 'ar' ? 'مستخدم' : 'User',
+  };
+
   const { data: logs, isLoading } = useQuery<ActivityLog[]>({
     queryKey: ['/api/admin/activity-logs'],
   });
+
+  const dateLocale = language === 'ar' ? ar : enUS;
 
   return (
     <div className="p-6 space-y-6">
@@ -58,13 +63,15 @@ export default function AdminActivity() {
         </Link>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Activity className="w-6 h-6" />
-          سجل النشاطات
+          {language === 'ar' ? "سجل النشاطات" : "Activity Log"}
         </h1>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>آخر النشاطات ({logs?.length || 0})</CardTitle>
+          <CardTitle>
+            {language === 'ar' ? `آخر النشاطات (${logs?.length || 0})` : `Recent Activities (${logs?.length || 0})`}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -73,17 +80,17 @@ export default function AdminActivity() {
             </div>
           ) : logs?.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              لا توجد نشاطات مسجلة
+              {language === 'ar' ? "لا توجد نشاطات مسجلة" : "No recorded activities"}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">الإجراء</TableHead>
-                  <TableHead className="text-right">النوع</TableHead>
-                  <TableHead className="text-right">المعرف</TableHead>
-                  <TableHead className="text-right">التفاصيل</TableHead>
-                  <TableHead className="text-right">التاريخ والوقت</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "الإجراء" : "Action"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "النوع" : "Type"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "المعرف" : "ID"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "التفاصيل" : "Details"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "التاريخ والوقت" : "Date & Time"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -115,14 +122,14 @@ export default function AdminActivity() {
                       <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                         {parsedDetails ? (
                           <span>
-                            {parsedDetails.userId && `مستخدم: ${parsedDetails.userId.substring(0, 8)}...`}
-                            {parsedDetails.amount && ` | المبلغ: ${parsedDetails.amount} ريال`}
-                            {parsedDetails.screenCount && ` | ${parsedDetails.screenCount} شاشة`}
+                            {parsedDetails.userId && `${language === 'ar' ? 'مستخدم' : 'User'}: ${parsedDetails.userId.substring(0, 8)}...`}
+                            {parsedDetails.amount && ` | ${language === 'ar' ? 'المبلغ' : 'Amount'}: ${parsedDetails.amount} ${language === 'ar' ? 'ريال' : 'SAR'}`}
+                            {parsedDetails.screenCount && ` | ${parsedDetails.screenCount} ${language === 'ar' ? 'شاشة' : 'screens'}`}
                           </span>
                         ) : '-'}
                       </TableCell>
                       <TableCell>
-                        {format(new Date(log.createdAt), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                        {format(new Date(log.createdAt), 'dd MMM yyyy - HH:mm', { locale: dateLocale })}
                       </TableCell>
                     </TableRow>
                   );

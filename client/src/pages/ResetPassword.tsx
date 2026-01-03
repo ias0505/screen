@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 import { Lock, CheckCircle, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function ResetPassword() {
   const { toast } = useToast();
+  const { language } = useLanguage();
   const searchParams = useSearch();
   const token = new URLSearchParams(searchParams).get("token");
   
@@ -25,14 +27,14 @@ export default function ResetPassword() {
     onSuccess: () => {
       setResetSuccess(true);
       toast({
-        title: "تم تغيير كلمة المرور",
-        description: "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة",
+        title: language === 'ar' ? "تم تغيير كلمة المرور" : "Password Changed",
+        description: language === 'ar' ? "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة" : "You can now log in with your new password",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "حدث خطأ",
-        description: error.message || "رابط إعادة التعيين غير صالح أو منتهي الصلاحية",
+        title: language === 'ar' ? "حدث خطأ" : "An error occurred",
+        description: error.message || (language === 'ar' ? "رابط إعادة التعيين غير صالح أو منتهي الصلاحية" : "Reset link is invalid or expired"),
         variant: "destructive",
       });
     },
@@ -43,7 +45,7 @@ export default function ResetPassword() {
     
     if (!newPassword || !confirmPassword) {
       toast({
-        title: "يرجى ملء جميع الحقول",
+        title: language === 'ar' ? "يرجى ملء جميع الحقول" : "Please fill in all fields",
         variant: "destructive",
       });
       return;
@@ -51,8 +53,8 @@ export default function ResetPassword() {
 
     if (newPassword.length < 6) {
       toast({
-        title: "كلمة المرور قصيرة",
-        description: "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+        title: language === 'ar' ? "كلمة المرور قصيرة" : "Password too short",
+        description: language === 'ar' ? "يجب أن تكون كلمة المرور 6 أحرف على الأقل" : "Password must be at least 6 characters",
         variant: "destructive",
       });
       return;
@@ -60,8 +62,8 @@ export default function ResetPassword() {
 
     if (newPassword !== confirmPassword) {
       toast({
-        title: "كلمات المرور غير متطابقة",
-        description: "يرجى التأكد من تطابق كلمتي المرور",
+        title: language === 'ar' ? "كلمات المرور غير متطابقة" : "Passwords do not match",
+        description: language === 'ar' ? "يرجى التأكد من تطابق كلمتي المرور" : "Please make sure both passwords match",
         variant: "destructive",
       });
       return;
@@ -69,8 +71,8 @@ export default function ResetPassword() {
 
     if (!token) {
       toast({
-        title: "رابط غير صالح",
-        description: "يرجى استخدام الرابط المرسل إلى بريدك الإلكتروني",
+        title: language === 'ar' ? "رابط غير صالح" : "Invalid link",
+        description: language === 'ar' ? "يرجى استخدام الرابط المرسل إلى بريدك الإلكتروني" : "Please use the link sent to your email",
         variant: "destructive",
       });
       return;
@@ -81,26 +83,30 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
               <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
-            <CardTitle className="text-2xl">رابط غير صالح</CardTitle>
+            <CardTitle className="text-2xl">
+              {language === 'ar' ? "رابط غير صالح" : "Invalid Link"}
+            </CardTitle>
             <CardDescription className="text-base mt-2">
-              الرابط الذي استخدمته غير صالح أو منتهي الصلاحية
+              {language === 'ar' 
+                ? "الرابط الذي استخدمته غير صالح أو منتهي الصلاحية"
+                : "The link you used is invalid or expired"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Link href="/forgot-password">
               <Button className="w-full" data-testid="button-request-new-link">
-                طلب رابط جديد
+                {language === 'ar' ? "طلب رابط جديد" : "Request New Link"}
               </Button>
             </Link>
             <Link href="/login">
               <Button variant="ghost" className="w-full" data-testid="button-back-to-login">
-                العودة لتسجيل الدخول
+                {language === 'ar' ? "العودة لتسجيل الدخول" : "Back to Login"}
               </Button>
             </Link>
           </CardContent>
@@ -111,21 +117,25 @@ export default function ResetPassword() {
 
   if (resetSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
               <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
-            <CardTitle className="text-2xl">تم تغيير كلمة المرور</CardTitle>
+            <CardTitle className="text-2xl">
+              {language === 'ar' ? "تم تغيير كلمة المرور" : "Password Changed"}
+            </CardTitle>
             <CardDescription className="text-base mt-2">
-              تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.
+              {language === 'ar' 
+                ? "تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة."
+                : "Password changed successfully. You can now log in with your new password."}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Link href="/login">
               <Button className="w-full" data-testid="button-go-to-login">
-                تسجيل الدخول
+                {language === 'ar' ? "تسجيل الدخول" : "Login"}
               </Button>
             </Link>
           </CardContent>
@@ -135,25 +145,29 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
             <Lock className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">إعادة تعيين كلمة المرور</CardTitle>
+          <CardTitle className="text-2xl">
+            {language === 'ar' ? "إعادة تعيين كلمة المرور" : "Reset Password"}
+          </CardTitle>
           <CardDescription className="text-base mt-2">
-            أدخل كلمة المرور الجديدة
+            {language === 'ar' ? "أدخل كلمة المرور الجديدة" : "Enter your new password"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
+              <Label htmlFor="newPassword">
+                {language === 'ar' ? "كلمة المرور الجديدة" : "New Password"}
+              </Label>
               <Input
                 id="newPassword"
                 type="password"
-                placeholder="أدخل كلمة المرور الجديدة"
+                placeholder={language === 'ar' ? "أدخل كلمة المرور الجديدة" : "Enter new password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 disabled={resetPasswordMutation.isPending}
@@ -161,11 +175,13 @@ export default function ResetPassword() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+              <Label htmlFor="confirmPassword">
+                {language === 'ar' ? "تأكيد كلمة المرور" : "Confirm Password"}
+              </Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="أعد إدخال كلمة المرور"
+                placeholder={language === 'ar' ? "أعد إدخال كلمة المرور" : "Re-enter password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={resetPasswordMutation.isPending}
@@ -178,7 +194,9 @@ export default function ResetPassword() {
               disabled={resetPasswordMutation.isPending}
               data-testid="button-submit"
             >
-              {resetPasswordMutation.isPending ? "جارٍ الحفظ..." : "حفظ كلمة المرور الجديدة"}
+              {resetPasswordMutation.isPending 
+                ? (language === 'ar' ? "جارٍ الحفظ..." : "Saving...") 
+                : (language === 'ar' ? "تحديث كلمة المرور" : "Update Password")}
             </Button>
           </form>
         </CardContent>

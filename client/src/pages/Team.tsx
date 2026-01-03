@@ -13,29 +13,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Layout from "@/components/Layout";
 import { ContextChoiceDialog } from "@/components/WorkContextSwitcher";
 import type { TeamMember, User } from "@shared/schema";
 
-const inviteSchema = z.object({
-  name: z.string().min(2, "الاسم مطلوب (حرفين على الأقل)"),
-  email: z.string().email("البريد الإلكتروني غير صالح"),
-  permission: z.enum(["viewer", "editor", "manager"]),
-});
-
-type InviteForm = z.infer<typeof inviteSchema>;
-
-const permissionLabels: Record<string, string> = {
-  viewer: "مشاهد",
-  editor: "محرر",
-  manager: "مدير",
-};
-
-const permissionDescriptions: Record<string, string> = {
-  viewer: "عرض المحتوى والشاشات فقط",
-  editor: "تعديل المحتوى والجداول",
-  manager: "إدارة كاملة بما في ذلك الفريق",
+type InviteForm = {
+  name: string;
+  email: string;
+  permission: "viewer" | "editor" | "manager";
 };
 
 export default function Team() {
@@ -44,6 +31,25 @@ export default function Team() {
   const [contextDialogOpen, setContextDialogOpen] = useState(false);
   const [acceptedCompany, setAcceptedCompany] = useState<{ ownerId: string; companyName: string } | null>(null);
   const { toast } = useToast();
+  const { t, language } = useLanguage();
+
+  const inviteSchema = z.object({
+    name: z.string().min(2, t.team.nameRequired),
+    email: z.string().email(t.team.invalidEmailError),
+    permission: z.enum(["viewer", "editor", "manager"]),
+  });
+
+  const permissionLabels: Record<string, string> = {
+    viewer: t.team.viewer,
+    editor: t.team.editor,
+    manager: t.team.manager,
+  };
+
+  const permissionDescriptions: Record<string, string> = {
+    viewer: t.team.viewContentOnly,
+    editor: t.team.editContentSchedule,
+    manager: t.team.fullManagement,
+  };
 
   const { data: members = [], isLoading } = useQuery<(TeamMember & { member?: User })[]>({
     queryKey: ['/api/team'],
@@ -64,10 +70,10 @@ export default function Team() {
       queryClient.invalidateQueries({ queryKey: ['/api/team'] });
       setIsInviteOpen(false);
       form.reset();
-      toast({ title: "تم إرسال الدعوة بنجاح" });
+      toast({ title: t.team.invitationSent });
     },
     onError: (error: any) => {
-      toast({ title: "خطأ", description: error.message || "فشل إرسال الدعوة", variant: "destructive" });
+      toast({ title: t.messages.error, description: error.message || t.team.sendInvitationFailed, variant: "destructive" });
     },
   });
 
@@ -75,7 +81,7 @@ export default function Team() {
     mutationFn: (invitationId: number) => apiRequest('DELETE', `/api/team/${invitationId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team'] });
-      toast({ title: "تم إزالة العضو" });
+      toast({ title: t.team.memberRemoved });
     },
   });
 
@@ -85,7 +91,7 @@ export default function Team() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team'] });
       setEditingMember(null);
-      toast({ title: "تم تحديث الصلاحية" });
+      toast({ title: t.team.permissionUpdated });
     },
   });
 
@@ -98,10 +104,10 @@ export default function Team() {
       queryClient.invalidateQueries({ queryKey: ['/api/team/context'] });
       const companyName = invitation.owner?.companyName || 
         `${invitation.owner?.firstName || ''} ${invitation.owner?.lastName || ''}`.trim() || 
-        'الشركة';
+        t.team.company;
       setAcceptedCompany({ ownerId: invitation.ownerId, companyName });
       setContextDialogOpen(true);
-      toast({ title: "تم قبول الدعوة بنجاح" });
+      toast({ title: t.team.invitationAccepted });
     },
   });
 
@@ -109,16 +115,16 @@ export default function Team() {
     mutationFn: (ownerId: string) => apiRequest('POST', `/api/team/invitations/${ownerId}/reject`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team/invitations'] });
-      toast({ title: "تم رفض الدعوة" });
+      toast({ title: t.team.invitationRejected });
     },
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge variant="default" className="bg-green-600"><CheckCircle className="w-3 h-3 ml-1" />نشط</Badge>;
+        return <Badge variant="default" className="bg-green-600"><CheckCircle className={`w-3 h-3 ${language === 'ar' ? 'ml-1' : 'mr-1'}`} />{t.team.statusActive}</Badge>;
       case 'pending':
-        return <Badge variant="secondary"><Clock className="w-3 h-3 ml-1" />في انتظار القبول</Badge>;
+        return <Badge variant="secondary"><Clock className={`w-3 h-3 ${language === 'ar' ? 'ml-1' : 'mr-1'}`} />{t.team.statusPending}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -146,19 +152,19 @@ export default function Team() {
       >
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold">إدارة الفريق</h1>
-            <p className="text-muted-foreground">أضف موظفين للوصول إلى نفس الشاشات والمحتوى</p>
+            <h1 className="text-2xl font-bold">{t.team.manageTeam}</h1>
+            <p className="text-muted-foreground">{t.team.addEmployeesToAccess}</p>
           </div>
           <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
             <DialogTrigger asChild>
               <Button data-testid="button-invite-member">
-                <UserPlus className="w-4 h-4 ml-2" />
-                دعوة موظف
+                <UserPlus className={`w-4 h-4 ${language === 'ar' ? 'ml-2' : 'mr-2'}`} />
+                {t.team.inviteEmployee}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>دعوة موظف جديد</DialogTitle>
+                <DialogTitle>{t.team.inviteNewEmployee}</DialogTitle>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit((data) => inviteMutation.mutate(data))} className="space-y-4">
@@ -167,11 +173,11 @@ export default function Team() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>اسم الموظف</FormLabel>
+                        <FormLabel>{t.team.employeeName}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            placeholder="أدخل اسم الموظف"
+                            placeholder={t.team.enterEmployeeName}
                             data-testid="input-invite-name"
                           />
                         </FormControl>
@@ -184,7 +190,7 @@ export default function Team() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>البريد الإلكتروني</FormLabel>
+                        <FormLabel>{t.team.email}</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -202,30 +208,30 @@ export default function Team() {
                     name="permission"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>الصلاحية</FormLabel>
+                        <FormLabel>{t.team.permission}</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-permission">
-                              <SelectValue placeholder="اختر الصلاحية" />
+                              <SelectValue placeholder={t.team.selectPermission} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="viewer">
                               <div className="flex flex-col">
-                                <span>مشاهد</span>
-                                <span className="text-xs text-muted-foreground">عرض المحتوى والشاشات فقط</span>
+                                <span>{t.team.viewer}</span>
+                                <span className="text-xs text-muted-foreground">{t.team.viewContentOnly}</span>
                               </div>
                             </SelectItem>
                             <SelectItem value="editor">
                               <div className="flex flex-col">
-                                <span>محرر</span>
-                                <span className="text-xs text-muted-foreground">تعديل المحتوى والجداول</span>
+                                <span>{t.team.editor}</span>
+                                <span className="text-xs text-muted-foreground">{t.team.editContentSchedule}</span>
                               </div>
                             </SelectItem>
                             <SelectItem value="manager">
                               <div className="flex flex-col">
-                                <span>مدير</span>
-                                <span className="text-xs text-muted-foreground">إدارة كاملة بما في ذلك الفريق</span>
+                                <span>{t.team.manager}</span>
+                                <span className="text-xs text-muted-foreground">{t.team.fullManagement}</span>
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -235,7 +241,7 @@ export default function Team() {
                     )}
                   />
                   <Button type="submit" className="w-full" disabled={inviteMutation.isPending} data-testid="button-send-invite">
-                    {inviteMutation.isPending ? "جاري الإرسال..." : "إرسال الدعوة"}
+                    {inviteMutation.isPending ? t.team.sending : t.team.sendInvitation}
                   </Button>
                 </form>
               </Form>
@@ -248,7 +254,7 @@ export default function Team() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="w-5 h-5" />
-                دعوات معلقة لك
+                {t.team.pendingInvitationsForYou}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -256,8 +262,8 @@ export default function Team() {
                 {invitations.map((inv) => (
                   <div key={inv.id} className="flex items-center justify-between gap-4 p-4 rounded-lg bg-muted/50 flex-wrap">
                     <div>
-                      <p className="font-medium">{inv.owner.firstName || inv.owner.email || 'شركة'}</p>
-                      <p className="text-sm text-muted-foreground">يدعوك للانضمام كـ {permissionLabels[inv.permission] || inv.permission}</p>
+                      <p className="font-medium">{inv.owner.firstName || inv.owner.email || t.team.company}</p>
+                      <p className="text-sm text-muted-foreground">{t.team.invitesYouToJoinAs} {permissionLabels[inv.permission] || inv.permission}</p>
                     </div>
                     <div className="flex gap-2">
                       <Button 
@@ -266,8 +272,8 @@ export default function Team() {
                         disabled={acceptMutation.isPending}
                         data-testid={`button-accept-invitation-${inv.id}`}
                       >
-                        <CheckCircle className="w-4 h-4 ml-1" />
-                        قبول
+                        <CheckCircle className={`w-4 h-4 ${language === 'ar' ? 'ml-1' : 'mr-1'}`} />
+                        {t.team.accept}
                       </Button>
                       <Button 
                         size="sm" 
@@ -276,8 +282,8 @@ export default function Team() {
                         disabled={rejectMutation.isPending}
                         data-testid={`button-reject-invitation-${inv.id}`}
                       >
-                        <XCircle className="w-4 h-4 ml-1" />
-                        رفض
+                        <XCircle className={`w-4 h-4 ${language === 'ar' ? 'ml-1' : 'mr-1'}`} />
+                        {t.team.reject}
                       </Button>
                     </div>
                   </div>
@@ -291,17 +297,17 @@ export default function Team() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              أعضاء الفريق ({members.length})
+              {t.team.teamMembers} ({members.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
+              <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
             ) : members.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>لا يوجد أعضاء في الفريق</p>
-                <p className="text-sm">أضف موظفين ليتمكنوا من إدارة الشاشات والمحتوى</p>
+                <p>{t.team.noTeamMembers}</p>
+                <p className="text-sm">{t.team.addEmployeesToManage}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -317,7 +323,7 @@ export default function Team() {
                       </div>
                       <div>
                         <p className="font-medium">
-                          {member.invitedName || member.member?.firstName || member.invitedEmail || 'موظف'}
+                          {member.invitedName || member.member?.firstName || member.invitedEmail || t.team.employee}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {member.member?.email || member.invitedEmail}
@@ -341,11 +347,11 @@ export default function Team() {
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>تعديل صلاحية {member.invitedName || member.invitedEmail}</DialogTitle>
+                            <DialogTitle>{t.team.editPermission} {member.invitedName || member.invitedEmail}</DialogTitle>
                           </DialogHeader>
                           <div className="space-y-4">
                             <div className="space-y-2">
-                              {['viewer', 'editor', 'manager'].map((perm) => (
+                              {(['viewer', 'editor', 'manager'] as const).map((perm) => (
                                 <div
                                   key={perm}
                                   className={`p-4 rounded-lg border cursor-pointer hover-elevate ${

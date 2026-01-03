@@ -3,6 +3,7 @@ import { useScreens, useScreenSchedules, useCreateSchedule, useDeleteSchedule, u
 import { useScreenGroups, useGroupSchedules, useCreateGroupSchedule, useDeleteGroupSchedule, useMediaGroups } from "@/hooks/use-groups";
 import { useMedia } from "@/hooks/use-media";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useLanguage } from "@/hooks/use-language";
 import Layout from "@/components/Layout";
 import { 
   CalendarClock, 
@@ -36,7 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 
 interface ScheduleItem {
@@ -54,6 +55,7 @@ interface ScheduleItem {
 }
 
 export default function Schedule() {
+  const { t, language } = useLanguage();
   const { canAdd, canEdit, canDelete } = usePermissions();
   const { data: screens = [] } = useScreens();
   const { data: groups = [] } = useScreenGroups();
@@ -86,11 +88,12 @@ export default function Schedule() {
   const [localSchedules, setLocalSchedules] = useState<ScheduleItem[]>([]);
   const [mediaGroupFilter, setMediaGroupFilter] = useState<string>("all");
 
+  const dateLocale = language === 'ar' ? ar : enUS;
+
   const ungroupedScreens = screens.filter(s => !s.groupId);
   
   const handleMediaSelect = (item: any) => {
     setSelectedMediaId(item.id.toString());
-    // For videos, default to video duration or 30 seconds if not set
     if (item.type === 'video') {
       setNewItemDuration(item.duration ? item.duration.toString() : "30");
     } else {
@@ -156,7 +159,11 @@ export default function Schedule() {
     if (!editingDuration) return;
     const newDuration = parseInt(editingDuration.value);
     if (isNaN(newDuration) || newDuration < 1) {
-      toast({ title: "خطأ", description: "المدة يجب أن تكون رقم أكبر من صفر", variant: "destructive" });
+      toast({ 
+        title: language === 'ar' ? "خطأ" : "Error", 
+        description: language === 'ar' ? "المدة يجب أن تكون رقم أكبر من صفر" : "Duration must be greater than zero", 
+        variant: "destructive" 
+      });
       return;
     }
     
@@ -201,7 +208,10 @@ export default function Schedule() {
         groupId: scheduleType === "group" ? parseInt(selectedGroupId) : undefined,
       });
       
-      toast({ title: "تم الحفظ", description: "تم إعادة ترتيب العناصر" });
+      toast({ 
+        title: language === 'ar' ? "تم الحفظ" : "Saved", 
+        description: language === 'ar' ? "تم إعادة ترتيب العناصر" : "Items reordered" 
+      });
     }
     setDraggedItem(null);
   };
@@ -215,8 +225,12 @@ export default function Schedule() {
       <div className="space-y-8 h-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">جدولة المحتوى</h1>
-            <p className="text-muted-foreground mt-2">نظم ظهور الإعلانات على شاشاتك ومجموعاتك</p>
+            <h1 className="text-3xl font-bold text-foreground">
+              {language === 'ar' ? "جدولة المحتوى" : "Content Schedule"}
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              {language === 'ar' ? "نظم ظهور الإعلانات على شاشاتك ومجموعاتك" : "Organize content display on your screens and groups"}
+            </p>
           </div>
           
           <div className="flex items-center gap-4 flex-wrap">
@@ -224,11 +238,11 @@ export default function Schedule() {
               <TabsList className="rounded-xl">
                 <TabsTrigger value="screen" className="gap-2 rounded-lg" data-testid="tab-screens">
                   <Monitor className="w-4 h-4" />
-                  شاشات
+                  {t.nav.screens}
                 </TabsTrigger>
                 <TabsTrigger value="group" className="gap-2 rounded-lg" data-testid="tab-groups">
                   <Layers className="w-4 h-4" />
-                  مجموعات
+                  {t.nav.groups}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -236,12 +250,12 @@ export default function Schedule() {
             {scheduleType === "screen" ? (
               <Select value={selectedScreenId} onValueChange={(v) => { setSelectedScreenId(v); setLocalSchedules([]); }}>
                 <SelectTrigger className="w-[250px] rounded-xl bg-card" data-testid="select-screen">
-                  <SelectValue placeholder="اختر الشاشة..." />
+                  <SelectValue placeholder={language === 'ar' ? "اختر الشاشة..." : "Select screen..."} />
                 </SelectTrigger>
                 <SelectContent>
                   {ungroupedScreens.length === 0 ? (
                     <div className="p-4 text-center text-sm text-muted-foreground">
-                      لا توجد شاشات غير مرتبطة بمجموعات
+                      {language === 'ar' ? "لا توجد شاشات غير مرتبطة بمجموعات" : "No screens not linked to groups"}
                     </div>
                   ) : (
                     ungroupedScreens.map((screen) => (
@@ -255,12 +269,12 @@ export default function Schedule() {
             ) : (
               <Select value={selectedGroupId} onValueChange={(v) => { setSelectedGroupId(v); setLocalSchedules([]); }}>
                 <SelectTrigger className="w-[250px] rounded-xl bg-card" data-testid="select-group">
-                  <SelectValue placeholder="اختر المجموعة..." />
+                  <SelectValue placeholder={language === 'ar' ? "اختر المجموعة..." : "Select group..."} />
                 </SelectTrigger>
                 <SelectContent>
                   {groups.length === 0 ? (
                     <div className="p-4 text-center text-sm text-muted-foreground">
-                      لا توجد مجموعات
+                      {language === 'ar' ? "لا توجد مجموعات" : "No groups"}
                     </div>
                   ) : (
                     groups.map((group) => (
@@ -282,27 +296,31 @@ export default function Schedule() {
                     data-testid="button-add-schedule"
                   >
                     <Plus className="w-5 h-5" />
-                    <span>إضافة للجدول</span>
+                    <span>{language === 'ar' ? "إضافة للجدول" : "Add to Schedule"}</span>
                   </Button>
                 </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle>اختر محتوى للإضافة</DialogTitle>
+                  <DialogTitle>
+                    {language === 'ar' ? "اختر محتوى للإضافة" : "Select Content to Add"}
+                  </DialogTitle>
                   <DialogDescription>
-                    اختر المحتوى الذي تريد إضافته إلى {scheduleType === "screen" ? "الشاشة" : "المجموعة"}
+                    {language === 'ar' 
+                      ? `اختر المحتوى الذي تريد إضافته إلى ${scheduleType === "screen" ? "الشاشة" : "المجموعة"}`
+                      : `Select the content you want to add to the ${scheduleType === "screen" ? "screen" : "group"}`
+                    }
                   </DialogDescription>
                 </DialogHeader>
                 
-                {/* فلترة حسب مجموعة المحتوى */}
                 <div className="flex items-center gap-2 py-2">
                   <Layers className="w-4 h-4 text-muted-foreground" />
                   <Select value={mediaGroupFilter} onValueChange={setMediaGroupFilter}>
                     <SelectTrigger className="flex-1 rounded-xl" data-testid="select-media-group-filter">
-                      <SelectValue placeholder="جميع المجموعات" />
+                      <SelectValue placeholder={language === 'ar' ? "جميع المجموعات" : "All Groups"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">جميع المجموعات</SelectItem>
-                      <SelectItem value="ungrouped">بدون مجموعة</SelectItem>
+                      <SelectItem value="all">{language === 'ar' ? "جميع المجموعات" : "All Groups"}</SelectItem>
+                      <SelectItem value="ungrouped">{language === 'ar' ? "بدون مجموعة" : "Ungrouped"}</SelectItem>
                       {mediaGroups.map((group) => (
                         <SelectItem key={group.id} value={group.id.toString()}>
                           {group.name}
@@ -354,14 +372,17 @@ export default function Schedule() {
                       return item.groupId?.toString() === mediaGroupFilter;
                     }).length === 0 && (
                      <div className="col-span-2 text-center text-muted-foreground py-8">
-                       {media.length === 0 ? "لا يوجد محتوى في المكتبة." : "لا يوجد محتوى في هذه المجموعة."}
+                       {media.length === 0 
+                         ? (language === 'ar' ? "لا يوجد محتوى في المكتبة." : "No content in the library.")
+                         : (language === 'ar' ? "لا يوجد محتوى في هذه المجموعة." : "No content in this group.")
+                       }
                      </div>
                   )}
                 </div>
                 {selectedMediaId && (
                   <div className="flex items-center gap-3 py-2 px-3 bg-muted/50 rounded-xl">
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">مدة العرض:</span>
+                    <span className="text-sm">{language === 'ar' ? "مدة العرض:" : "Display duration:"}</span>
                     <Input
                       type="number"
                       min="1"
@@ -370,18 +391,20 @@ export default function Schedule() {
                       className="w-20 h-8"
                       data-testid="input-new-duration"
                     />
-                    <span className="text-sm text-muted-foreground">ثانية</span>
+                    <span className="text-sm text-muted-foreground">{language === 'ar' ? "ثانية" : "sec"}</span>
                   </div>
                 )}
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="outline" onClick={() => setIsAddOpen(false)} className="rounded-xl">إلغاء</Button>
+                  <Button variant="outline" onClick={() => setIsAddOpen(false)} className="rounded-xl">
+                    {t.cancel}
+                  </Button>
                   <Button 
                     onClick={handleAddSchedule} 
                     disabled={!selectedMediaId || createSchedule.isPending || createGroupSchedule.isPending}
                     className="bg-primary rounded-xl"
                     data-testid="button-confirm-add"
                   >
-                    إضافة
+                    {t.add}
                   </Button>
                 </div>
               </DialogContent>
@@ -395,15 +418,25 @@ export default function Schedule() {
             {scheduleType === "screen" ? (
               <>
                 <Monitor className="w-16 h-16 text-muted-foreground/30 mb-4" />
-                <h3 className="text-xl font-bold text-muted-foreground">لم يتم اختيار شاشة</h3>
-                <p className="text-muted-foreground mt-2">اختر شاشة من القائمة أعلاه لعرض وتعديل جدولها</p>
-                <p className="text-sm text-muted-foreground mt-1">الشاشات المرتبطة بمجموعات تُجدول من خلال مجموعتها</p>
+                <h3 className="text-xl font-bold text-muted-foreground">
+                  {language === 'ar' ? "لم يتم اختيار شاشة" : "No Screen Selected"}
+                </h3>
+                <p className="text-muted-foreground mt-2">
+                  {language === 'ar' ? "اختر شاشة من القائمة أعلاه لعرض وتعديل جدولها" : "Select a screen from the list above to view and edit its schedule"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {language === 'ar' ? "الشاشات المرتبطة بمجموعات تُجدول من خلال مجموعتها" : "Screens linked to groups are scheduled through their group"}
+                </p>
               </>
             ) : (
               <>
                 <Layers className="w-16 h-16 text-muted-foreground/30 mb-4" />
-                <h3 className="text-xl font-bold text-muted-foreground">لم يتم اختيار مجموعة</h3>
-                <p className="text-muted-foreground mt-2">اختر مجموعة من القائمة أعلاه لعرض وتعديل جدولها</p>
+                <h3 className="text-xl font-bold text-muted-foreground">
+                  {language === 'ar' ? "لم يتم اختيار مجموعة" : "No Group Selected"}
+                </h3>
+                <p className="text-muted-foreground mt-2">
+                  {language === 'ar' ? "اختر مجموعة من القائمة أعلاه لعرض وتعديل جدولها" : "Select a group from the list above to view and edit its schedule"}
+                </p>
               </>
             )}
           </div>
@@ -412,12 +445,16 @@ export default function Schedule() {
             <div className="p-6 border-b border-border/50 flex items-center justify-between gap-2 flex-wrap">
               <h3 className="font-bold text-lg flex items-center gap-2">
                 <CalendarClock className="w-5 h-5 text-primary" />
-                قائمة التشغيل الحالية
+                {language === 'ar' ? "قائمة التشغيل الحالية" : "Current Playlist"}
               </h3>
               <div className="flex items-center gap-3">
-                {canEdit && <span className="text-sm text-muted-foreground">اسحب العناصر لإعادة الترتيب</span>}
+                {canEdit && (
+                  <span className="text-sm text-muted-foreground">
+                    {language === 'ar' ? "اسحب العناصر لإعادة الترتيب" : "Drag items to reorder"}
+                  </span>
+                )}
                 <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                  {schedules.length} عناصر
+                  {schedules.length} {language === 'ar' ? "عناصر" : "items"}
                 </span>
               </div>
             </div>
@@ -468,7 +505,7 @@ export default function Schedule() {
                               className="w-20 h-7 text-xs"
                               data-testid={`input-duration-${schedule.id}`}
                             />
-                            <span>ثانية</span>
+                            <span>{language === 'ar' ? "ثانية" : "sec"}</span>
                             <Button 
                               size="icon" 
                               variant="ghost" 
@@ -482,7 +519,9 @@ export default function Schedule() {
                         ) : (
                           <div className="flex items-center gap-2 bg-muted/50 px-2 py-1 rounded-lg">
                             <Clock className="w-3 h-3" />
-                            <span className="font-medium">{getScheduleDuration(schedule)} ثانية</span>
+                            <span className="font-medium">
+                              {getScheduleDuration(schedule)} {language === 'ar' ? "ثانية" : "sec"}
+                            </span>
                             {canEdit && (
                               <Button 
                                 size="icon" 
@@ -497,7 +536,7 @@ export default function Schedule() {
                           </div>
                         )}
                         <span>
-                           أضيف: {schedule.createdAt ? format(new Date(schedule.createdAt), "d MMMM yyyy", { locale: ar }) : '-'}
+                          {language === 'ar' ? "أضيف:" : "Added:"} {schedule.createdAt ? format(new Date(schedule.createdAt), "d MMMM yyyy", { locale: dateLocale }) : '-'}
                         </span>
                       </div>
                     </div>
@@ -516,18 +555,14 @@ export default function Schedule() {
                 ))}
               </div>
             ) : (
-              <div className="p-12 text-center text-muted-foreground">
-                <p>الجدول فارغ {scheduleType === "screen" ? "لهذه الشاشة" : "لهذه المجموعة"}</p>
-                {canAdd && (
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setIsAddOpen(true)}
-                    className="mt-2 text-primary"
-                    data-testid="button-add-first-content"
-                  >
-                    إضافة محتوى الآن <ArrowRight className="w-4 h-4 mr-1" />
-                  </Button>
-                )}
+              <div className="p-12 text-center">
+                <CalendarClock className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  {language === 'ar' ? "لا توجد عناصر في الجدول" : "No items in the schedule"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {language === 'ar' ? "أضف محتوى من المكتبة للبدء" : "Add content from the library to get started"}
+                </p>
               </div>
             )}
           </div>

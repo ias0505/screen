@@ -3,6 +3,7 @@ import { useMedia, useCreateMedia, useDeleteMedia } from "@/hooks/use-media";
 import { useMediaGroups, useCreateMediaGroup } from "@/hooks/use-groups";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useLanguage } from "@/hooks/use-language";
 import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -41,6 +42,7 @@ import {
 export default function Media() {
   const { user } = useAuth();
   const { canAdd, canDelete } = usePermissions();
+  const { t, language } = useLanguage();
   const { data: media = [], isLoading } = useMedia();
   const { data: groups = [] } = useMediaGroups();
   const createMedia = useCreateMedia();
@@ -130,8 +132,12 @@ export default function Media() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">مكتبة الوسائط</h1>
-            <p className="text-muted-foreground mt-2">إدارة الصور والفيديوهات الإعلانية والمجموعات</p>
+            <h1 className="text-3xl font-bold text-foreground">
+              {language === 'ar' ? 'مكتبة الوسائط' : 'Media Library'}
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              {language === 'ar' ? 'إدارة الصور والفيديوهات الإعلانية والمجموعات' : 'Manage images, videos and groups'}
+            </p>
           </div>
           
           <div className="flex gap-2">
@@ -140,35 +146,39 @@ export default function Media() {
                 <DialogTrigger asChild>
                   <Button variant="outline" className="gap-2 rounded-xl">
                     <Layers className="w-5 h-5" />
-                    <span>مجموعة جديدة</span>
+                    <span>{language === 'ar' ? 'مجموعة جديدة' : 'New Group'}</span>
                   </Button>
                 </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>إنشاء مجموعة وسائط</DialogTitle>
+                  <DialogTitle>
+                    {language === 'ar' ? 'إنشاء مجموعة وسائط' : 'Create Media Group'}
+                  </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleCreateGroup} className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label>اسم المجموعة</Label>
+                    <Label>{t.groups.groupName}</Label>
                     <Input 
                       value={newGroup.name} 
                       onChange={(e) => setNewGroup({...newGroup, name: e.target.value})}
-                      placeholder="مثال: إعلانات رمضان"
+                      placeholder={language === 'ar' ? 'مثال: إعلانات رمضان' : 'Example: Ramadan Ads'}
                       required
                       className="rounded-xl"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>الوصف</Label>
+                    <Label>{t.groups.description}</Label>
                     <Input 
                       value={newGroup.description} 
                       onChange={(e) => setNewGroup({...newGroup, description: e.target.value})}
-                      placeholder="وصف اختياري للمجموعة"
+                      placeholder={language === 'ar' ? 'وصف اختياري للمجموعة' : 'Optional description'}
                       className="rounded-xl"
                     />
                   </div>
                   <Button type="submit" disabled={createGroup.isPending} className="w-full bg-primary rounded-xl">
-                    {createGroup.isPending ? "جاري الحفظ..." : "حفظ المجموعة"}
+                    {createGroup.isPending 
+                      ? (language === 'ar' ? 'جاري الحفظ...' : 'Saving...') 
+                      : (language === 'ar' ? 'حفظ المجموعة' : 'Save Group')}
                   </Button>
                 </form>
               </DialogContent>
@@ -180,41 +190,47 @@ export default function Media() {
                 <DialogTrigger asChild>
                   <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 rounded-xl px-6">
                     <Plus className="w-5 h-5" />
-                    <span>رفع محتوى</span>
+                    <span>{language === 'ar' ? 'رفع محتوى' : 'Upload Content'}</span>
                   </Button>
                 </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle>إضافة محتوى جديد</DialogTitle>
+                  <DialogTitle>
+                    {language === 'ar' ? 'إضافة محتوى جديد' : 'Add New Content'}
+                  </DialogTitle>
                 </DialogHeader>
                 
                 <Tabs defaultValue="image" className="w-full pt-4" onValueChange={(v) => setNewMedia({...newMedia, type: v as any})}>
                   <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="image">صورة</TabsTrigger>
-                    <TabsTrigger value="video">فيديو</TabsTrigger>
+                    <TabsTrigger value="image">{t.media.image}</TabsTrigger>
+                    <TabsTrigger value="video">{t.media.video}</TabsTrigger>
                   </TabsList>
                   
                   <form onSubmit={handleCreate} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="title">عنوان المحتوى</Label>
+                      <Label htmlFor="title">
+                        {language === 'ar' ? 'عنوان المحتوى' : 'Content Title'}
+                      </Label>
                       <Input
                         id="title"
                         value={newMedia.title}
                         onChange={(e) => setNewMedia({ ...newMedia, title: e.target.value })}
-                        placeholder="مثال: إعلان الصيف"
+                        placeholder={language === 'ar' ? 'مثال: إعلان الصيف' : 'Example: Summer Ad'}
                         required
                         className="rounded-xl"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="groupId">المجموعة</Label>
+                      <Label htmlFor="groupId">
+                        {language === 'ar' ? 'المجموعة' : 'Group'}
+                      </Label>
                       <Select 
                         value={newMedia.groupId} 
                         onValueChange={(v) => setNewMedia({...newMedia, groupId: v})}
                       >
                         <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="اختر مجموعة (اختياري)" />
+                          <SelectValue placeholder={language === 'ar' ? 'اختر مجموعة (اختياري)' : 'Select Group (optional)'} />
                         </SelectTrigger>
                         <SelectContent>
                           {groups.map(g => (
@@ -225,7 +241,9 @@ export default function Media() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="file">رفع ملف من الجهاز</Label>
+                      <Label htmlFor="file">
+                        {language === 'ar' ? 'رفع ملف من الجهاز' : 'Upload File from Device'}
+                      </Label>
                       <div className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-4 hover:border-primary/50 transition-colors bg-muted/5 relative">
                         <input
                           id="file"
@@ -236,35 +254,49 @@ export default function Media() {
                         />
                         <Upload className="w-8 h-8 text-muted-foreground mb-2" />
                         <p className="text-sm text-muted-foreground">
-                          {file ? file.name : "اضغط هنا أو اسحب الملف للرفع"}
+                          {file ? file.name : (language === 'ar' ? 'اسحب الملف هنا أو انقر للرفع' : 'Drag file here or click to upload')}
                         </p>
                       </div>
                       <div className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 space-y-1">
-                        <p className="font-medium">الأبعاد الموصى بها:</p>
-                        <p>الشاشة الأفقية: 1920 × 1080 بكسل</p>
-                        <p>الشاشة العمودية: 1080 × 1920 بكسل</p>
+                        <p className="font-medium">
+                          {language === 'ar' ? 'الأبعاد الموصى بها:' : 'Recommended dimensions:'}
+                        </p>
+                        <p>
+                          {language === 'ar' ? 'الشاشة الأفقية: 1920 × 1080 بكسل' : 'Horizontal screen: 1920 × 1080 pixels'}
+                        </p>
+                        <p>
+                          {language === 'ar' ? 'الشاشة العمودية: 1080 × 1920 بكسل' : 'Vertical screen: 1080 × 1920 pixels'}
+                        </p>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="url">أو رابط الملف (URL)</Label>
+                      <Label htmlFor="url">
+                        {language === 'ar' ? 'أو رابط الملف (URL)' : 'Or File URL'}
+                      </Label>
                       <div className="relative">
-                        <LinkIcon className="absolute right-3 top-3 w-4 h-4 text-muted-foreground" />
+                        <LinkIcon className={`absolute ${language === 'ar' ? 'right-3' : 'left-3'} top-3 w-4 h-4 text-muted-foreground`} />
                         <Input
                           id="url"
                           value={newMedia.url}
                           onChange={(e) => setNewMedia({ ...newMedia, url: e.target.value })}
                           placeholder={newMedia.type === 'image' ? "https://images.unsplash.com/..." : "https://example.com/video.mp4"}
-                          className="rounded-xl pr-10"
+                          className={`rounded-xl ${language === 'ar' ? 'pr-10' : 'pl-10'}`}
                           dir="ltr"
                         />
                       </div>
                     </div>
 
                     <div className="flex justify-end gap-2 pt-4">
-                      <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="rounded-xl">إلغاء</Button>
+                      <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="rounded-xl">
+                        {t.cancel}
+                      </Button>
                       <Button type="submit" disabled={createMedia.isPending || isUploading} className="bg-primary hover:bg-primary/90 rounded-xl">
-                        {isUploading ? "جاري الرفع..." : createMedia.isPending ? "جاري الحفظ..." : "حفظ المحتوى"}
+                        {isUploading 
+                          ? (language === 'ar' ? 'جاري الرفع...' : 'Uploading...') 
+                          : createMedia.isPending 
+                            ? (language === 'ar' ? 'جاري الحفظ...' : 'Saving...') 
+                            : (language === 'ar' ? 'حفظ المحتوى' : 'Save Content')}
                       </Button>
                     </div>
                   </form>
@@ -284,7 +316,7 @@ export default function Media() {
         ) : (
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="bg-muted/50 p-1 rounded-xl mb-6 overflow-x-auto">
-              <TabsTrigger value="all" className="rounded-lg">الكل</TabsTrigger>
+              <TabsTrigger value="all" className="rounded-lg">{t.all}</TabsTrigger>
               {groups.map(group => (
                 <TabsTrigger key={group.id} value={`group-${group.id}`} className="rounded-lg">
                   {group.name}
@@ -296,7 +328,7 @@ export default function Media() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 <AnimatePresence>
                   {media.map((item) => (
-                    <MediaCard key={item.id} item={item} onDelete={() => deleteMedia.mutate(item.id)} canDelete={canDelete} />
+                    <MediaCard key={item.id} item={item} onDelete={() => deleteMedia.mutate(item.id)} canDelete={canDelete} language={language} />
                   ))}
                 </AnimatePresence>
               </div>
@@ -306,11 +338,11 @@ export default function Media() {
               <TabsContent key={group.id} value={`group-${group.id}`}>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {media.filter(m => m.groupId === group.id).map((item) => (
-                    <MediaCard key={item.id} item={item} onDelete={() => deleteMedia.mutate(item.id)} canDelete={canDelete} />
+                    <MediaCard key={item.id} item={item} onDelete={() => deleteMedia.mutate(item.id)} canDelete={canDelete} language={language} />
                   ))}
                   {media.filter(m => m.groupId === group.id).length === 0 && (
                     <div className="col-span-full py-10 text-center text-muted-foreground">
-                      لا يوجد محتوى في هذه المجموعة
+                      {language === 'ar' ? 'لا يوجد محتوى في هذه المجموعة' : 'No content in this group'}
                     </div>
                   )}
                 </div>
@@ -320,7 +352,10 @@ export default function Media() {
             {media.length === 0 && (
               <div className="col-span-full py-20 text-center text-muted-foreground bg-muted/10 border-2 border-dashed border-border rounded-3xl">
                 <ImageIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>لم يتم رفع أي محتوى بعد</p>
+                <p>{language === 'ar' ? 'لا يوجد محتوى' : 'No content'}</p>
+                <p className="text-sm mt-1">
+                  {language === 'ar' ? 'ابدأ بإضافة الصور والفيديوهات' : 'Start by adding images and videos'}
+                </p>
               </div>
             )}
           </Tabs>
@@ -330,7 +365,7 @@ export default function Media() {
   );
 }
 
-function MediaCard({ item, onDelete, canDelete }: { item: any, onDelete: () => void, canDelete: boolean }) {
+function MediaCard({ item, onDelete, canDelete, language }: { item: any, onDelete: () => void, canDelete: boolean, language: string }) {
   return (
     <motion.div
       layout
@@ -346,7 +381,7 @@ function MediaCard({ item, onDelete, canDelete }: { item: any, onDelete: () => v
             alt={item.title} 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=60"; // Fallback abstract image
+              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=60";
             }}
           />
         ) : (
@@ -355,7 +390,6 @@ function MediaCard({ item, onDelete, canDelete }: { item: any, onDelete: () => v
           </div>
         )}
         
-        {/* Overlay Actions */}
         {canDelete && (
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
             <Button 
@@ -374,7 +408,9 @@ function MediaCard({ item, onDelete, canDelete }: { item: any, onDelete: () => v
         <div className="flex items-center justify-between gap-2">
           <h3 className="font-semibold truncate text-sm" title={item.title}>{item.title}</h3>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">
-            {item.type === 'image' ? 'صورة' : 'فيديو'}
+            {item.type === 'image' 
+              ? (language === 'ar' ? 'صورة' : 'Image') 
+              : (language === 'ar' ? 'فيديو' : 'Video')}
           </span>
         </div>
       </div>
