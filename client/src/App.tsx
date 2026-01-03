@@ -32,6 +32,9 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import InvoiceView from "@/pages/InvoiceView";
 import LandingPage from "@/pages/LandingPage";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
+import ContactUs from "@/pages/ContactUs";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -99,6 +102,9 @@ function Router() {
       
       {/* Public Routes */}
       <Route path="/" component={LandingPage} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsOfService} />
+      <Route path="/contact" component={ContactUs} />
       <Route path="/player/:id" component={Player} />
       <Route path="/activate" component={Activate} />
 

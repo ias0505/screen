@@ -14,9 +14,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle,
-  Play,
-  Smartphone,
-  BarChart3
+  Play
 } from "lucide-react";
 import logoImage from "@assets/Meror_logo_v.1_1767180225600.png";
 
@@ -199,10 +197,6 @@ export default function LandingPage() {
                   {language === 'ar' ? 'ابدأ مجاناً' : 'Start Free'}
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="gap-2 text-lg px-8 py-6" data-testid="button-watch-demo">
-                <Smartphone className="w-5 h-5" />
-                {language === 'ar' ? 'شاهد العرض' : 'Watch Demo'}
-              </Button>
             </div>
           </motion.div>
         </div>
@@ -400,15 +394,15 @@ export default function LandingPage() {
               </span>
             </div>
             <div className="flex items-center gap-6 text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">
+              <Link href="/privacy" className="hover:text-foreground transition-colors">
                 {language === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}
-              </a>
-              <a href="#" className="hover:text-foreground transition-colors">
+              </Link>
+              <Link href="/terms" className="hover:text-foreground transition-colors">
                 {language === 'ar' ? 'الشروط والأحكام' : 'Terms of Service'}
-              </a>
-              <a href="#" className="hover:text-foreground transition-colors">
+              </Link>
+              <Link href="/contact" className="hover:text-foreground transition-colors">
                 {language === 'ar' ? 'تواصل معنا' : 'Contact Us'}
-              </a>
+              </Link>
             </div>
           </div>
         </div>
