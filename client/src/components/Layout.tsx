@@ -66,15 +66,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className={cn(
-      "min-h-screen bg-background flex flex-col md:flex-row font-sans",
-      language === 'en' && "md:flex-row-reverse"
-    )} dir={dir}>
+    <div className="min-h-screen bg-background flex flex-col md:flex-row font-sans" dir={dir}>
       {/* Sidebar */}
-      <aside className={cn(
-        "w-full md:w-64 bg-card shadow-xl z-20 flex-shrink-0",
-        language === 'ar' ? "border-l border-border/50" : "border-r border-border/50"
-      )}>
+      <aside className="w-full md:w-64 bg-card shadow-xl z-20 flex-shrink-0 border-s border-border/50">
         <div className="p-6 border-b border-border/50">
           <div className="flex flex-col items-center text-center mb-3">
             <img src={logoImage} alt="Meror" className="h-12 w-auto mb-3" />
