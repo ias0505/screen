@@ -1,0 +1,140 @@
+root@vmi2695527:/var/www/signage-app# npm run build
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+✓ 3106 modules transformed.
+../dist/public/index.html                                          2.08 kB │ gzip:   0.84 kB
+../dist/public/assets/Meror_logo_v.1_1767180225600-CaZ4IK_u.png    5.95 kB
+../dist/public/assets/index-DwhsZYrI.css                         101.12 kB │ gzip:  15.98 kB
+../dist/public/assets/index-C0jkbfXP.js                          334.94 kB │ gzip: 100.08 kB
+../dist/public/assets/index-DW4KLIVS.js                          944.08 kB │ gzip: 269.91 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 14.67s
+building server...
+
+  dist/index.cjs  1.2mb ⚠️
+
+⚡ Done in 211ms
+root@vmi2695527:/var/www/signage-app# pm2 restart signage-app
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [signage-app](ids: [ 0 ])
+[PM2] [signage-app](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ signage-app        │ fork     │ 4    │ online    │ 0%       │ 16.6mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@vmi2695527:/var/www/signage-app# git pull origin main
+From https://github.com/ias0505/screen
+ * branch            main       -> FETCH_HEAD
+Updating 94701b7..6837c5d
+error: The following untracked working tree files would be overwritten by merge:
+        public/uploads
+        public/uploads
+Please move or remove them before you merge.
+Aborting
+root@vmi2695527:/var/www/signage-app# npm install
+
+up to date, audited 543 packages in 2s
+
+74 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+root@vmi2695527:/var/www/signage-app# npm run build
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+✓ 3106 modules transformed.
+../dist/public/index.html                                          2.08 kB │ gzip:   0.84 kB
+../dist/public/assets/Meror_logo_v.1_1767180225600-CaZ4IK_u.png    5.95 kB
+../dist/public/assets/index-DwhsZYrI.css                         101.12 kB │ gzip:  15.98 kB
+../dist/public/assets/index-C0jkbfXP.js                          334.94 kB │ gzip: 100.08 kB
+../dist/public/assets/index-DW4KLIVS.js                          944.08 kB │ gzip: 269.91 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 14.61s
+building server...
+
+  dist/index.cjs  1.2mb ⚠️
+
+⚡ Done in 186ms
+root@vmi2695527:/var/www/signage-app# pm2 restart meror
+Use --update-env to update environment variables
+[PM2][ERROR] Process or Namespace meror not found
+root@vmi2695527:/var/www/signage-app# ^C
+root@vmi2695527:/var/www/signage-app# ^C
+root@vmi2695527:/var/www/signage-app# git pull origin main
+From https://github.com/ias0505/screen
+ * branch            main       -> FETCH_HEAD
+Updating 94701b7..6837c5d
+error: The following untracked working tree files would be overwritten by merge:
+        public/uploads
+        public/uploads
+Please move or remove them before you merge.
+Aborting
+root@vmi2695527:/var/www/signage-app# npm install
+
+up to date, audited 543 packages in 2s
+
+74 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+root@vmi2695527:/var/www/signage-app# npm run build
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+✓ 3106 modules transformed.
+../dist/public/index.html                                          2.08 kB │ gzip:   0.84 kB
+../dist/public/assets/Meror_logo_v.1_1767180225600-CaZ4IK_u.png    5.95 kB
+../dist/public/assets/index-DwhsZYrI.css                         101.12 kB │ gzip:  15.98 kB
+../dist/public/assets/index-C0jkbfXP.js                          334.94 kB │ gzip: 100.08 kB
+../dist/public/assets/index-DW4KLIVS.js                          944.08 kB │ gzip: 269.91 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 14.31s
+building server...
+
+  dist/index.cjs  1.2mb ⚠️
+
+⚡ Done in 189ms
+root@vmi2695527:/var/www/signage-app# pm2 start dist/index.cjs --name meror
+[PM2] Starting /var/www/signage-app/dist/index.cjs in fork_mode (1 instance)
+[PM2] Done.
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 1  │ meror              │ fork     │ 0    │ online    │ 0%       │ 16.7mb   │
+│ 0  │ signage-app        │ fork     │ 4    │ online    │ 0%       │ 92.4mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@vmi2695527:/var/www/signage-app# pm2 start npm --name meror -- start
+[PM2] Starting /usr/bin/npm in fork_mode (1 instance)
+[PM2] Done.
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 1  │ meror              │ fork     │ 0    │ online    │ 0%       │ 85.9mb   │
+│ 2  │ meror              │ fork     │ 0    │ online    │ 0%       │ 16.5mb   │
+│ 0  │ signage-app        │ fork     │ 4    │ online    │ 0%       │ 93.2mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@vmi2695527:/var/www/signage-app#
