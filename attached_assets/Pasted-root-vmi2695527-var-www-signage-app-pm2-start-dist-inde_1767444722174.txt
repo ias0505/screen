@@ -1,0 +1,70 @@
+root@vmi2695527:/var/www/signage-app# pm2 start dist/index.cjs --name meror
+[PM2] Starting /var/www/signage-app/dist/index.cjs in fork_mode (1 instance)
+[PM2] Done.
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ meror              │ fork     │ 0    │ online    │ 0%       │ 16.5mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@vmi2695527:/var/www/signage-app# pm2 save
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+root@vmi2695527:/var/www/signage-app# ^C
+root@vmi2695527:/var/www/signage-app# mv public/uploads /tmp/uploads-backup
+root@vmi2695527:/var/www/signage-app# git pull origin main
+From https://github.com/ias0505/screen
+ * branch            main       -> FETCH_HEAD
+Updating 94701b7..6837c5d
+Fast-forward
+ attached_assets/image_1767442295332.png         | Bin 0 -> 15933 bytes
+ client/src/components/admin/AdminLayout.tsx     |   2 +-
+ client/src/hooks/use-media.ts                   |   7 +--
+ client/src/pages/Dashboard.tsx                  |  64 +++++++++++++++++++++++-
+ client/src/pages/LandingPage.tsx                |  46 ++++++++++++++---
+ client/src/pages/Media.tsx                      |  19 ++++++-
+ public/uploads/file-1767443286190-689207237.png | Bin 0 -> 193878 bytes
+ public/uploads/file-1767443314882-126770422.png | Bin 0 -> 191686 bytes
+ server/routes.ts                                |  30 +++++++++--
+ server/storage.ts                               |  46 +++++++++++++++++
+ shared/schema.ts                                |   2 +
+ 11 files changed, 201 insertions(+), 15 deletions(-)
+ create mode 100644 attached_assets/image_1767442295332.png
+ create mode 100644 public/uploads/file-1767443286190-689207237.png
+ create mode 100644 public/uploads/file-1767443314882-126770422.png
+root@vmi2695527:/var/www/signage-app# mv /tmp/uploads-backup public/uploads
+root@vmi2695527:/var/www/signage-app# npm run build
+
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+✓ 3106 modules transformed.
+../dist/public/index.html                                          2.08 kB │ gzip:   0.84 kB
+../dist/public/assets/Meror_logo_v.1_1767180225600-CaZ4IK_u.png    5.95 kB
+../dist/public/assets/index-ouMXWDWO.css                         101.25 kB │ gzip:  16.00 kB
+../dist/public/assets/index-qbj27qC6.js                          334.94 kB │ gzip: 100.08 kB
+../dist/public/assets/index-CewBjKSV.js                          947.42 kB │ gzip: 270.99 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 14.20s
+building server...
+
+  dist/index.cjs  1.2mb ⚠️
+
+⚡ Done in 201ms
+root@vmi2695527:/var/www/signage-app#
+root@vmi2695527:/var/www/signage-app# pm2 restart meror
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [meror](ids: [ 0 ])
+[PM2] [meror](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ meror              │ fork     │ 1    │ online    │ 0%       │ 18.5mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@vmi2695527:/var/www/signage-app#
