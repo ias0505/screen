@@ -8,7 +8,7 @@ import multer from "multer";
 import path from "path";
 import express from "express";
 import crypto from "crypto";
-import { sendSubscriptionEmail, sendTeamInviteEmail } from "./email";
+import { sendSubscriptionEmail, sendTeamInviteEmail, sendContactNotificationEmail } from "./email";
 
 // Rate limiting for activation attempts (in-memory store)
 const activationAttempts = new Map<string, { count: number; blockedUntil: number }>();
@@ -1782,6 +1782,11 @@ export async function registerRoutes(
       }
       
       const created = await storage.createContactMessage({ name, phone, email, subject, message });
+      
+      // إرسال إشعار بريد إلكتروني للإدارة
+      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'ias0505@gmail.com';
+      sendContactNotificationEmail(adminEmail, name, email, phone, subject, message);
+      
       res.json({ success: true, message: "تم إرسال رسالتك بنجاح" });
     } catch (error) {
       console.error("Error creating contact message:", error);

@@ -310,3 +310,83 @@ export async function sendTeamInviteEmail(
     return false;
   }
 }
+
+// إشعار رسالة تواصل جديدة
+export async function sendContactNotificationEmail(
+  adminEmail: string,
+  senderName: string,
+  senderEmail: string,
+  senderPhone: string,
+  subject: string,
+  message: string
+): Promise<boolean> {
+  if (!resend) {
+    console.warn('Resend API key not configured (RESEND_API_KEY). Contact notification email not sent.');
+    return false;
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Meror <noreply@meror.net>',
+      to: adminEmail,
+      subject: `رسالة جديدة: ${subject}`,
+      html: `
+        <div dir="rtl" style="font-family: 'Tajawal', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">رسالة جديدة من صفحة التواصل</h1>
+          </div>
+          
+          <div style="background: #f8fafc; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <div style="margin-bottom: 20px;">
+              <p style="font-size: 14px; color: #64748b; margin: 0 0 5px 0;">المرسل:</p>
+              <p style="font-size: 16px; color: #334155; margin: 0; font-weight: bold;">${senderName}</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <p style="font-size: 14px; color: #64748b; margin: 0 0 5px 0;">البريد الإلكتروني:</p>
+              <p style="font-size: 16px; color: #334155; margin: 0;">
+                <a href="mailto:${senderEmail}" style="color: #6366f1;">${senderEmail}</a>
+              </p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <p style="font-size: 14px; color: #64748b; margin: 0 0 5px 0;">رقم الجوال:</p>
+              <p style="font-size: 16px; color: #334155; margin: 0;">
+                <a href="tel:${senderPhone}" style="color: #6366f1;">${senderPhone}</a>
+              </p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <p style="font-size: 14px; color: #64748b; margin: 0 0 5px 0;">الموضوع:</p>
+              <p style="font-size: 16px; color: #334155; margin: 0; font-weight: bold;">${subject}</p>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+            
+            <div>
+              <p style="font-size: 14px; color: #64748b; margin: 0 0 10px 0;">الرسالة:</p>
+              <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <p style="font-size: 16px; color: #334155; margin: 0; white-space: pre-wrap;">${message}</p>
+              </div>
+            </div>
+          </div>
+          
+          <p style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 20px;">
+            Meror - منصة إدارة الشاشات الرقمية
+          </p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error('Error sending contact notification email:', error);
+      return false;
+    }
+
+    console.log('Contact notification email sent:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('Error sending contact notification email:', error);
+    return false;
+  }
+}
