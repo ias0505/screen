@@ -1,0 +1,47 @@
+root@vmi2695527:/var/www/signage-app# pm2 delete meror
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 logs meror --lines 10
+[PM2] Applying action deleteProcessId on app [meror](ids: [ 0 ])
+[PM2] [meror](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2][WARN] Applications meror not running, starting...
+[PM2] App [meror] launched (1 instances)
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ meror              │ fork     │ 0    │ online    │ 0%       │ 13.6mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+[TAILING] Tailing last 10 lines for [meror] process (change the value with --lines option)
+/root/.pm2/logs/meror-out.log last 10 lines:
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+0|meror    |
+0|meror    | > rest-express@1.0.0 start
+0|meror    | > NODE_ENV=production node dist/index.cjs
+0|meror    |
+
+/root/.pm2/logs/meror-error.log last 10 lines:
+0|meror    |     at new Configuration (file:///var/www/signage-app/node_modules/openid-client/build/index.js:463:19)
+0|meror    |     at Object.discovery (file:///var/www/signage-app/node_modules/openid-client/build/index.js:244:22)
+0|meror    |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+0|meror    |     at async tz.maxAge (/var/www/signage-app/dist/index.cjs:78:112076)
+0|meror    |     at async kg (/var/www/signage-app/dist/index.cjs:78:114588)
+0|meror    |     at async BA (/var/www/signage-app/dist/index.cjs:295:26224)
+0|meror    |     at async /var/www/signage-app/dist/index.cjs:296:17588 {
+0|meror    |   code: 'ERR_INVALID_ARG_TYPE',
+0|meror    |   [cause]: undefined
+0|meror    | }
+
+0|meror  | Replit Auth disabled via REPLIT_AUTH_DISABLED=true
+0|meror  | Google OAuth enabled
+0|meror  | 2:08:20 PM [express] serving on port 5000
+
