@@ -1,6 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
+import { useLanguage } from "@/hooks/use-language";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { 
   LayoutDashboard, 
   Monitor, 
@@ -25,6 +27,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const { visibleMenus, permission } = usePermissions();
+  const { t, dir, language } = useLanguage();
   
   const { data: profile, isLoading: profileLoading } = useQuery<User>({
     queryKey: ['/api/user/profile'],
@@ -37,23 +40,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   });
 
   const allNavItems = [
-    { href: "/", label: "لوحة التحكم", icon: LayoutDashboard },
-    { href: "/screens", label: "الشاشات", icon: Monitor },
-    { href: "/groups", label: "المجموعات", icon: Layers },
-    { href: "/media", label: "المحتوى", icon: ImageIcon },
-    { href: "/schedule", label: "الجدولة", icon: CalendarClock },
-    { href: "/subscriptions", label: "الاشتراكات", icon: CreditCard },
-    { href: "/team", label: "الفريق", icon: Users },
-    { href: "/settings", label: "الإعدادات", icon: Settings },
-    ...(adminCheck?.isAdmin ? [{ href: "/admin", label: "لوحة المدير", icon: Shield }] : []),
+    { href: "/", label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: "/screens", label: t.nav.screens, icon: Monitor },
+    { href: "/groups", label: t.nav.groups, icon: Layers },
+    { href: "/media", label: t.nav.media, icon: ImageIcon },
+    { href: "/schedule", label: t.nav.schedule, icon: CalendarClock },
+    { href: "/subscriptions", label: t.nav.subscriptions, icon: CreditCard },
+    { href: "/team", label: t.nav.team, icon: Users },
+    { href: "/settings", label: t.nav.settings, icon: Settings },
+    ...(adminCheck?.isAdmin ? [{ href: "/admin", label: t.nav.admin, icon: Shield }] : []),
   ];
 
   const navItems = allNavItems.filter(item => visibleMenus.includes(item.href));
 
   if (profileLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center" dir="rtl">
-        <div className="text-muted-foreground">جاري التحميل...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center" dir={dir}>
+        <div className="text-muted-foreground">{t.loading}</div>
       </div>
     );
   }
@@ -63,16 +66,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row font-sans" dir="rtl">
+    <div className={cn(
+      "min-h-screen bg-background flex flex-col md:flex-row font-sans",
+      language === 'en' && "md:flex-row-reverse"
+    )} dir={dir}>
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-card border-l border-border/50 shadow-xl z-20 flex-shrink-0">
+      <aside className={cn(
+        "w-full md:w-64 bg-card shadow-xl z-20 flex-shrink-0",
+        language === 'ar' ? "border-l border-border/50" : "border-r border-border/50"
+      )}>
         <div className="p-6 border-b border-border/50">
           <div className="flex flex-col items-center text-center mb-3">
             <img src={logoImage} alt="Meror" className="h-12 w-auto mb-3" />
             <h1 className="font-bold text-lg text-foreground tracking-tight truncate max-w-full" data-testid="text-company-name">
-              {profile?.companyName || 'منصة العرض'}
+              {profile?.companyName || 'Meror'}
             </h1>
-            <p className="text-xs text-muted-foreground">لوحة التحكم</p>
+            <p className="text-xs text-muted-foreground">{t.nav.controlPanel}</p>
           </div>
           <WorkContextSwitcher />
         </div>
@@ -103,11 +112,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="p-4 border-t border-border/50">
+          <div className="flex justify-center mb-4">
+            <LanguageSwitcher />
+          </div>
           <div className="bg-muted/50 rounded-xl p-4 mb-4">
             <div className="flex items-center gap-3 mb-2">
               <UserCircle className="w-8 h-8 text-primary/80" />
               <div className="overflow-hidden">
-                <p className="font-semibold text-sm truncate">{user?.firstName || 'مستخدم'}</p>
+                <p className="font-semibold text-sm truncate">{user?.firstName || t.auth.user}</p>
                 <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
@@ -115,9 +127,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <button 
             onClick={() => logout()}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-destructive hover:bg-destructive/10 transition-colors text-sm font-medium"
+            data-testid="button-logout"
           >
             <LogOut className="w-4 h-4" />
-            <span>تسجيل خروج</span>
+            <span>{t.auth.logout}</span>
           </button>
         </div>
       </aside>
