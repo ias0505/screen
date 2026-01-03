@@ -76,6 +76,7 @@ export const subscriptions = pgTable("subscriptions", {
   status: text("status").notNull().default("active"), // active, expired
   pricePerScreen: integer("price_per_screen").default(50),
   totalPrice: integer("total_price").default(0),
+  storagePerScreenMb: integer("storage_per_screen_mb").default(1024), // مساحة التخزين لكل شاشة بالميجابايت (1 جيجا)
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -98,6 +99,7 @@ export const mediaItems = pgTable("media_items", {
   type: text("type").notNull(), // image, video
   url: text("url").notNull(),
   duration: integer("duration").default(10), // seconds, default for images
+  fileSizeBytes: integer("file_size_bytes").default(0), // حجم الملف بالبايت
   groupId: integer("group_id").references(() => mediaGroups.id),
   userId: varchar("user_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),

@@ -4,6 +4,8 @@ import { useMediaGroups, useCreateMediaGroup } from "@/hooks/use-groups";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 import Layout from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -43,6 +45,7 @@ export default function Media() {
   const { user } = useAuth();
   const { canAdd, canDelete } = usePermissions();
   const { t, language } = useLanguage();
+  const { toast } = useToast();
   const { data: media = [], isLoading } = useMedia();
   const { data: groups = [] } = useMediaGroups();
   const createMedia = useCreateMedia();
@@ -93,6 +96,7 @@ export default function Media() {
     setIsUploading(true);
     try {
       let finalUrl = newMedia.url;
+      let fileSizeBytes = 0;
       
       if (file) {
         const formData = new FormData();
@@ -103,9 +107,18 @@ export default function Media() {
           body: formData,
         });
         
-        if (!response.ok) throw new Error('Upload failed');
+        if (!response.ok) {
+          const errorData = await response.json();
+          toast({
+            title: language === 'ar' ? 'خطأ' : 'Error',
+            description: language === 'ar' ? errorData.message : errorData.messageEn,
+            variant: 'destructive'
+          });
+          return;
+        }
         const data = await response.json();
         finalUrl = data.url;
+        fileSizeBytes = data.fileSize || 0;
       }
 
       await createMedia.mutateAsync({
@@ -115,7 +128,11 @@ export default function Media() {
         duration: 10,
         groupId: newMedia.groupId ? parseInt(newMedia.groupId) : null,
         userId: user.id,
+        fileSizeBytes,
       });
+      
+      // Invalidate storage usage cache after uploading
+      queryClient.invalidateQueries({ queryKey: ['/api/storage/usage'] });
       
       setIsOpen(false);
       setNewMedia({ title: "", url: "", type: "image", groupId: "" });

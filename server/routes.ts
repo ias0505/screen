@@ -146,12 +146,35 @@ export async function registerRoutes(
     next();
   };
 
-  app.post("/api/upload", requireAuth, requireEditor, upload.single("file"), (req, res) => {
+  app.post("/api/upload", requireAuth, requireEditor, upload.single("file"), async (req: any, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
+    
+    const userId = await getEffectiveUserId(req);
+    const fileSize = req.file.size;
+    
+    // التحقق من المساحة المتبقية قبل الرفع
+    const storageInfo = await storage.getUserStorageUsage(userId);
+    if (storageInfo.limitBytes > 0 && storageInfo.usedBytes + fileSize > storageInfo.limitBytes) {
+      // حذف الملف المرفوع لأنه يتجاوز الحد
+      const fs = await import("fs");
+      fs.unlinkSync(req.file.path);
+      return res.status(413).json({ 
+        message: "لا توجد مساحة تخزين كافية. يرجى حذف بعض الملفات أو ترقية اشتراكك.",
+        messageEn: "Not enough storage space. Please delete some files or upgrade your subscription."
+      });
+    }
+    
     const url = `/uploads/${req.file.filename}`;
-    res.json({ url });
+    res.json({ url, fileSize });
+  });
+  
+  // Storage usage endpoint
+  app.get("/api/storage/usage", requireAuth, async (req: any, res) => {
+    const userId = await getEffectiveUserId(req);
+    const storageInfo = await storage.getUserStorageUsage(userId);
+    res.json(storageInfo);
   });
 
   // Subscriptions (new independent model)
@@ -452,7 +475,8 @@ export async function registerRoutes(
     try {
       const userId = await getEffectiveUserId(req);
       const input = api.media.create.input.parse(req.body);
-      const media = await storage.createMediaItem({ ...input, userId });
+      const fileSizeBytes = req.body.fileSizeBytes || 0;
+      const media = await storage.createMediaItem({ ...input, fileSizeBytes, userId });
       res.status(201).json(media);
     } catch (err) {
       if (err instanceof z.ZodError) {

@@ -15,13 +15,13 @@ export function useCreateMedia() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: InsertMediaItem) => {
-      const validated = api.media.create.input.parse(data);
-      const res = await apiRequest(api.media.create.method, api.media.create.path, validated);
+    mutationFn: async (data: InsertMediaItem & { fileSizeBytes?: number }) => {
+      const res = await apiRequest(api.media.create.method, api.media.create.path, data);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.media.list.path] });
+      queryClient.invalidateQueries({ queryKey: ['/api/storage/usage'] });
       toast({
         title: "تم الرفع بنجاح",
         description: "تمت إضافة المحتوى إلى المكتبة",
@@ -48,6 +48,7 @@ export function useDeleteMedia() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.media.list.path] });
+      queryClient.invalidateQueries({ queryKey: ['/api/storage/usage'] });
       toast({
         title: "تم الحذف",
         description: "تم حذف المحتوى بنجاح",

@@ -3,9 +3,10 @@ import { useMedia } from "@/hooks/use-media";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
-import { Monitor, Image as ImageIcon, MonitorCheck, PlayCircle } from "lucide-react";
+import { Monitor, Image as ImageIcon, MonitorCheck, PlayCircle, HardDrive } from "lucide-react";
 import Layout from "@/components/Layout";
 import { Link } from "wouter";
+import { Progress } from "@/components/ui/progress";
 
 export default function Dashboard() {
   const { data: screens = [], isLoading: loadingScreens } = useScreens();
@@ -15,11 +16,24 @@ export default function Dashboard() {
   const { data: slotsData } = useQuery<{ availableSlots: number }>({
     queryKey: ['/api/subscriptions/available-slots'],
   });
+  
+  const { data: storageData } = useQuery<{ usedBytes: number; limitBytes: number; remainingBytes: number; percentage: number }>({
+    queryKey: ['/api/storage/usage'],
+  });
 
   const activeScreens = screens.filter(s => s.status === 'online').length;
   const totalScreens = screens.length;
   const totalMedia = media.length;
   const availableSlots = slotsData?.availableSlots ?? 0;
+  
+  // Format storage size
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const stats = [
     {
@@ -111,6 +125,41 @@ export default function Dashboard() {
             </Link>
           ))}
         </motion.div>
+
+        {/* Storage Usage Section */}
+        {storageData && storageData.limitBytes > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-card rounded-2xl border border-border/50 shadow-sm p-6"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 rounded-xl bg-orange-500/10">
+                <HardDrive className="w-6 h-6 text-orange-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">{language === 'ar' ? 'مساحة التخزين' : 'Storage Usage'}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {language === 'ar' 
+                    ? `${formatBytes(storageData.usedBytes)} مستخدمة من ${formatBytes(storageData.limitBytes)}`
+                    : `${formatBytes(storageData.usedBytes)} used of ${formatBytes(storageData.limitBytes)}`}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Progress value={storageData.percentage} className="h-3" />
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {language === 'ar' ? 'المتبقي: ' : 'Remaining: '}{formatBytes(storageData.remainingBytes)}
+                </span>
+                <span className={`font-medium ${storageData.percentage > 90 ? 'text-red-500' : storageData.percentage > 70 ? 'text-yellow-500' : 'text-emerald-500'}`}>
+                  {storageData.percentage}%
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <motion.div 
