@@ -1767,5 +1767,55 @@ export async function registerRoutes(
     res.json({ pricePerScreen: price ? parseInt(price, 10) : 50 });
   });
 
+  // Contact Messages (Public: create, Admin: read/update/delete)
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const { name, phone, email, subject, message } = req.body;
+      
+      if (!name || !phone || !email || !subject || !message) {
+        return res.status(400).json({ message: "جميع الحقول مطلوبة" });
+      }
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "البريد الإلكتروني غير صالح" });
+      }
+      
+      const created = await storage.createContactMessage({ name, phone, email, subject, message });
+      res.json({ success: true, message: "تم إرسال رسالتك بنجاح" });
+    } catch (error) {
+      console.error("Error creating contact message:", error);
+      res.status(500).json({ message: "حدث خطأ أثناء إرسال الرسالة" });
+    }
+  });
+
+  // Admin: Get all contact messages
+  app.get("/api/admin/contact-messages", requireAdmin, async (req, res) => {
+    const messages = await storage.getContactMessages();
+    res.json(messages);
+  });
+
+  // Admin: Mark message as read
+  app.patch("/api/admin/contact-messages/:id/read", requireAdmin, async (req: any, res) => {
+    const id = parseInt(req.params.id);
+    await storage.markContactMessageAsRead(id);
+    
+    const adminId = getUserId(req);
+    await storage.logAdminActivity(adminId, 'message_read', 'contact_message', id.toString(), null, req.ip);
+    
+    res.json({ success: true });
+  });
+
+  // Admin: Delete contact message
+  app.delete("/api/admin/contact-messages/:id", requireAdmin, async (req: any, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteContactMessage(id);
+    
+    const adminId = getUserId(req);
+    await storage.logAdminActivity(adminId, 'message_deleted', 'contact_message', id.toString(), null, req.ip);
+    
+    res.json({ success: true });
+  });
+
   return httpServer;
 }

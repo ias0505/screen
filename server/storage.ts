@@ -3,7 +3,7 @@ import {
   screens, mediaItems, schedules, screenGroups, mediaGroups,
   subscriptionPlans, userSubscriptions, subscriptions, discountCodes,
   screenActivationCodes, screenDeviceBindings, pendingDeviceBindings,
-  admins, adminActivityLogs, invoices, users, teamMembers, systemSettings,
+  admins, adminActivityLogs, invoices, users, teamMembers, systemSettings, contactMessages,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
   type Schedule, type InsertSchedule,
@@ -12,7 +12,8 @@ import {
   type SubscriptionPlan, type UserSubscription, type Subscription, type DiscountCode,
   type ScreenActivationCode, type ScreenDeviceBinding,
   type Admin, type AdminActivityLog, type Invoice, type User, type TeamMember,
-  type InsertSubscriptionPlan, type InsertDiscountCode, type SystemSetting
+  type InsertSubscriptionPlan, type InsertDiscountCode, type SystemSetting,
+  type ContactMessage, type InsertContactMessage
 } from "@shared/schema";
 import { eq, desc, and, gt, lte, isNull, sql, ne } from "drizzle-orm";
 
@@ -152,6 +153,12 @@ export interface IStorage {
   // System Settings
   getSystemSettings(): Promise<SystemSetting[]>;
   getSystemSetting(key: string): Promise<string | null>;
+  
+  // Contact Messages
+  createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
+  getContactMessages(): Promise<ContactMessage[]>;
+  markContactMessageAsRead(id: number): Promise<void>;
+  deleteContactMessage(id: number): Promise<void>;
   setSystemSetting(key: string, value: string, description?: string, updatedBy?: string): Promise<SystemSetting>;
 }
 
@@ -1059,6 +1066,24 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  // Contact Messages
+  async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
+    const [created] = await db.insert(contactMessages).values(message).returning();
+    return created;
+  }
+
+  async getContactMessages(): Promise<ContactMessage[]> {
+    return await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+  }
+
+  async markContactMessageAsRead(id: number): Promise<void> {
+    await db.update(contactMessages).set({ isRead: true }).where(eq(contactMessages.id, id));
+  }
+
+  async deleteContactMessage(id: number): Promise<void> {
+    await db.delete(contactMessages).where(eq(contactMessages.id, id));
   }
 }
 

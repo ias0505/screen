@@ -34,17 +34,39 @@ export default function ContactUs() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast({
-      title: language === 'ar' ? 'تم إرسال رسالتك' : 'Message Sent',
-      description: language === 'ar' 
-        ? 'شكراً لتواصلك معنا، سنرد عليك في أقرب وقت' 
-        : 'Thank you for contacting us, we will respond soon',
-    });
-    
-    setForm({ name: "", phone: "", email: "", subject: "", message: "" });
-    setIsSubmitting(false);
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast({
+          title: language === 'ar' ? 'تم إرسال رسالتك' : 'Message Sent',
+          description: language === 'ar' 
+            ? 'شكراً لتواصلك معنا، سنرد عليك في أقرب وقت' 
+            : 'Thank you for contacting us, we will respond soon',
+        });
+        setForm({ name: "", phone: "", email: "", subject: "", message: "" });
+      } else {
+        toast({
+          title: language === 'ar' ? 'خطأ' : 'Error',
+          description: data.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: language === 'ar' ? 'خطأ' : 'Error',
+        description: language === 'ar' ? 'حدث خطأ أثناء إرسال الرسالة' : 'Error sending message',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

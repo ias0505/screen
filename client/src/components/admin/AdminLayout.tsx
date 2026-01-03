@@ -11,7 +11,8 @@ import {
   Tag,
   LayoutDashboard,
   LogOut,
-  Home
+  Home,
+  MessageSquare
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
@@ -35,6 +36,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { title: language === 'ar' ? "المديرين" : "Admins", icon: Shield, href: "/admin/admins" },
     { title: language === 'ar' ? "الخطط" : "Plans", icon: Package, href: "/admin/plans" },
     { title: language === 'ar' ? "أكواد الخصم" : "Discount Codes", icon: Tag, href: "/admin/discount-codes" },
+    { title: language === 'ar' ? "رسائل التواصل" : "Messages", icon: MessageSquare, href: "/admin/messages" },
   ];
 
   const isActive = (href: string) => {
