@@ -118,7 +118,9 @@ export default function ContactUs() {
                   </Label>
                   <Input
                     id="phone"
-                    type="tel"
+                    type="text"
+                    inputMode="tel"
+                    dir={language === 'ar' ? 'rtl' : 'ltr'}
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     placeholder={language === 'ar' ? 'أدخل رقم جوالك' : 'Enter your phone number'}
