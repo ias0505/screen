@@ -23,6 +23,7 @@ export default function ContactUs() {
   
   const [form, setForm] = useState({
     name: "",
+    phone: "",
     email: "",
     subject: "",
     message: ""
@@ -42,7 +43,7 @@ export default function ContactUs() {
         : 'Thank you for contacting us, we will respond soon',
     });
     
-    setForm({ name: "", email: "", subject: "", message: "" });
+    setForm({ name: "", phone: "", email: "", subject: "", message: "" });
     setIsSubmitting(false);
   };
 
@@ -108,6 +109,21 @@ export default function ContactUs() {
                     placeholder={language === 'ar' ? 'أدخل اسمك' : 'Enter your name'}
                     required
                     data-testid="input-name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">
+                    {language === 'ar' ? 'رقم الجوال' : 'Phone Number'}
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder={language === 'ar' ? 'أدخل رقم جوالك' : 'Enter your phone number'}
+                    required
+                    data-testid="input-phone"
                   />
                 </div>
 
