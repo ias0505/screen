@@ -127,7 +127,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Storage Usage Section */}
-        {storageData && storageData.limitBytes > 0 && (
+        {storageData && (storageData.limitBytes > 0 || storageData.limitBytes === -1) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -141,23 +141,36 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-xl font-bold">{language === 'ar' ? 'مساحة التخزين' : 'Storage Usage'}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {language === 'ar' 
-                    ? `${formatBytes(storageData.usedBytes)} مستخدمة من ${formatBytes(storageData.limitBytes)}`
-                    : `${formatBytes(storageData.usedBytes)} used of ${formatBytes(storageData.limitBytes)}`}
+                  {storageData.limitBytes === -1
+                    ? (language === 'ar' 
+                        ? `${formatBytes(storageData.usedBytes)} مستخدمة - غير محدود`
+                        : `${formatBytes(storageData.usedBytes)} used - Unlimited`)
+                    : (language === 'ar' 
+                        ? `${formatBytes(storageData.usedBytes)} مستخدمة من ${formatBytes(storageData.limitBytes)}`
+                        : `${formatBytes(storageData.usedBytes)} used of ${formatBytes(storageData.limitBytes)}`)}
                 </p>
               </div>
             </div>
-            <div className="space-y-2">
-              <Progress value={storageData.percentage} className="h-3" />
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {language === 'ar' ? 'المتبقي: ' : 'Remaining: '}{formatBytes(storageData.remainingBytes)}
-                </span>
-                <span className={`font-medium ${storageData.percentage > 90 ? 'text-red-500' : storageData.percentage > 70 ? 'text-yellow-500' : 'text-emerald-500'}`}>
-                  {storageData.percentage}%
+            {storageData.limitBytes !== -1 && (
+              <div className="space-y-2">
+                <Progress value={storageData.percentage} className="h-3" />
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {language === 'ar' ? 'المتبقي: ' : 'Remaining: '}{formatBytes(storageData.remainingBytes)}
+                  </span>
+                  <span className={`font-medium ${storageData.percentage > 90 ? 'text-red-500' : storageData.percentage > 70 ? 'text-yellow-500' : 'text-emerald-500'}`}>
+                    {storageData.percentage}%
+                  </span>
+                </div>
+              </div>
+            )}
+            {storageData.limitBytes === -1 && (
+              <div className="text-center py-2">
+                <span className="text-emerald-500 font-medium">
+                  {language === 'ar' ? 'تخزين غير محدود (أكثر من 50 شاشة)' : 'Unlimited storage (50+ screens)'}
                 </span>
               </div>
-            </div>
+            )}
           </motion.div>
         )}
 

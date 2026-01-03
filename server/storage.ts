@@ -1111,15 +1111,23 @@ export class DatabaseStorage implements IStorage {
       )
     );
     
-    // حساب إجمالي المساحة المتاحة (شاشات × مساحة لكل شاشة)
+    // حساب إجمالي عدد الشاشات والمساحة المتاحة
+    let totalScreens = 0;
     let limitBytes = 0;
     for (const sub of activeSubscriptions) {
+      totalScreens += sub.screenCount;
       const storagePerScreen = sub.storagePerScreenMb || 1024; // 1GB افتراضياً
       limitBytes += sub.screenCount * storagePerScreen * 1024 * 1024; // تحويل من ميجابايت إلى بايت
     }
     
-    const remainingBytes = Math.max(0, limitBytes - usedBytes);
-    const percentage = limitBytes > 0 ? Math.round((usedBytes / limitBytes) * 100) : 0;
+    // إذا كان لدى المستخدم أكثر من 50 شاشة، التخزين غير محدود
+    const isUnlimited = totalScreens > 50;
+    if (isUnlimited) {
+      limitBytes = -1; // -1 يعني غير محدود
+    }
+    
+    const remainingBytes = isUnlimited ? -1 : Math.max(0, limitBytes - usedBytes);
+    const percentage = isUnlimited ? 0 : (limitBytes > 0 ? Math.round((usedBytes / limitBytes) * 100) : 0);
     
     return { usedBytes, limitBytes, remainingBytes, percentage };
   }
