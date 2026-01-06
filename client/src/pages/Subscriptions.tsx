@@ -382,44 +382,44 @@ export default function Subscriptions() {
                           data-testid={`card-plan-${plan.id}`}
                         >
                           {plan.discountPercentage && plan.discountPercentage > 0 && (
-                            <div className={`absolute bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold py-1.5 shadow-lg whitespace-nowrap text-center ${
+                            <div className={`absolute bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold py-1 shadow-lg whitespace-nowrap text-center ${
                               language === 'ar' 
-                                ? 'top-5 -left-12 transform -rotate-45 w-40' 
-                                : 'top-5 -right-12 transform rotate-45 w-40'
+                                ? 'top-3 -left-10 transform -rotate-45 w-32' 
+                                : 'top-3 -right-10 transform rotate-45 w-32'
                             }`}>
                               {t.subscriptions.discount} {plan.discountPercentage}%
                             </div>
                           )}
-                          <CardHeader className="pb-2">
+                          <CardHeader className="p-3 pb-1">
                             <div className="flex items-center justify-between gap-2">
-                              <CardTitle className="text-base">{plan.name}</CardTitle>
+                              <CardTitle className="text-sm">{plan.name}</CardTitle>
                               {plan.isDefault && (
-                                <Badge variant="secondary" className="text-xs">{t.subscriptions.recommended}</Badge>
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t.subscriptions.recommended}</Badge>
                               )}
                               {selectedPlan?.id === plan.id && (
-                                <Check className="w-5 h-5 text-primary" />
+                                <Check className="w-4 h-4 text-primary" />
                               )}
                             </div>
                           </CardHeader>
-                          <CardContent className="space-y-2">
+                          <CardContent className="p-3 pt-0 space-y-1">
                             <div className="flex items-baseline gap-1">
-                              <span className="text-2xl font-bold inline-flex items-center gap-1">
-                                {plan.pricePerScreen} <SARIcon size={18} />
+                              <span className="text-xl font-bold inline-flex items-center gap-1">
+                                {plan.pricePerScreen} <SARIcon size={14} />
                               </span>
-                              <span className="text-muted-foreground text-sm">
+                              <span className="text-muted-foreground text-xs">
                                 {billingPeriod === 'monthly' 
                                   ? t.subscriptions.pricePerScreenPerMonth
                                   : t.subscriptions.pricePerScreenPerYear}
                               </span>
                             </div>
                             {plan.description && (
-                              <p className="text-sm text-muted-foreground">{plan.description}</p>
+                              <p className="text-xs text-muted-foreground">{plan.description}</p>
                             )}
                             {features.length > 0 && (
-                              <ul className="text-xs text-muted-foreground space-y-1">
+                              <ul className="text-[10px] text-muted-foreground space-y-0.5">
                                 {features.slice(0, 3).map((feature, idx) => (
                                   <li key={idx} className="flex items-center gap-1">
-                                    <Check className="w-3 h-3 text-green-500" />
+                                    <Check className="w-2.5 h-2.5 text-green-500" />
                                     {feature}
                                   </li>
                                 ))}
