@@ -249,8 +249,16 @@ export default function Subscriptions() {
     setDiscountResult(null);
   };
 
+  const getFilteredPlans = () => {
+    return plans.filter(plan => 
+      (plan as any).billingPeriod === billingPeriod || 
+      (!(plan as any).billingPeriod && billingPeriod === 'annual')
+    );
+  };
+
   const findBestPlanForScreenCount = (count: number): SubscriptionPlan | null => {
-    const sortedPlans = [...plans].sort((a, b) => (a.minScreens || 1) - (b.minScreens || 1));
+    const filteredPlans = getFilteredPlans();
+    const sortedPlans = [...filteredPlans].sort((a, b) => (a.minScreens || 1) - (b.minScreens || 1));
     
     const exactMatch = sortedPlans.find(p => {
       const min = p.minScreens || 1;
@@ -294,7 +302,8 @@ export default function Subscriptions() {
           <Dialog open={isOpen} onOpenChange={(open) => {
             setIsOpen(open);
             if (open && plans.length > 0 && !selectedPlan) {
-              setSelectedPlan(plans[0]);
+              const filtered = getFilteredPlans();
+              if (filtered.length > 0) setSelectedPlan(filtered[0]);
             }
             if (!open) {
               setSelectedPlan(null);
@@ -304,7 +313,10 @@ export default function Subscriptions() {
           }}>
             <DialogTrigger asChild>
               <Button 
-                onClick={() => { if (plans.length > 0) setSelectedPlan(plans[0]); }}
+                onClick={() => { 
+                  const filtered = getFilteredPlans();
+                  if (filtered.length > 0) setSelectedPlan(filtered[0]); 
+                }}
                 className="gap-2 bg-primary rounded-xl px-6" 
                 data-testid="button-add-subscription"
               >
@@ -318,13 +330,49 @@ export default function Subscriptions() {
               </DialogHeader>
               
               {plans.length > 0 && (
-                <div className="space-y-3 pt-4">
+                <div className="space-y-4 pt-4">
                   <Label className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
                     {t.subscriptions.selectPlan}
                   </Label>
+                  
+                  <div className="flex gap-2 p-1 bg-muted rounded-xl">
+                    <Button
+                      type="button"
+                      variant={billingPeriod === 'annual' ? 'default' : 'ghost'}
+                      className={`flex-1 rounded-lg ${billingPeriod === 'annual' ? '' : 'hover:bg-transparent'}`}
+                      onClick={() => {
+                        setBillingPeriod('annual');
+                        const annualPlans = plans.filter(p => (p as any).billingPeriod === 'annual' || !(p as any).billingPeriod);
+                        if (annualPlans.length > 0) setSelectedPlan(annualPlans[0]);
+                        else setSelectedPlan(null);
+                      }}
+                      data-testid="button-billing-annual-top"
+                    >
+                      {t.subscriptions.annual}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={billingPeriod === 'monthly' ? 'default' : 'ghost'}
+                      className={`flex-1 rounded-lg ${billingPeriod === 'monthly' ? '' : 'hover:bg-transparent'}`}
+                      onClick={() => {
+                        setBillingPeriod('monthly');
+                        const monthlyPlans = plans.filter(p => (p as any).billingPeriod === 'monthly');
+                        if (monthlyPlans.length > 0) setSelectedPlan(monthlyPlans[0]);
+                        else setSelectedPlan(null);
+                      }}
+                      data-testid="button-billing-monthly-top"
+                    >
+                      {t.subscriptions.monthly}
+                    </Button>
+                  </div>
+                  {billingPeriod === 'annual' && (
+                    <p className="text-xs text-green-600 text-center">{t.subscriptions.annualSaving}</p>
+                  )}
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[...plans].sort((a, b) => (a.minScreens || 1) - (b.minScreens || 1)).map((plan) => {
+                    {getFilteredPlans()
+                      .sort((a, b) => (a.minScreens || 1) - (b.minScreens || 1)).map((plan) => {
                       const features = parseFeatures(plan.features);
                       return (
                         <Card 
@@ -346,8 +394,16 @@ export default function Subscriptions() {
                           </CardHeader>
                           <CardContent className="space-y-2">
                             <div className="flex items-baseline gap-1">
-                              <span className="text-2xl font-bold">{plan.pricePerScreen}</span>
-                              <span className="text-muted-foreground text-sm">{t.subscriptions.pricePerScreenPerYear}</span>
+                              <span className="text-2xl font-bold">
+                                {billingPeriod === 'monthly' 
+                                  ? Math.round(plan.pricePerScreen / 12)
+                                  : plan.pricePerScreen}
+                              </span>
+                              <span className="text-muted-foreground text-sm">
+                                {billingPeriod === 'monthly' 
+                                  ? t.subscriptions.pricePerScreenPerMonth
+                                  : t.subscriptions.pricePerScreenPerYear}
+                              </span>
                             </div>
                             {plan.discountPercentage && plan.discountPercentage > 0 && (
                               <Badge variant="outline" className="text-green-600">
@@ -376,33 +432,6 @@ export default function Subscriptions() {
               )}
               
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label>{t.subscriptions.billingPeriod}</Label>
-                  <div className="flex gap-2 p-1 bg-muted rounded-xl">
-                    <Button
-                      type="button"
-                      variant={billingPeriod === 'monthly' ? 'default' : 'ghost'}
-                      className={`flex-1 rounded-lg ${billingPeriod === 'monthly' ? '' : 'hover:bg-transparent'}`}
-                      onClick={() => setBillingPeriod('monthly')}
-                      data-testid="button-billing-monthly"
-                    >
-                      {t.subscriptions.monthly}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={billingPeriod === 'annual' ? 'default' : 'ghost'}
-                      className={`flex-1 rounded-lg ${billingPeriod === 'annual' ? '' : 'hover:bg-transparent'}`}
-                      onClick={() => setBillingPeriod('annual')}
-                      data-testid="button-billing-annual"
-                    >
-                      {t.subscriptions.annual}
-                    </Button>
-                  </div>
-                  {billingPeriod === 'annual' && (
-                    <p className="text-xs text-green-600">{t.subscriptions.annualSaving}</p>
-                  )}
-                </div>
-                
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t.subscriptions.screenCount}</Label>
