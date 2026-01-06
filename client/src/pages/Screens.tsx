@@ -695,7 +695,10 @@ export default function Screens() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                   >
-                    <Card data-testid={`card-screen-${screen.id}`}>
+                    <Card 
+                      data-testid={`card-screen-${screen.id}`}
+                      className={screen.isActive === false ? "opacity-50" : ""}
+                    >
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-3">
