@@ -381,7 +381,7 @@ export default function Subscriptions() {
                           onClick={() => selectPlan(plan)}
                           data-testid={`card-plan-${plan.id}`}
                         >
-                          {plan.discountPercentage && plan.discountPercentage > 0 && (
+                          {plan.discountPercentage !== null && plan.discountPercentage > 0 && (
                             <div className={`absolute bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold py-1.5 shadow-lg whitespace-nowrap text-center ${
                               language === 'ar' 
                                 ? 'top-5 -left-12 transform -rotate-45 w-40' 
