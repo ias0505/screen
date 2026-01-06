@@ -33,6 +33,8 @@ export interface IStorage {
   createScreen(screen: InsertScreen & { userId: string }): Promise<Screen>;
   updateScreen(id: number, data: Partial<Screen>): Promise<Screen>;
   deleteScreen(id: number): Promise<void>;
+  getActiveScreensCount(userId: string): Promise<number>;
+  getAllowedActiveScreens(userId: string): Promise<number>;
 
   // Media
   getMediaItems(userId: string): Promise<MediaItem[]>;
@@ -419,6 +421,35 @@ export class DatabaseStorage implements IStorage {
     await db.delete(screenDeviceBindings).where(eq(screenDeviceBindings.screenId, id));
     await db.delete(pendingDeviceBindings).where(eq(pendingDeviceBindings.screenId, id));
     await db.delete(screens).where(eq(screens.id, id));
+  }
+
+  async getActiveScreensCount(userId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(screens)
+      .where(and(eq(screens.userId, userId), eq(screens.isActive, true)));
+    return Number(result[0]?.count || 0);
+  }
+
+  async getAllowedActiveScreens(userId: string): Promise<number> {
+    const activeSubscriptions = await db.select()
+      .from(subscriptions)
+      .where(and(
+        eq(subscriptions.userId, userId),
+        eq(subscriptions.status, 'active'),
+        gt(subscriptions.endDate, new Date())
+      ));
+    
+    let totalAllowed = 0;
+    for (const sub of activeSubscriptions) {
+      totalAllowed += sub.screenCount;
+    }
+    
+    // أضف أيضاً الشاشات المضافة من الأدمن بدون اشتراك
+    const adminScreens = await db.select({ count: sql<number>`count(*)` })
+      .from(screens)
+      .where(and(eq(screens.userId, userId), isNull(screens.subscriptionId)));
+    
+    return totalAllowed + Number(adminScreens[0]?.count || 0);
   }
 
   // Media
