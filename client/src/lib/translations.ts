@@ -386,7 +386,7 @@ export const translations = {
     
     // Currency
     currency: {
-      sar: "ر.س",
+      sar: "﷼",
     },
     
     // Work Context Switcher
@@ -788,7 +788,7 @@ export const translations = {
     
     // Currency
     currency: {
-      sar: "SAR",
+      sar: "﷼",
     },
     
     // Work Context Switcher
