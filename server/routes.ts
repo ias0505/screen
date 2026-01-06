@@ -373,6 +373,49 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  // Toggle screen active status
+  app.post("/api/screens/:id/toggle-active", requireAuth, requireEditor, async (req: any, res) => {
+    const userId = await getEffectiveUserId(req);
+    const screenId = Number(req.params.id);
+    const { isActive } = req.body;
+    
+    const screen = await storage.getScreen(screenId);
+    if (!screen || screen.userId !== userId) {
+      return res.status(404).json({ message: 'الشاشة غير موجودة' });
+    }
+    
+    // إذا كان يريد تفعيل الشاشة، تحقق من الحد المسموح
+    if (isActive === true) {
+      const currentActive = await storage.getActiveScreensCount(userId);
+      const allowedActive = await storage.getAllowedActiveScreens(userId);
+      
+      // الشاشة الحالية غير مفعلة، سنضيف واحد
+      if (currentActive >= allowedActive) {
+        return res.status(403).json({ 
+          message: 'وصلت للحد الأقصى من الشاشات المفعلة. قم بإيقاف شاشة أخرى أو أضف اشتراك جديد.',
+          currentActive,
+          allowedActive
+        });
+      }
+    }
+    
+    const updated = await storage.updateScreen(screenId, { isActive: isActive === true });
+    res.json(updated);
+  });
+
+  // Get screen activation status
+  app.get("/api/screens/activation-status", requireAuth, async (req: any, res) => {
+    const userId = await getEffectiveUserId(req);
+    const currentActive = await storage.getActiveScreensCount(userId);
+    const allowedActive = await storage.getAllowedActiveScreens(userId);
+    
+    res.json({
+      currentActive,
+      allowedActive,
+      remaining: allowedActive - currentActive
+    });
+  });
+
   // Heartbeat endpoint for player status updates
   app.post("/api/screens/:id/heartbeat", async (req: any, res) => {
     const screenId = Number(req.params.id);
