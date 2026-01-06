@@ -24,8 +24,10 @@ export const mediaGroups = pgTable("media_groups", {
 
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
+  name: text("name").notNull(), // الاسم بالعربية
+  nameEn: text("name_en"), // الاسم بالإنجليزية
+  description: text("description"), // الوصف بالعربية
+  descriptionEn: text("description_en"), // الوصف بالإنجليزية
   pricePerScreen: integer("price_per_screen").notNull().default(50), // سعر الشاشة الواحدة بالريال
   minScreens: integer("min_screens").default(1), // الحد الأدنى للشاشات
   maxScreens: integer("max_screens"), // الحد الأقصى للشاشات (null = غير محدود)

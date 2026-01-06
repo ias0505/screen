@@ -392,7 +392,7 @@ export default function Subscriptions() {
                           )}
                           <CardHeader className="pb-2">
                             <div className="flex items-center justify-between gap-2">
-                              <CardTitle className="text-base">{plan.name}</CardTitle>
+                              <CardTitle className="text-base">{language === 'en' && plan.nameEn ? plan.nameEn : plan.name}</CardTitle>
                               {plan.isDefault && (
                                 <Badge variant="secondary" className="text-xs">{t.subscriptions.recommended}</Badge>
                               )}
@@ -412,8 +412,8 @@ export default function Subscriptions() {
                                   : t.subscriptions.pricePerScreenPerYear}
                               </span>
                             </div>
-                            {plan.description && (
-                              <p className="text-sm text-muted-foreground">{plan.description}</p>
+                            {(plan.description || plan.descriptionEn) && (
+                              <p className="text-sm text-muted-foreground">{language === 'en' && plan.descriptionEn ? plan.descriptionEn : plan.description}</p>
                             )}
                             {features.length > 0 && (
                               <ul className="text-xs text-muted-foreground space-y-1">

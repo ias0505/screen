@@ -35,7 +35,9 @@ import { useToast } from "@/hooks/use-toast";
 interface SubscriptionPlan {
   id: number;
   name: string;
+  nameEn: string | null;
   description: string | null;
+  descriptionEn: string | null;
   pricePerScreen: number;
   minScreens: number | null;
   maxScreens: number | null;
@@ -54,7 +56,9 @@ export default function AdminPlans() {
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    nameEn: "",
     description: "",
+    descriptionEn: "",
     pricePerScreen: 50,
     minScreens: 1,
     maxScreens: "",
@@ -115,7 +119,9 @@ export default function AdminPlans() {
   const resetForm = () => {
     setFormData({
       name: "",
+      nameEn: "",
       description: "",
+      descriptionEn: "",
       pricePerScreen: 50,
       minScreens: 1,
       maxScreens: "",
@@ -144,7 +150,9 @@ export default function AdminPlans() {
     }
     setFormData({
       name: plan.name,
+      nameEn: plan.nameEn || "",
       description: plan.description || "",
+      descriptionEn: plan.descriptionEn || "",
       pricePerScreen: plan.pricePerScreen,
       minScreens: plan.minScreens || 1,
       maxScreens: plan.maxScreens?.toString() || "",
@@ -334,7 +342,7 @@ export default function AdminPlans() {
           resetForm();
         }
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingPlan 
@@ -343,25 +351,53 @@ export default function AdminPlans() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">{language === 'ar' ? "اسم الخطة" : "Plan Name"}</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={language === 'ar' ? "مثال: الخطة الأساسية" : "e.g., Basic Plan"}
-                data-testid="input-plan-name"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">{language === 'ar' ? "الاسم (عربي)" : "Name (Arabic)"}</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="الخطة الأساسية"
+                  data-testid="input-plan-name"
+                  dir="rtl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nameEn">{language === 'ar' ? "الاسم (إنجليزي)" : "Name (English)"}</Label>
+                <Input
+                  id="nameEn"
+                  value={formData.nameEn}
+                  onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                  placeholder="Basic Plan"
+                  data-testid="input-plan-name-en"
+                  dir="ltr"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">{language === 'ar' ? "الوصف" : "Description"}</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={language === 'ar' ? "وصف الخطة..." : "Plan description..."}
-                data-testid="input-plan-description"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="description">{language === 'ar' ? "الوصف (عربي)" : "Description (Arabic)"}</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="وصف الخطة..."
+                  data-testid="input-plan-description"
+                  dir="rtl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="descriptionEn">{language === 'ar' ? "الوصف (إنجليزي)" : "Description (English)"}</Label>
+                <Textarea
+                  id="descriptionEn"
+                  value={formData.descriptionEn}
+                  onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
+                  placeholder="Plan description..."
+                  data-testid="input-plan-description-en"
+                  dir="ltr"
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
