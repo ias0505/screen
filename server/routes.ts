@@ -574,6 +574,11 @@ export async function registerRoutes(
       return res.json({ playable: false, reason: 'unavailable' });
     }
     
+    // التحقق من أن الشاشة مفعلة
+    if (screen.isActive === false) {
+      return res.json({ playable: false, reason: 'screen_inactive' });
+    }
+    
     if (screen.subscriptionId) {
       const sub = await storage.getSubscription(screen.subscriptionId);
       if (!sub || sub.status !== 'active' || new Date(sub.endDate) <= new Date()) {
