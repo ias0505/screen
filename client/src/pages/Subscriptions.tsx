@@ -154,9 +154,8 @@ export default function Subscriptions() {
     let basePrice: number;
     
     if (billingPeriod === 'monthly') {
-      // السعر الشهري = السعر السنوي / 12
-      const monthlyPrice = pricePerScreen / 12;
-      basePrice = form.screenCount * monthlyPrice * form.durationMonths;
+      // السعر الشهري محدد مباشرة من المسؤول - لا يوجد قسمة
+      basePrice = form.screenCount * pricePerScreen * form.durationMonths;
     } else {
       basePrice = form.screenCount * pricePerScreen * form.durationYears;
     }
@@ -395,9 +394,7 @@ export default function Subscriptions() {
                           <CardContent className="space-y-2">
                             <div className="flex items-baseline gap-1">
                               <span className="text-2xl font-bold">
-                                {billingPeriod === 'monthly' 
-                                  ? Math.round(plan.pricePerScreen / 12)
-                                  : plan.pricePerScreen}
+                                {plan.pricePerScreen}
                               </span>
                               <span className="text-muted-foreground text-sm">
                                 {billingPeriod === 'monthly' 
@@ -521,7 +518,7 @@ export default function Subscriptions() {
                       <span>{t.subscriptions.basePrice}:</span>
                       <span>
                         {billingPeriod === 'monthly' 
-                          ? Math.round(form.screenCount * (getPricePerScreen() / 12) * form.durationMonths)
+                          ? form.screenCount * getPricePerScreen() * form.durationMonths
                           : form.screenCount * getPricePerScreen() * form.durationYears
                         } {t.currency.sar}
                       </span>
@@ -531,7 +528,7 @@ export default function Subscriptions() {
                         <span>{t.subscriptions.planDiscount} ({selectedPlan.discountPercentage}%):</span>
                         <span>
                           -{billingPeriod === 'monthly'
-                            ? Math.round(form.screenCount * (getPricePerScreen() / 12) * form.durationMonths * selectedPlan.discountPercentage / 100)
+                            ? Math.round(form.screenCount * getPricePerScreen() * form.durationMonths * selectedPlan.discountPercentage / 100)
                             : Math.round(form.screenCount * getPricePerScreen() * form.durationYears * selectedPlan.discountPercentage / 100)
                           } {t.currency.sar}
                         </span>
@@ -555,7 +552,7 @@ export default function Subscriptions() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {billingPeriod === 'monthly'
-                        ? `${form.screenCount} ${t.subscriptions.screens} × ${Math.round(getPricePerScreen() / 12)} ${t.currency.sar} × ${form.durationMonths} ${t.subscriptions.month}`
+                        ? `${form.screenCount} ${t.subscriptions.screens} × ${getPricePerScreen()} ${t.currency.sar} × ${form.durationMonths} ${t.subscriptions.month}`
                         : `${form.screenCount} ${t.subscriptions.screens} × ${getPricePerScreen()} ${t.currency.sar} × ${form.durationYears} ${t.subscriptions.year}`
                       }
                     </p>
