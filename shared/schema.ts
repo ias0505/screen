@@ -31,6 +31,7 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   maxScreens: integer("max_screens"), // الحد الأقصى للشاشات (null = غير محدود)
   discountPercentage: integer("discount_percentage").default(0), // نسبة الخصم
   features: text("features"), // المميزات (JSON)
+  billingPeriod: text("billing_period").default("annual"), // monthly, annual - نوع فترة الفوترة
   isActive: boolean("is_active").default(true), // هل الخطة فعالة؟
   isDefault: boolean("is_default").default(false), // الخطة الافتراضية
   createdAt: timestamp("created_at").defaultNow(),

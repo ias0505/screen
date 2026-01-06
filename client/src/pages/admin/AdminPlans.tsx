@@ -40,6 +40,7 @@ interface SubscriptionPlan {
   maxScreens: number | null;
   discountPercentage: number | null;
   features: string | null;
+  billingPeriod: 'monthly' | 'annual' | null;
   isActive: boolean | null;
   isDefault: boolean | null;
   createdAt: string;
@@ -58,6 +59,7 @@ export default function AdminPlans() {
     maxScreens: "",
     discountPercentage: 0,
     features: "",
+    billingPeriod: "annual" as 'monthly' | 'annual',
     isActive: true,
     isDefault: false
   });
@@ -118,6 +120,7 @@ export default function AdminPlans() {
       maxScreens: "",
       discountPercentage: 0,
       features: "",
+      billingPeriod: "annual",
       isActive: true,
       isDefault: false
     });
@@ -146,6 +149,7 @@ export default function AdminPlans() {
       maxScreens: plan.maxScreens?.toString() || "",
       discountPercentage: plan.discountPercentage || 0,
       features: featuresText,
+      billingPeriod: plan.billingPeriod || "annual",
       isActive: plan.isActive !== false,
       isDefault: plan.isDefault || false
     });
@@ -245,6 +249,7 @@ export default function AdminPlans() {
                 <TableRow>
                   <TableHead className="text-right">{language === 'ar' ? "اسم الخطة" : "Plan Name"}</TableHead>
                   <TableHead className="text-right">{language === 'ar' ? "سعر الشاشة" : "Price per Screen"}</TableHead>
+                  <TableHead className="text-right">{language === 'ar' ? "نوع الفترة" : "Billing Period"}</TableHead>
                   <TableHead className="text-right">{language === 'ar' ? "حدود الشاشات" : "Screen Limits"}</TableHead>
                   <TableHead className="text-right">{language === 'ar' ? "الخصم" : "Discount"}</TableHead>
                   <TableHead className="text-right">{language === 'ar' ? "الحالة" : "Status"}</TableHead>
@@ -265,6 +270,13 @@ export default function AdminPlans() {
                       </div>
                     </TableCell>
                     <TableCell>{plan.pricePerScreen} {language === 'ar' ? "ريال" : "SAR"}</TableCell>
+                    <TableCell>
+                      <Badge variant={plan.billingPeriod === 'monthly' ? 'secondary' : 'default'}>
+                        {plan.billingPeriod === 'monthly' 
+                          ? (language === 'ar' ? "شهري" : "Monthly")
+                          : (language === 'ar' ? "سنوي" : "Annual")}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       {plan.minScreens || 1} - {plan.maxScreens || "∞"}
                     </TableCell>
@@ -415,6 +427,31 @@ export default function AdminPlans() {
                 rows={3}
                 data-testid="input-plan-features"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ar' ? "نوع الفترة" : "Billing Period"}</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={formData.billingPeriod === 'annual' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFormData({ ...formData, billingPeriod: 'annual' })}
+                  className="flex-1"
+                  data-testid="button-period-annual"
+                >
+                  {language === 'ar' ? "سنوي" : "Annual"}
+                </Button>
+                <Button
+                  type="button"
+                  variant={formData.billingPeriod === 'monthly' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFormData({ ...formData, billingPeriod: 'monthly' })}
+                  className="flex-1"
+                  data-testid="button-period-monthly"
+                >
+                  {language === 'ar' ? "شهري" : "Monthly"}
+                </Button>
+              </div>
             </div>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
