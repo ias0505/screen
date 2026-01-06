@@ -49,7 +49,7 @@ export interface IStorage {
   // Subscriptions (independent)
   getSubscriptions(userId: string): Promise<Subscription[]>;
   getSubscription(id: number): Promise<Subscription | undefined>;
-  createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, pricePerScreen?: number): Promise<Subscription>;
+  createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, pricePerScreen?: number, durationMonths?: number, billingPeriod?: 'monthly' | 'annual'): Promise<Subscription>;
   getAvailableScreenSlots(userId: string): Promise<number>;
   findSubscriptionWithAvailableSlot(userId: string): Promise<Subscription | null>;
   getScreensCountBySubscription(subscriptionId: number): Promise<number>;
@@ -178,9 +178,17 @@ export class DatabaseStorage implements IStorage {
     return sub;
   }
 
-  async createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, customPricePerScreen?: number): Promise<Subscription> {
+  async createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, customPricePerScreen?: number, durationMonths?: number, billingPeriod?: 'monthly' | 'annual'): Promise<Subscription> {
     const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + durationYears);
+    const period = billingPeriod || 'annual';
+    
+    if (period === 'monthly' && durationMonths && durationMonths > 0) {
+      // الاشتراك الشهري - إضافة أشهر
+      endDate.setMonth(endDate.getMonth() + durationMonths);
+    } else {
+      // الاشتراك السنوي - إضافة سنوات
+      endDate.setFullYear(endDate.getFullYear() + durationYears);
+    }
     
     // Use custom price from selected plan, or get price from system settings, or use default
     let pricePerScreen: number;
@@ -190,7 +198,15 @@ export class DatabaseStorage implements IStorage {
       const priceFromSettings = await this.getSystemSetting('price_per_screen');
       pricePerScreen = priceFromSettings ? parseInt(priceFromSettings, 10) : 50;
     }
-    let totalPrice = screenCount * pricePerScreen * durationYears;
+    
+    let totalPrice: number;
+    if (period === 'monthly' && durationMonths && durationMonths > 0) {
+      // السعر الشهري = السعر السنوي / 12
+      const monthlyPrice = pricePerScreen / 12;
+      totalPrice = Math.round(screenCount * monthlyPrice * durationMonths);
+    } else {
+      totalPrice = screenCount * pricePerScreen * durationYears;
+    }
     
     // Apply discount if provided
     if (discountCode) {
@@ -205,7 +221,9 @@ export class DatabaseStorage implements IStorage {
     const [sub] = await db.insert(subscriptions).values({
       userId,
       screenCount,
-      durationYears,
+      durationYears: period === 'annual' ? durationYears : 0,
+      durationMonths: period === 'monthly' ? durationMonths : 0,
+      billingPeriod: period,
       endDate,
       pricePerScreen,
       totalPrice,

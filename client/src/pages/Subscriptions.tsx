@@ -129,7 +129,8 @@ export default function Subscriptions() {
   
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
-  const [form, setForm] = useState({ screenCount: 1, durationYears: 1 });
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('annual');
+  const [form, setForm] = useState({ screenCount: 1, durationYears: 1, durationMonths: 1 });
   const [discountCode, setDiscountCode] = useState("");
   const [discountResult, setDiscountResult] = useState<DiscountValidation | null>(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -150,7 +151,15 @@ export default function Subscriptions() {
 
   const calculateBasePrice = () => {
     const pricePerScreen = getPricePerScreen();
-    let basePrice = form.screenCount * pricePerScreen * form.durationYears;
+    let basePrice: number;
+    
+    if (billingPeriod === 'monthly') {
+      // السعر الشهري = السعر السنوي / 12
+      const monthlyPrice = pricePerScreen / 12;
+      basePrice = form.screenCount * monthlyPrice * form.durationMonths;
+    } else {
+      basePrice = form.screenCount * pricePerScreen * form.durationYears;
+    }
     
     if (selectedPlan?.discountPercentage && selectedPlan.discountPercentage > 0) {
       basePrice = basePrice * (1 - selectedPlan.discountPercentage / 100);
@@ -203,22 +212,30 @@ export default function Subscriptions() {
     e.preventDefault();
     
     const finalPrice = calculateFinalPrice();
+    const durationText = billingPeriod === 'monthly' 
+      ? `${form.durationMonths} ${t.subscriptions.month}`
+      : `${form.durationYears} ${t.subscriptions.year}`;
+    
     const confirmed = window.confirm(
       `${t.subscriptions.confirmCreateTitle}\n` +
       `${t.subscriptions.confirmScreenCount}: ${form.screenCount}\n` +
-      `${t.subscriptions.confirmDuration}: ${form.durationYears} ${t.subscriptions.year}\n` +
+      `${t.subscriptions.confirmDuration}: ${durationText}\n` +
       `${t.subscriptions.confirmAmount}: ${finalPrice} ${t.currency.sar}` +
       (discountResult?.valid ? `\n${t.subscriptions.afterDiscount}` : '')
     );
     
     if (confirmed) {
       await createSubscription.mutateAsync({
-        ...form,
+        screenCount: form.screenCount,
+        durationYears: billingPeriod === 'annual' ? form.durationYears : 0,
+        durationMonths: billingPeriod === 'monthly' ? form.durationMonths : 0,
+        billingPeriod,
         discountCode: discountResult?.valid ? discountCode : undefined,
         pricePerScreen: getPricePerScreen()
       });
       setIsOpen(false);
-      setForm({ screenCount: 1, durationYears: 1 });
+      setForm({ screenCount: 1, durationYears: 1, durationMonths: 1 });
+      setBillingPeriod('annual');
       setSelectedPlan(null);
       setDiscountCode("");
       setDiscountResult(null);
@@ -359,6 +376,33 @@ export default function Subscriptions() {
               )}
               
               <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label>{t.subscriptions.billingPeriod}</Label>
+                  <div className="flex gap-2 p-1 bg-muted rounded-xl">
+                    <Button
+                      type="button"
+                      variant={billingPeriod === 'monthly' ? 'default' : 'ghost'}
+                      className={`flex-1 rounded-lg ${billingPeriod === 'monthly' ? '' : 'hover:bg-transparent'}`}
+                      onClick={() => setBillingPeriod('monthly')}
+                      data-testid="button-billing-monthly"
+                    >
+                      {t.subscriptions.monthly}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={billingPeriod === 'annual' ? 'default' : 'ghost'}
+                      className={`flex-1 rounded-lg ${billingPeriod === 'annual' ? '' : 'hover:bg-transparent'}`}
+                      onClick={() => setBillingPeriod('annual')}
+                      data-testid="button-billing-annual"
+                    >
+                      {t.subscriptions.annual}
+                    </Button>
+                  </div>
+                  {billingPeriod === 'annual' && (
+                    <p className="text-xs text-green-600">{t.subscriptions.annualSaving}</p>
+                  )}
+                </div>
+                
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t.subscriptions.screenCount}</Label>
@@ -376,19 +420,35 @@ export default function Subscriptions() {
                   </div>
                   <div className="space-y-2">
                     <Label>{t.subscriptions.subscriptionDuration}</Label>
-                    <Select 
-                      value={form.durationYears.toString()} 
-                      onValueChange={(v) => setForm({...form, durationYears: parseInt(v)})}
-                    >
-                      <SelectTrigger className="rounded-xl" data-testid="select-duration">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">{t.subscriptions.oneYear}</SelectItem>
-                        <SelectItem value="2">{t.subscriptions.twoYears}</SelectItem>
-                        <SelectItem value="3">{t.subscriptions.threeYears}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {billingPeriod === 'annual' ? (
+                      <Select 
+                        value={form.durationYears.toString()} 
+                        onValueChange={(v) => setForm({...form, durationYears: parseInt(v)})}
+                      >
+                        <SelectTrigger className="rounded-xl" data-testid="select-duration">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">{t.subscriptions.oneYear}</SelectItem>
+                          <SelectItem value="2">{t.subscriptions.twoYears}</SelectItem>
+                          <SelectItem value="3">{t.subscriptions.threeYears}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Select 
+                        value={form.durationMonths.toString()} 
+                        onValueChange={(v) => setForm({...form, durationMonths: parseInt(v)})}
+                      >
+                        <SelectTrigger className="rounded-xl" data-testid="select-duration-months">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">{t.subscriptions.oneMonth}</SelectItem>
+                          <SelectItem value="3">{t.subscriptions.threeMonths}</SelectItem>
+                          <SelectItem value="6">{t.subscriptions.sixMonths}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </div>
                 
@@ -430,12 +490,22 @@ export default function Subscriptions() {
                   <CardContent className="pt-4 space-y-2">
                     <div className="flex justify-between items-center text-sm text-muted-foreground">
                       <span>{t.subscriptions.basePrice}:</span>
-                      <span>{form.screenCount * getPricePerScreen() * form.durationYears} {t.currency.sar}</span>
+                      <span>
+                        {billingPeriod === 'monthly' 
+                          ? Math.round(form.screenCount * (getPricePerScreen() / 12) * form.durationMonths)
+                          : form.screenCount * getPricePerScreen() * form.durationYears
+                        } {t.currency.sar}
+                      </span>
                     </div>
                     {selectedPlan?.discountPercentage && selectedPlan.discountPercentage > 0 && (
                       <div className="flex justify-between items-center text-sm text-green-600">
                         <span>{t.subscriptions.planDiscount} ({selectedPlan.discountPercentage}%):</span>
-                        <span>-{Math.round(form.screenCount * getPricePerScreen() * form.durationYears * selectedPlan.discountPercentage / 100)} {t.currency.sar}</span>
+                        <span>
+                          -{billingPeriod === 'monthly'
+                            ? Math.round(form.screenCount * (getPricePerScreen() / 12) * form.durationMonths * selectedPlan.discountPercentage / 100)
+                            : Math.round(form.screenCount * getPricePerScreen() * form.durationYears * selectedPlan.discountPercentage / 100)
+                          } {t.currency.sar}
+                        </span>
                       </div>
                     )}
                     {discountResult?.valid && (
@@ -455,7 +525,10 @@ export default function Subscriptions() {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {form.screenCount} {t.subscriptions.screens} × {getPricePerScreen()} {t.currency.sar} × {form.durationYears} {t.subscriptions.year}
+                      {billingPeriod === 'monthly'
+                        ? `${form.screenCount} ${t.subscriptions.screens} × ${Math.round(getPricePerScreen() / 12)} ${t.currency.sar} × ${form.durationMonths} ${t.subscriptions.month}`
+                        : `${form.screenCount} ${t.subscriptions.screens} × ${getPricePerScreen()} ${t.currency.sar} × ${form.durationYears} ${t.subscriptions.year}`
+                      }
                     </p>
                   </CardContent>
                 </Card>

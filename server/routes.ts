@@ -187,18 +187,25 @@ export async function registerRoutes(
 
   app.post("/api/subscriptions", requireAuth, async (req: any, res) => {
     const userId = await getEffectiveUserId(req);
-    const { screenCount, durationYears, discountCode, pricePerScreen } = req.body;
+    const { screenCount, durationYears, durationMonths, billingPeriod, discountCode, pricePerScreen } = req.body;
+    const period = billingPeriod || 'annual';
     
-    if (!screenCount || !durationYears) {
-      return res.status(400).json({ message: "يرجى تحديد عدد الشاشات ومدة الاشتراك" });
+    if (!screenCount) {
+      return res.status(400).json({ message: "يرجى تحديد عدد الشاشات" });
     }
     
     if (screenCount < 1 || screenCount > 100) {
       return res.status(400).json({ message: "عدد الشاشات يجب أن يكون بين 1 و 100" });
     }
     
-    if (durationYears < 1 || durationYears > 3) {
-      return res.status(400).json({ message: "مدة الاشتراك يجب أن تكون من 1 إلى 3 سنوات" });
+    if (period === 'monthly') {
+      if (!durationMonths || durationMonths < 1 || durationMonths > 12) {
+        return res.status(400).json({ message: "مدة الاشتراك الشهري يجب أن تكون من 1 إلى 12 شهر" });
+      }
+    } else {
+      if (!durationYears || durationYears < 1 || durationYears > 3) {
+        return res.status(400).json({ message: "مدة الاشتراك السنوي يجب أن تكون من 1 إلى 3 سنوات" });
+      }
     }
 
     // Validate and apply discount code if provided
@@ -219,7 +226,7 @@ export async function registerRoutes(
       }
     }
 
-    const sub = await storage.createSubscription(userId, screenCount, durationYears, validatedDiscountCode, pricePerScreen);
+    const sub = await storage.createSubscription(userId, screenCount, durationYears || 1, validatedDiscountCode, pricePerScreen, durationMonths, period);
     
     // Create invoice for the subscription (base amount before tax)
     await storage.createInvoice(sub.id, userId, sub.totalPrice, userId);
@@ -233,7 +240,8 @@ export async function registerRoutes(
     const user = await storage.getUserById(userId);
     if (user?.email) {
       const appUrl = process.env.APP_URL || `${req.protocol}://${req.headers.host}`;
-      sendSubscriptionEmail(user.email, user.firstName || '', screenCount, durationYears, sub.totalPrice, appUrl)
+      const durationText = period === 'monthly' ? `${durationMonths} شهر` : `${durationYears} سنة`;
+      sendSubscriptionEmail(user.email, user.firstName || '', screenCount, period === 'monthly' ? 0 : durationYears, sub.totalPrice, appUrl)
         .catch(err => console.error('Failed to send subscription email:', err));
     }
     
