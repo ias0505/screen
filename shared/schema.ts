@@ -71,6 +71,8 @@ export const subscriptions = pgTable("subscriptions", {
   userId: varchar("user_id").references(() => users.id).notNull(),
   screenCount: integer("screen_count").notNull().default(1),
   durationYears: integer("duration_years").notNull().default(1),
+  durationMonths: integer("duration_months").default(0), // مدة الاشتراك بالأشهر (للاشتراك الشهري)
+  billingPeriod: text("billing_period").default("annual"), // monthly, annual
   startDate: timestamp("start_date").defaultNow(),
   endDate: timestamp("end_date").notNull(),
   status: text("status").notNull().default("active"), // active, expired
