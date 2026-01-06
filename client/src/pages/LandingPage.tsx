@@ -360,9 +360,11 @@ export default function LandingPage() {
                       {language === 'ar' ? plan.nameAr : plan.nameEn}
                     </h3>
                     <div className="flex items-baseline gap-1 mb-6">
-                      <span className="text-4xl font-bold">{plan.price}</span>
-                      <span className="text-muted-foreground inline-flex items-center gap-1">
-                        <SARIcon size={14} />{language === 'ar' ? '/سنة' : '/year'}
+                      <span className="text-4xl font-bold inline-flex items-center gap-1">
+                        {plan.price}<SARIcon size={24} />
+                      </span>
+                      <span className="text-muted-foreground">
+                        {language === 'ar' ? '/سنة' : '/year'}
                       </span>
                     </div>
                     <ul className="space-y-3 mb-6">
