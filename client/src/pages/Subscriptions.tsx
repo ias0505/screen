@@ -220,7 +220,7 @@ export default function Subscriptions() {
       `${t.subscriptions.confirmCreateTitle}\n` +
       `${t.subscriptions.confirmScreenCount}: ${form.screenCount}\n` +
       `${t.subscriptions.confirmDuration}: ${durationText}\n` +
-      `${t.subscriptions.confirmAmount}: ${finalPrice} ريال` +
+      `${t.subscriptions.confirmAmount}: ${finalPrice} ﷼` +
       (discountResult?.valid ? `\n${t.subscriptions.afterDiscount}` : '')
     );
     
