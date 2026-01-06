@@ -394,8 +394,8 @@ export default function Subscriptions() {
                           </CardHeader>
                           <CardContent className="space-y-2">
                             <div className="flex items-baseline gap-1">
-                              <span className="text-2xl font-bold">
-                                {plan.pricePerScreen}
+                              <span className="text-2xl font-bold inline-flex items-center gap-1">
+                                {plan.pricePerScreen} <SARIcon size={18} />
                               </span>
                               <span className="text-muted-foreground text-sm">
                                 {billingPeriod === 'monthly' 
