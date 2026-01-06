@@ -382,8 +382,8 @@ export default function Subscriptions() {
                           data-testid={`card-plan-${plan.id}`}
                         >
                           {plan.discountPercentage && plan.discountPercentage > 0 && (
-                            <div className="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-6 py-1 transform -rotate-45 -translate-x-6 translate-y-2 shadow-sm">
-                              {plan.discountPercentage}%
+                            <div className="absolute top-0 left-0 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-8 py-1 transform -rotate-45 -translate-x-6 translate-y-3 shadow-lg">
+                              {plan.discountPercentage}% خصم
                             </div>
                           )}
                           <CardHeader className="pb-2">
