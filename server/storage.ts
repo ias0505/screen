@@ -291,12 +291,51 @@ export class DatabaseStorage implements IStorage {
 
   async expireOldSubscriptions(): Promise<void> {
     const now = new Date();
+    
+    // أولاً: جلب الاشتراكات التي ستنتهي مع userIds الخاصة بها
+    const expiringSubscriptions = await db.select({ userId: subscriptions.userId })
+      .from(subscriptions)
+      .where(and(
+        eq(subscriptions.status, 'active'),
+        lte(subscriptions.endDate, now)
+      ));
+    
+    // تحديث حالة الاشتراكات المنتهية
     await db.update(subscriptions)
       .set({ status: 'expired' })
       .where(and(
         eq(subscriptions.status, 'active'),
         lte(subscriptions.endDate, now)
       ));
+    
+    // لكل مستخدم متأثر، تحقق من أن عدد الشاشات المفعلة لا يتجاوز المسموح
+    const affectedUserIds = Array.from(new Set(expiringSubscriptions.map(s => s.userId)));
+    for (const userId of affectedUserIds) {
+      await this.enforceActiveScreenLimit(userId);
+    }
+  }
+
+  // دالة مساعدة لفرض حد الشاشات المفعلة
+  async enforceActiveScreenLimit(userId: string): Promise<void> {
+    const allowedActive = await this.getAllowedActiveScreens(userId);
+    const currentActive = await this.getActiveScreensCount(userId);
+    
+    if (currentActive > allowedActive) {
+      // إيقاف الشاشات الزائدة (الأقدم أولاً)
+      const excessCount = currentActive - allowedActive;
+      const activeScreens = await db.select()
+        .from(screens)
+        .where(and(eq(screens.userId, userId), eq(screens.isActive, true)))
+        .orderBy(screens.createdAt);
+      
+      // إيقاف الشاشات الزائدة
+      const screensToDeactivate = activeScreens.slice(0, excessCount);
+      for (const screen of screensToDeactivate) {
+        await db.update(screens)
+          .set({ isActive: false })
+          .where(eq(screens.id, screen.id));
+      }
+    }
   }
 
   // Legacy subscription plans
