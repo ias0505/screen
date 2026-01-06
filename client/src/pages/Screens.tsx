@@ -715,70 +715,82 @@ export default function Screens() {
                               )}
                             </div>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" data-testid={`button-screen-menu-${screen.id}`}>
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link href={`/player/${screen.id}`} target="_blank" className="flex items-center">
-                                  <ExternalLink className="w-4 h-4 ml-2" />
-                                  {language === 'ar' ? "فتح العرض" : "Open Display"}
-                                </Link>
-                              </DropdownMenuItem>
-                              {canEdit && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    onClick={() => openEditDialog(screen)}
-                                    data-testid={`button-edit-screen-${screen.id}`}
-                                  >
-                                    <Pencil className="w-4 h-4 ml-2" />
-                                    {language === 'ar' ? "تعديل الشاشة" : "Edit Screen"}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => {
-                                      setActivationDialogScreen(screen.id);
-                                      setGeneratedCode(null);
-                                    }}
-                                    data-testid={`button-generate-code-${screen.id}`}
-                                  >
-                                    <Key className="w-4 h-4 ml-2" />
-                                    {language === 'ar' ? "إنشاء رمز تفعيل" : "Generate Activation Code"}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => openScannerForScreen(screen)}
-                                    data-testid={`button-scan-qr-${screen.id}`}
-                                  >
-                                    <Camera className="w-4 h-4 ml-2" />
-                                    {language === 'ar' ? "مسح QR جهاز" : "Scan Device QR"}
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              <DropdownMenuItem 
-                                onClick={() => setDeviceDialogScreen(screen.id)}
-                                data-testid={`button-view-devices-${screen.id}`}
-                              >
-                                <Smartphone className="w-4 h-4 ml-2" />
-                                {language === 'ar' ? "الأجهزة المرتبطة" : "Linked Devices"}
-                              </DropdownMenuItem>
-                              {canDelete && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDelete(screen.id)}
-                                    className="text-destructive"
-                                    data-testid={`button-delete-screen-${screen.id}`}
-                                  >
-                                    <Trash2 className="w-4 h-4 ml-2" />
-                                    {language === 'ar' ? "حذف الشاشة" : "Delete Screen"}
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {screen.isActive !== false ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" data-testid={`button-screen-menu-${screen.id}`}>
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/player/${screen.id}`} target="_blank" className="flex items-center">
+                                    <ExternalLink className="w-4 h-4 ml-2" />
+                                    {language === 'ar' ? "فتح العرض" : "Open Display"}
+                                  </Link>
+                                </DropdownMenuItem>
+                                {canEdit && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      onClick={() => openEditDialog(screen)}
+                                      data-testid={`button-edit-screen-${screen.id}`}
+                                    >
+                                      <Pencil className="w-4 h-4 ml-2" />
+                                      {language === 'ar' ? "تعديل الشاشة" : "Edit Screen"}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        setActivationDialogScreen(screen.id);
+                                        setGeneratedCode(null);
+                                      }}
+                                      data-testid={`button-generate-code-${screen.id}`}
+                                    >
+                                      <Key className="w-4 h-4 ml-2" />
+                                      {language === 'ar' ? "إنشاء رمز تفعيل" : "Generate Activation Code"}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => openScannerForScreen(screen)}
+                                      data-testid={`button-scan-qr-${screen.id}`}
+                                    >
+                                      <Camera className="w-4 h-4 ml-2" />
+                                      {language === 'ar' ? "مسح QR جهاز" : "Scan Device QR"}
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                <DropdownMenuItem 
+                                  onClick={() => setDeviceDialogScreen(screen.id)}
+                                  data-testid={`button-view-devices-${screen.id}`}
+                                >
+                                  <Smartphone className="w-4 h-4 ml-2" />
+                                  {language === 'ar' ? "الأجهزة المرتبطة" : "Linked Devices"}
+                                </DropdownMenuItem>
+                                {canDelete && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDelete(screen.id)}
+                                      className="text-destructive"
+                                      data-testid={`button-delete-screen-${screen.id}`}
+                                    >
+                                      <Trash2 className="w-4 h-4 ml-2" />
+                                      {language === 'ar' ? "حذف الشاشة" : "Delete Screen"}
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              disabled
+                              className="opacity-30"
+                              data-testid={`button-screen-menu-${screen.id}`}
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
