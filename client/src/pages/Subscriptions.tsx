@@ -382,10 +382,10 @@ export default function Subscriptions() {
                           data-testid={`card-plan-${plan.id}`}
                         >
                           {plan.discountPercentage && plan.discountPercentage > 0 && (
-                            <div className={`absolute bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold py-1 shadow-lg whitespace-nowrap ${
+                            <div className={`absolute bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold py-1 shadow-lg whitespace-nowrap text-center ${
                               language === 'ar' 
-                                ? 'top-3 -left-8 transform -rotate-45 px-10' 
-                                : 'top-3 -right-8 transform rotate-45 px-10'
+                                ? 'top-4 -left-10 transform -rotate-45 w-32' 
+                                : 'top-4 -right-10 transform rotate-45 w-32'
                             }`}>
                               {t.subscriptions.discount} {plan.discountPercentage}%
                             </div>
