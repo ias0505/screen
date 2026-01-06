@@ -377,10 +377,15 @@ export default function Subscriptions() {
                       return (
                         <Card 
                           key={plan.id}
-                          className={`cursor-pointer hover-elevate transition-all ${selectedPlan?.id === plan.id ? 'ring-2 ring-primary' : ''}`}
+                          className={`cursor-pointer hover-elevate transition-all relative overflow-hidden ${selectedPlan?.id === plan.id ? 'ring-2 ring-primary' : ''}`}
                           onClick={() => selectPlan(plan)}
                           data-testid={`card-plan-${plan.id}`}
                         >
+                          {plan.discountPercentage && plan.discountPercentage > 0 && (
+                            <div className="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-6 py-1 transform -rotate-45 -translate-x-6 translate-y-2 shadow-sm">
+                              {plan.discountPercentage}%
+                            </div>
+                          )}
                           <CardHeader className="pb-2">
                             <div className="flex items-center justify-between gap-2">
                               <CardTitle className="text-base">{plan.name}</CardTitle>
@@ -403,11 +408,6 @@ export default function Subscriptions() {
                                   : t.subscriptions.pricePerScreenPerYear}
                               </span>
                             </div>
-                            {plan.discountPercentage && plan.discountPercentage > 0 && (
-                              <Badge variant="outline" className="text-green-600">
-                                {t.subscriptions.discount} {plan.discountPercentage}%
-                              </Badge>
-                            )}
                             {plan.description && (
                               <p className="text-sm text-muted-foreground">{plan.description}</p>
                             )}
