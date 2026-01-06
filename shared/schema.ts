@@ -93,6 +93,7 @@ export const screens = pgTable("screens", {
   groupId: integer("group_id").references(() => screenGroups.id),
   subscriptionId: integer("subscription_id").references(() => subscriptions.id),
   userId: varchar("user_id").references(() => users.id).notNull(),
+  isActive: boolean("is_active").default(true), // هل الشاشة مفعلة للعرض
   createdAt: timestamp("created_at").defaultNow(),
 });
 
