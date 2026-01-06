@@ -4,6 +4,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SARIcon } from "@/components/ui/price";
 import { 
   Monitor, 
   Upload, 
@@ -360,8 +361,8 @@ export default function LandingPage() {
                     </h3>
                     <div className="flex items-baseline gap-1 mb-6">
                       <span className="text-4xl font-bold">{plan.price}</span>
-                      <span className="text-muted-foreground">
-                        {language === 'ar' ? 'ر.س/سنة' : 'SAR/year'}
+                      <span className="text-muted-foreground inline-flex items-center gap-1">
+                        <SARIcon size={14} />{language === 'ar' ? '/سنة' : '/year'}
                       </span>
                     </div>
                     <ul className="space-y-3 mb-6">

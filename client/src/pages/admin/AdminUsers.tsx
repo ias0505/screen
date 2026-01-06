@@ -24,6 +24,7 @@ import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/use-language";
+import { SARIcon } from "@/components/ui/price";
 import {
   Select,
   SelectContent,
@@ -500,8 +501,8 @@ export default function AdminUsers() {
                           />
                         </div>
                         <div className="p-3 bg-muted rounded-md">
-                          <p className="text-sm">
-                            {language === 'ar' ? "المبلغ:" : "Amount:"} <span className="font-bold">{screenCount * 50 * durationYears} {language === 'ar' ? "ريال" : "SAR"}</span>
+                          <p className="text-sm inline-flex items-center gap-1">
+                            {language === 'ar' ? "المبلغ:" : "Amount:"} <span className="font-bold inline-flex items-center gap-1">{screenCount * 50 * durationYears} <SARIcon size={12} /></span>
                           </p>
                         </div>
                         <Button 

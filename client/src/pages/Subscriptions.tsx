@@ -41,6 +41,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import type { Subscription, SubscriptionPlan, Invoice } from "@shared/schema";
+import { SARIcon } from "@/components/ui/price";
 
 interface DiscountValidation {
   valid: boolean;
@@ -85,7 +86,7 @@ function SubscriptionCard({ sub }: { sub: Subscription }) {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CreditCard className="w-4 h-4" />
-            <span>{sub.totalPrice} {t.currency.sar} ({sub.durationYears} {t.subscriptions.year})</span>
+            <span className="inline-flex items-center gap-1">{sub.totalPrice} <SARIcon size={12} /> ({sub.durationYears} {t.subscriptions.year})</span>
           </div>
           {latestInvoice && (
             <Link href={`/invoice/${latestInvoice.id}`}>
@@ -219,7 +220,7 @@ export default function Subscriptions() {
       `${t.subscriptions.confirmCreateTitle}\n` +
       `${t.subscriptions.confirmScreenCount}: ${form.screenCount}\n` +
       `${t.subscriptions.confirmDuration}: ${durationText}\n` +
-      `${t.subscriptions.confirmAmount}: ${finalPrice} ${t.currency.sar}` +
+      `${t.subscriptions.confirmAmount}: ${finalPrice} ريال` +
       (discountResult?.valid ? `\n${t.subscriptions.afterDiscount}` : '')
     );
     
@@ -516,44 +517,44 @@ export default function Subscriptions() {
                   <CardContent className="pt-4 space-y-2">
                     <div className="flex justify-between items-center text-sm text-muted-foreground">
                       <span>{t.subscriptions.basePrice}:</span>
-                      <span>
+                      <span className="inline-flex items-center gap-1">
                         {billingPeriod === 'monthly' 
                           ? form.screenCount * getPricePerScreen() * form.durationMonths
                           : form.screenCount * getPricePerScreen() * form.durationYears
-                        } {t.currency.sar}
+                        } <SARIcon size={12} />
                       </span>
                     </div>
                     {selectedPlan?.discountPercentage && selectedPlan.discountPercentage > 0 && (
                       <div className="flex justify-between items-center text-sm text-green-600">
                         <span>{t.subscriptions.planDiscount} ({selectedPlan.discountPercentage}%):</span>
-                        <span>
+                        <span className="inline-flex items-center gap-1">
                           -{billingPeriod === 'monthly'
                             ? Math.round(form.screenCount * getPricePerScreen() * form.durationMonths * selectedPlan.discountPercentage / 100)
                             : Math.round(form.screenCount * getPricePerScreen() * form.durationYears * selectedPlan.discountPercentage / 100)
-                          } {t.currency.sar}
+                          } <SARIcon size={12} />
                         </span>
                       </div>
                     )}
                     {discountResult?.valid && (
                       <div className="flex justify-between items-center text-sm text-green-600">
                         <span>{t.subscriptions.discountCodeLabel}:</span>
-                        <span>
+                        <span className="inline-flex items-center gap-1">
                           {discountResult.discountType === 'percentage' 
                             ? `-${discountResult.discountValue}%` 
-                            : `-${discountResult.discountValue} ${t.currency.sar}`}
+                            : <><span>-{discountResult.discountValue}</span> <SARIcon size={12} /></>}
                         </span>
                       </div>
                     )}
                     <div className="border-t pt-2 flex justify-between items-center">
                       <span className="font-medium">{t.subscriptions.totalPrice}:</span>
-                      <span className="text-2xl font-bold text-primary">
-                        {calculateFinalPrice()} {t.currency.sar}
+                      <span className="text-2xl font-bold text-primary inline-flex items-center gap-1">
+                        {calculateFinalPrice()} <SARIcon size={18} />
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground inline-flex items-center gap-1 flex-wrap">
                       {billingPeriod === 'monthly'
-                        ? `${form.screenCount} ${t.subscriptions.screens} × ${getPricePerScreen()} ${t.currency.sar} × ${form.durationMonths} ${t.subscriptions.month}`
-                        : `${form.screenCount} ${t.subscriptions.screens} × ${getPricePerScreen()} ${t.currency.sar} × ${form.durationYears} ${t.subscriptions.year}`
+                        ? <>{form.screenCount} {t.subscriptions.screens} × {getPricePerScreen()} <SARIcon size={10} /> × {form.durationMonths} {t.subscriptions.month}</>
+                        : <>{form.screenCount} {t.subscriptions.screens} × {getPricePerScreen()} <SARIcon size={10} /> × {form.durationYears} {t.subscriptions.year}</>
                       }
                     </p>
                   </CardContent>

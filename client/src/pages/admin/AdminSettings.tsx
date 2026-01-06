@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
+import { SARIcon } from "@/components/ui/price";
 import { Settings, Save, DollarSign } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -113,10 +114,10 @@ export default function AdminSettings() {
                       : (language === 'ar' ? "حفظ" : "Save")}
                   </Button>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground inline-flex items-center gap-1 flex-wrap">
                   {language === 'ar' 
-                    ? `السعر الحالي: ${settings?.price_per_screen || "50"} ريال لكل شاشة في السنة`
-                    : `Current price: ${settings?.price_per_screen || "50"} SAR per screen per year`}
+                    ? <>السعر الحالي: {settings?.price_per_screen || "50"} <SARIcon size={12} /> لكل شاشة في السنة</>
+                    : <>Current price: {settings?.price_per_screen || "50"} <SARIcon size={12} /> per screen per year</>}
                 </p>
               </div>
 
@@ -125,20 +126,20 @@ export default function AdminSettings() {
                   {language === 'ar' ? "أمثلة على حساب السعر:" : "Price calculation examples:"}
                 </h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>
+                  <li className="inline-flex items-center gap-1 flex-wrap">
                     {language === 'ar' 
-                      ? `شاشة واحدة لمدة سنة = ${pricePerScreen || "50"} ريال`
-                      : `1 screen for 1 year = ${pricePerScreen || "50"} SAR`}
+                      ? <>شاشة واحدة لمدة سنة = {pricePerScreen || "50"} <SARIcon size={12} /></>
+                      : <>1 screen for 1 year = {pricePerScreen || "50"} <SARIcon size={12} /></>}
                   </li>
-                  <li>
+                  <li className="inline-flex items-center gap-1 flex-wrap">
                     {language === 'ar' 
-                      ? `5 شاشات لمدة سنة = ${(parseInt(pricePerScreen) || 50) * 5} ريال`
-                      : `5 screens for 1 year = ${(parseInt(pricePerScreen) || 50) * 5} SAR`}
+                      ? <>5 شاشات لمدة سنة = {(parseInt(pricePerScreen) || 50) * 5} <SARIcon size={12} /></>
+                      : <>5 screens for 1 year = {(parseInt(pricePerScreen) || 50) * 5} <SARIcon size={12} /></>}
                   </li>
-                  <li>
+                  <li className="inline-flex items-center gap-1 flex-wrap">
                     {language === 'ar' 
-                      ? `5 شاشات لمدة سنتين = ${(parseInt(pricePerScreen) || 50) * 5 * 2} ريال`
-                      : `5 screens for 2 years = ${(parseInt(pricePerScreen) || 50) * 5 * 2} SAR`}
+                      ? <>5 شاشات لمدة سنتين = {(parseInt(pricePerScreen) || 50) * 5 * 2} <SARIcon size={12} /></>
+                      : <>5 screens for 2 years = {(parseInt(pricePerScreen) || 50) * 5 * 2} <SARIcon size={12} /></>}
                   </li>
                 </ul>
               </div>

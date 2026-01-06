@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Link } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
+import { SARIcon } from "@/components/ui/price";
 import { Activity, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
@@ -123,7 +124,7 @@ export default function AdminActivity() {
                         {parsedDetails ? (
                           <span>
                             {parsedDetails.userId && `${language === 'ar' ? 'مستخدم' : 'User'}: ${parsedDetails.userId.substring(0, 8)}...`}
-                            {parsedDetails.amount && ` | ${language === 'ar' ? 'المبلغ' : 'Amount'}: ${parsedDetails.amount} ${language === 'ar' ? 'ريال' : 'SAR'}`}
+                            {parsedDetails.amount && <> | {language === 'ar' ? 'المبلغ' : 'Amount'}: <span className="inline-flex items-center gap-1">{parsedDetails.amount} <SARIcon size={10} /></span></>}
                             {parsedDetails.screenCount && ` | ${parsedDetails.screenCount} ${language === 'ar' ? 'شاشة' : 'screens'}`}
                           </span>
                         ) : '-'}

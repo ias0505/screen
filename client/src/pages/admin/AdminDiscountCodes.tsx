@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
+import { SARIcon } from "@/components/ui/price";
 import { Tag, ArrowRight, Plus, Pencil, Trash2, CheckCircle, XCircle, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
@@ -296,7 +297,7 @@ export default function AdminDiscountCodes() {
                       <Badge variant="outline">
                         {code.discountType === 'percentage' 
                           ? `${code.discountValue}%`
-                          : `${code.discountValue} ${language === 'ar' ? 'ريال' : 'SAR'}`
+                          : <span className="inline-flex items-center gap-1">{code.discountValue} <SARIcon size={10} /></span>
                         }
                       </Badge>
                     </TableCell>

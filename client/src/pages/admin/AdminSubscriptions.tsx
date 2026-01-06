@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Link } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
+import { SARIcon } from "@/components/ui/price";
 import { CreditCard, ArrowRight, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
@@ -102,7 +103,7 @@ export default function AdminSubscriptions() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-emerald-600">{totalRevenue} {language === 'ar' ? "ريال" : "SAR"}</p>
+            <p className="text-2xl font-bold text-emerald-600 inline-flex items-center gap-1">{totalRevenue} <SARIcon size={16} /></p>
           </CardContent>
         </Card>
       </div>
@@ -141,7 +142,7 @@ export default function AdminSubscriptions() {
                     </TableCell>
                     <TableCell>{sub.screenCount} {language === 'ar' ? "شاشة" : "screens"}</TableCell>
                     <TableCell>{sub.durationYears} {language === 'ar' ? "سنة" : "year(s)"}</TableCell>
-                    <TableCell className="font-semibold">{sub.totalPrice || 0} {language === 'ar' ? "ريال" : "SAR"}</TableCell>
+                    <TableCell className="font-semibold"><span className="inline-flex items-center gap-1">{sub.totalPrice || 0} <SARIcon size={12} /></span></TableCell>
                     <TableCell>
                       {format(new Date(sub.endDate), 'dd MMM yyyy', { locale: dateLocale })}
                     </TableCell>

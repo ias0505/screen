@@ -29,6 +29,7 @@ import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/use-language";
+import { SARIcon } from "@/components/ui/price";
 import { FileText, ArrowRight, CheckCircle, Clock, XCircle, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
@@ -133,7 +134,7 @@ export default function AdminInvoices() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600">{totalPaid} {language === 'ar' ? "ريال" : "SAR"}</p>
+            <p className="text-2xl font-bold text-green-600 inline-flex items-center gap-1">{totalPaid} <SARIcon size={16} /></p>
           </CardContent>
         </Card>
         <Card>
@@ -143,7 +144,7 @@ export default function AdminInvoices() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-orange-600">{totalPending} {language === 'ar' ? "ريال" : "SAR"}</p>
+            <p className="text-2xl font-bold text-orange-600 inline-flex items-center gap-1">{totalPending} <SARIcon size={16} /></p>
           </CardContent>
         </Card>
         <Card>
@@ -207,7 +208,7 @@ export default function AdminInvoices() {
                     <TableCell>
                       {invoice.subscription.screenCount} {language === 'ar' ? "شاشة" : "screens"} / {invoice.subscription.durationYears} {language === 'ar' ? "سنة" : "year(s)"}
                     </TableCell>
-                    <TableCell className="font-semibold">{invoice.amount} {language === 'ar' ? "ريال" : "SAR"}</TableCell>
+                    <TableCell className="font-semibold"><span className="inline-flex items-center gap-1">{invoice.amount} <SARIcon size={12} /></span></TableCell>
                     <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                     <TableCell>
                       {format(new Date(invoice.createdAt), 'dd MMM yyyy', { locale: dateLocale })}

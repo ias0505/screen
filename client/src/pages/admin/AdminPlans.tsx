@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
+import { SARIcon } from "@/components/ui/price";
 import { Package, ArrowRight, Plus, Pencil, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
@@ -269,7 +270,7 @@ export default function AdminPlans() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>{plan.pricePerScreen} {language === 'ar' ? "ريال" : "SAR"}</TableCell>
+                    <TableCell><span className="inline-flex items-center gap-1">{plan.pricePerScreen} <SARIcon size={12} /></span></TableCell>
                     <TableCell>
                       <Badge variant={plan.billingPeriod === 'monthly' ? 'secondary' : 'default'}>
                         {plan.billingPeriod === 'monthly' 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { SARIcon } from "@/components/ui/price";
 import { ArrowRight, Printer, Download, CheckCircle, Clock, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -225,8 +226,8 @@ export default function InvoiceView() {
                         </div>
                       </td>
                       <td className="text-center p-3">{invoice.subscription?.screenCount || 1}</td>
-                      <td className="text-center p-3">{invoice.subscription?.pricePerScreen || 50} ريال</td>
-                      <td className="text-left p-3 font-medium">{baseAmount} ريال</td>
+                      <td className="text-center p-3"><span className="inline-flex items-center gap-1">{invoice.subscription?.pricePerScreen || 50} <SARIcon size={12} /></span></td>
+                      <td className="text-left p-3 font-medium"><span className="inline-flex items-center gap-1">{baseAmount} <SARIcon size={12} /></span></td>
                     </tr>
                   </tbody>
                 </table>
@@ -237,16 +238,16 @@ export default function InvoiceView() {
               <div className="w-72 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">المجموع الفرعي:</span>
-                  <span>{baseAmount} ريال</span>
+                  <span className="inline-flex items-center gap-1">{baseAmount} <SARIcon size={12} /></span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">ضريبة القيمة المضافة ({taxRate}%):</span>
-                  <span data-testid="text-tax-amount">{taxAmount} ريال</span>
+                  <span data-testid="text-tax-amount" className="inline-flex items-center gap-1">{taxAmount} <SARIcon size={12} /></span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>الإجمالي:</span>
-                  <span data-testid="text-total-amount">{totalAmount} ريال</span>
+                  <span data-testid="text-total-amount" className="inline-flex items-center gap-1">{totalAmount} <SARIcon size={14} /></span>
                 </div>
               </div>
             </div>

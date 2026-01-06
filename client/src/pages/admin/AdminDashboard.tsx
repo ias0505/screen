@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
+import { SARIcon } from "@/components/ui/price";
 import { 
   Users, 
   Monitor, 
@@ -76,7 +77,7 @@ export default function AdminDashboard() {
     },
     {
       title: language === 'ar' ? "إجمالي الإيرادات" : "Total Revenue",
-      value: language === 'ar' ? `${stats?.totalRevenue || 0} ريال` : `${stats?.totalRevenue || 0} SAR`,
+      value: <span className="inline-flex items-center gap-1">{stats?.totalRevenue || 0} <SARIcon size={16} /></span>,
       icon: TrendingUp,
       color: "text-emerald-500",
       link: "/admin/invoices"
@@ -183,8 +184,8 @@ export default function AdminDashboard() {
             {isLoading ? (
               <Skeleton className="h-5 w-24" />
             ) : (
-              <span className="font-semibold text-emerald-600">
-                {language === 'ar' ? `${stats?.totalRevenue || 0} ريال` : `${stats?.totalRevenue || 0} SAR`}
+              <span className="font-semibold text-emerald-600 inline-flex items-center gap-1">
+                {stats?.totalRevenue || 0} <SARIcon size={14} />
               </span>
             )}
           </div>
