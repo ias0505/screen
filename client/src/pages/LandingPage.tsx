@@ -4,7 +4,6 @@ import { useLanguage } from "@/hooks/use-language";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { SARIcon } from "@/components/ui/price";
 import { 
   Monitor, 
   Upload, 
@@ -15,7 +14,6 @@ import {
   Globe,
   ArrowLeft,
   ArrowRight,
-  CheckCircle,
   Play
 } from "lucide-react";
 import logoImage from "@assets/Meror_logo_v.1_1767180225600.png";
@@ -107,34 +105,6 @@ export default function LandingPage() {
       </div>
     );
   }
-
-  const pricingPlans = [
-    {
-      nameAr: "الأساسية",
-      nameEn: "Basic",
-      screens: 5,
-      price: 250,
-      featuresAr: ["5 شاشات", "5 جيجا تخزين", "دعم بالبريد"],
-      featuresEn: ["5 Screens", "5GB Storage", "Email Support"]
-    },
-    {
-      nameAr: "الاحترافية",
-      nameEn: "Professional",
-      screens: 20,
-      price: 1000,
-      popular: true,
-      featuresAr: ["20 شاشة", "20 جيجا تخزين", "دعم أولوية", "تقارير متقدمة"],
-      featuresEn: ["20 Screens", "20GB Storage", "Priority Support", "Advanced Reports"]
-    },
-    {
-      nameAr: "المؤسسات",
-      nameEn: "Enterprise",
-      screens: 100,
-      price: 4000,
-      featuresAr: ["100 شاشة", "تخزين غير محدود", "مدير حساب مخصص", "API كامل"],
-      featuresEn: ["100 Screens", "Unlimited Storage", "Dedicated Manager", "Full API Access"]
-    }
-  ];
 
   const Arrow = language === 'ar' ? ArrowLeft : ArrowRight;
 
@@ -313,77 +283,6 @@ export default function LandingPage() {
                     <p className="text-muted-foreground">
                       {language === 'ar' ? feature.descAr : feature.descEn}
                     </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              {language === 'ar' ? 'خطط أسعار مرنة' : 'Flexible Pricing Plans'}
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              {language === 'ar' 
-                ? 'اختر الخطة المناسبة لاحتياجات عملك'
-                : 'Choose the plan that fits your business needs'}
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {pricingPlans.map((plan, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <Card className={`h-full relative overflow-visible ${plan.popular ? 'border-primary shadow-lg shadow-primary/20' : 'border-border/50'}`}>
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-primary-foreground text-sm rounded-full">
-                      {language === 'ar' ? 'الأكثر شعبية' : 'Most Popular'}
-                    </div>
-                  )}
-                  <CardContent className="p-6 pt-8">
-                    <h3 className="text-xl font-semibold mb-2">
-                      {language === 'ar' ? plan.nameAr : plan.nameEn}
-                    </h3>
-                    <div className="flex items-baseline gap-1 mb-6">
-                      <span className="text-4xl font-bold inline-flex items-center gap-1">
-                        {plan.price}<SARIcon size={24} />
-                      </span>
-                      <span className="text-muted-foreground">
-                        {language === 'ar' ? '/سنة' : '/year'}
-                      </span>
-                    </div>
-                    <ul className="space-y-3 mb-6">
-                      {(language === 'ar' ? plan.featuresAr : plan.featuresEn).map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Link href="/dashboard">
-                      <Button 
-                        className="w-full" 
-                        variant={plan.popular ? "default" : "outline"}
-                        data-testid={`button-plan-${index}`}
-                      >
-                        {language === 'ar' ? 'ابدأ الآن' : 'Get Started'}
-                      </Button>
-                    </Link>
                   </CardContent>
                 </Card>
               </motion.div>
