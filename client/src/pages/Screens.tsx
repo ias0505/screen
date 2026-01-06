@@ -28,8 +28,10 @@ import {
   Camera,
   Search,
   Filter,
-  X
+  X,
+  Power
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -192,6 +194,42 @@ export default function Screens() {
         variant: "destructive",
       });
       setScanning(false);
+    },
+  });
+
+  // Query for activation status
+  const { data: activationStatus } = useQuery<{ currentActive: number; allowedActive: number; remaining: number }>({
+    queryKey: ['/api/screens/activation-status'],
+  });
+
+  // Toggle screen active status mutation
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ screenId, isActive }: { screenId: number; isActive: boolean }) => {
+      const response = await apiRequest("POST", `/api/screens/${screenId}/toggle-active`, { isActive });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || (language === 'ar' ? "فشل تغيير حالة الشاشة" : "Failed to toggle screen status"));
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.isActive 
+          ? (language === 'ar' ? "تم تفعيل الشاشة" : "Screen activated")
+          : (language === 'ar' ? "تم إيقاف الشاشة" : "Screen deactivated"),
+        description: data.isActive
+          ? (language === 'ar' ? "الشاشة تعمل الآن وتعرض المحتوى" : "Screen is now active and displaying content")
+          : (language === 'ar' ? "الشاشة متوقفة ولن تعرض المحتوى" : "Screen is inactive and won't display content"),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/screens'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/screens/activation-status'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === 'ar' ? "خطأ" : "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -385,6 +423,17 @@ export default function Screens() {
               <Monitor className="w-4 h-4" />
               {language === 'ar' ? `متاح: ${availableSlots} شاشة` : `Available: ${availableSlots} screens`}
             </Badge>
+            {activationStatus && (
+              <Badge 
+                variant={activationStatus.remaining > 0 ? 'outline' : 'destructive'} 
+                className="gap-1 py-1.5 px-3"
+              >
+                <Power className="w-4 h-4" />
+                {language === 'ar' 
+                  ? `مفعّلة: ${activationStatus.currentActive}/${activationStatus.allowedActive}` 
+                  : `Active: ${activationStatus.currentActive}/${activationStatus.allowedActive}`}
+              </Badge>
+            )}
             
             {canAdd && (
               <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -729,7 +778,7 @@ export default function Screens() {
                           </DropdownMenu>
                         </div>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="space-y-3">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant={screen.status === 'online' ? 'default' : 'secondary'}>
                             {screen.status === 'online' ? t.online : t.offline}
@@ -744,7 +793,31 @@ export default function Screens() {
                               {groupName}
                             </Badge>
                           )}
+                          <Badge 
+                            variant={screen.isActive !== false ? 'default' : 'secondary'}
+                            className={screen.isActive !== false ? 'bg-green-600 dark:bg-green-700' : 'bg-muted'}
+                          >
+                            <Power className="w-3 h-3 ml-1" />
+                            {screen.isActive !== false 
+                              ? (language === 'ar' ? 'مفعّلة' : 'Active')
+                              : (language === 'ar' ? 'متوقفة' : 'Inactive')}
+                          </Badge>
                         </div>
+                        {canEdit && (
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                            <span className="text-sm text-muted-foreground">
+                              {language === 'ar' ? 'تفعيل العرض' : 'Display Active'}
+                            </span>
+                            <Switch
+                              checked={screen.isActive !== false}
+                              onCheckedChange={(checked) => {
+                                toggleActiveMutation.mutate({ screenId: screen.id, isActive: checked });
+                              }}
+                              disabled={toggleActiveMutation.isPending}
+                              data-testid={`switch-screen-active-${screen.id}`}
+                            />
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </motion.div>
