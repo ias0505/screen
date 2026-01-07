@@ -258,6 +258,55 @@ export default function Player() {
     });
   }, [currentIndex, schedules, isDeviceBound]);
 
+  // Handle video buffering/stalling - retry playback on network issues
+  useEffect(() => {
+    if (!isDeviceBound || !schedules.length) return;
+    
+    const handlers: Array<{ video: HTMLVideoElement; cleanup: () => void }> = [];
+    
+    videoRefs.current.forEach((video, idx) => {
+      const handleStalled = () => {
+        console.log(`Video ${idx} stalled, attempting recovery...`);
+        // Try to resume playback after a brief pause
+        setTimeout(() => {
+          if (idx === currentIndex && video.paused) {
+            video.play().catch(() => {});
+          }
+        }, 1000);
+      };
+      
+      const handleWaiting = () => {
+        console.log(`Video ${idx} waiting for data...`);
+      };
+      
+      const handleError = () => {
+        console.error(`Video ${idx} error, retrying...`);
+        // Retry after error
+        setTimeout(() => {
+          if (idx === currentIndex) {
+            video.currentTime = 0;
+            video.play().catch(() => {});
+          }
+        }, 2000);
+      };
+      
+      video.addEventListener('stalled', handleStalled);
+      video.addEventListener('waiting', handleWaiting);
+      video.addEventListener('error', handleError);
+      
+      handlers.push({
+        video,
+        cleanup: () => {
+          video.removeEventListener('stalled', handleStalled);
+          video.removeEventListener('waiting', handleWaiting);
+          video.removeEventListener('error', handleError);
+        }
+      });
+    });
+    
+    return () => handlers.forEach(h => h.cleanup());
+  }, [schedules, isDeviceBound, currentIndex]);
+
   useEffect(() => {
     if (!isDeviceBound || !schedules.length) return;
 
