@@ -397,6 +397,26 @@ export async function registerRoutes(
           allowedActive
         });
       }
+      
+      // ربط الشاشة باشتراك نشط إذا لم تكن مربوطة أو اشتراكها منتهي
+      const currentSubscription = screen.subscriptionId 
+        ? await storage.getSubscription(screen.subscriptionId) 
+        : null;
+      
+      const needsNewSubscription = !currentSubscription || 
+        currentSubscription.status !== 'active' || 
+        new Date(currentSubscription.endDate) <= new Date();
+      
+      if (needsNewSubscription) {
+        const activeSubscription = await storage.findSubscriptionWithAvailableSlot(userId);
+        if (activeSubscription) {
+          await storage.updateScreen(screenId, { 
+            isActive: true, 
+            subscriptionId: activeSubscription.id 
+          });
+          return res.json(await storage.getScreen(screenId));
+        }
+      }
     }
     
     const updated = await storage.updateScreen(screenId, { isActive: isActive === true });
