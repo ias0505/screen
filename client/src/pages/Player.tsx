@@ -241,9 +241,8 @@ export default function Player() {
     // Pause all videos first, then play current
     videoRefs.current.forEach((video, idx) => {
       if (idx === currentIndex) {
-        // Reset and play current video
+        // Reset and play current video (no load() - uses buffered data)
         video.currentTime = 0;
-        video.load(); // Force reload to ensure it plays again
         const playPromise = video.play();
         if (playPromise !== undefined) {
           playPromise.catch(() => {
@@ -459,6 +458,7 @@ export default function Player() {
                   muted={isMuted}
                   loop={false}
                   playsInline
+                  preload="auto"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
@@ -505,6 +505,7 @@ export default function Player() {
               muted={isMuted}
               loop={false}
               playsInline
+              preload="auto"
               className="w-full h-full object-contain"
             />
           ) : (
