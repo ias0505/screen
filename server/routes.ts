@@ -408,7 +408,7 @@ export async function registerRoutes(
         new Date(currentSubscription.endDate) <= new Date();
       
       if (needsNewSubscription) {
-        const activeSubscription = await storage.findSubscriptionWithAvailableSlot(userId);
+        const activeSubscription = await storage.getAnyActiveSubscription(userId);
         if (activeSubscription) {
           await storage.updateScreen(screenId, { 
             isActive: true, 

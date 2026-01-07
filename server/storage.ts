@@ -54,6 +54,7 @@ export interface IStorage {
   createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, pricePerScreen?: number, durationMonths?: number, billingPeriod?: 'monthly' | 'annual'): Promise<Subscription>;
   getAvailableScreenSlots(userId: string): Promise<number>;
   findSubscriptionWithAvailableSlot(userId: string): Promise<Subscription | null>;
+  getAnyActiveSubscription(userId: string): Promise<Subscription | null>;
   getScreensCountBySubscription(subscriptionId: number): Promise<number>;
   expireOldSubscriptions(): Promise<void>;
   
@@ -281,6 +282,22 @@ export class DatabaseStorage implements IStorage {
     }
     
     return activeSubs[0] || null;
+  }
+
+  async getAnyActiveSubscription(userId: string): Promise<Subscription | null> {
+    await this.expireOldSubscriptions();
+    
+    const now = new Date();
+    const [activeSub] = await db.select().from(subscriptions)
+      .where(and(
+        eq(subscriptions.userId, userId),
+        eq(subscriptions.status, 'active'),
+        gt(subscriptions.endDate, now)
+      ))
+      .orderBy(desc(subscriptions.endDate))
+      .limit(1);
+    
+    return activeSub || null;
   }
 
   async getScreensCountBySubscription(subscriptionId: number): Promise<number> {
