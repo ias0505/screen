@@ -76,8 +76,13 @@ export default function Player() {
   });
   
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
-  const [showUnmuteHint, setShowUnmuteHint] = useState(true);
+  // Check if user previously enabled sound
+  const [isMuted, setIsMuted] = useState(() => {
+    return localStorage.getItem('player_sound_enabled') !== 'true';
+  });
+  const [showUnmuteHint, setShowUnmuteHint] = useState(() => {
+    return localStorage.getItem('player_sound_enabled') !== 'true';
+  });
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const preloadedImages = useRef<Set<string>>(new Set());
 
@@ -85,10 +90,31 @@ export default function Player() {
   const handleUnmute = () => {
     setIsMuted(false);
     setShowUnmuteHint(false);
+    localStorage.setItem('player_sound_enabled', 'true');
     videoRefs.current.forEach((video) => {
       video.muted = false;
     });
   };
+
+  // Try to auto-unmute if user previously enabled sound
+  useEffect(() => {
+    if (localStorage.getItem('player_sound_enabled') === 'true') {
+      // Try to unmute - browser may still block it
+      const tryUnmute = () => {
+        videoRefs.current.forEach((video) => {
+          video.muted = false;
+          video.play().catch(() => {
+            // Browser blocked unmuted play, keep it muted
+            video.muted = true;
+            setIsMuted(true);
+          });
+        });
+      };
+      // Delay to ensure videos are loaded
+      const timer = setTimeout(tryUnmute, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [schedules]);
 
   // Fetch activation code for unbound screens
   const { data: activationData, refetch: refetchActivation } = useQuery<ActivationCodeData>({
