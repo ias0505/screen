@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { WifiOff, AlertCircle, CreditCard, Monitor, Key } from "lucide-react";
+import { WifiOff, AlertCircle, CreditCard, Monitor, Key, Volume2, VolumeX } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
 function getDeviceToken(screenId: number): string | null {
@@ -76,8 +76,19 @@ export default function Player() {
   });
   
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
+  const [showUnmuteHint, setShowUnmuteHint] = useState(true);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const preloadedImages = useRef<Set<string>>(new Set());
+
+  // Handle unmuting all videos
+  const handleUnmute = () => {
+    setIsMuted(false);
+    setShowUnmuteHint(false);
+    videoRefs.current.forEach((video) => {
+      video.muted = false;
+    });
+  };
 
   // Fetch activation code for unbound screens
   const { data: activationData, refetch: refetchActivation } = useQuery<ActivationCodeData>({
@@ -376,7 +387,15 @@ export default function Player() {
     // The monitor is physically rotated 90 degrees (landscape screen mounted vertically)
     // So we rotate content 90 degrees to match
     return (
-      <div className="w-screen h-screen bg-black overflow-hidden relative">
+      <div className="w-screen h-screen bg-black overflow-hidden relative" onClick={isMuted ? handleUnmute : undefined}>
+        {/* Sound unmute hint */}
+        {isMuted && showUnmuteHint && schedules.some((s: any) => s.mediaItem?.type === 'video') && (
+          <div className="absolute top-4 right-4 z-50 bg-black/70 text-white px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer animate-pulse" onClick={handleUnmute}>
+            <VolumeX className="w-5 h-5" />
+            <span className="text-sm">اضغط لتفعيل الصوت</span>
+          </div>
+        )}
+        
         {/* Rotated container for portrait mode */}
         <div 
           style={{
@@ -411,7 +430,7 @@ export default function Player() {
                   ref={(el) => { if (el) videoRefs.current.set(index, el); }}
                   src={item.mediaItem.url} 
                   autoPlay={index === currentIndex}
-                  muted 
+                  muted={isMuted}
                   loop={false}
                   playsInline
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -433,7 +452,15 @@ export default function Player() {
   
   // Landscape mode (default)
   return (
-    <div className="w-screen h-screen bg-black overflow-hidden relative">
+    <div className="w-screen h-screen bg-black overflow-hidden relative" onClick={isMuted ? handleUnmute : undefined}>
+      {/* Sound unmute hint */}
+      {isMuted && showUnmuteHint && schedules.some((s: any) => s.mediaItem?.type === 'video') && (
+        <div className="absolute top-4 right-4 z-50 bg-black/70 text-white px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer animate-pulse" onClick={handleUnmute}>
+          <VolumeX className="w-5 h-5" />
+          <span className="text-sm">اضغط لتفعيل الصوت</span>
+        </div>
+      )}
+      
       {/* Render all items but only show current one */}
       {schedules.map((item: any, index: number) => (
         <div 
@@ -449,7 +476,7 @@ export default function Player() {
               ref={(el) => { if (el) videoRefs.current.set(index, el); }}
               src={item.mediaItem.url} 
               autoPlay={index === currentIndex}
-              muted 
+              muted={isMuted}
               loop={false}
               playsInline
               className="w-full h-full object-contain"
