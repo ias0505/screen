@@ -38,6 +38,7 @@ import LandingPage from "@/pages/LandingPage";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
 import ContactUs from "@/pages/ContactUs";
+import { PopupNotifications } from "@/components/PopupNotifications";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -51,7 +52,12 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     return <Redirect to="/login" />;
   }
 
-  return <Component />;
+  return (
+    <>
+      <PopupNotifications />
+      <Component />
+    </>
+  );
 }
 
 // Redirect logged-in users from public pages to dashboard
