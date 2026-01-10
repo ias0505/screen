@@ -142,7 +142,7 @@ export default function AdminPopups() {
       formDataUpload.append('file', file);
       formDataUpload.append('title', file.name);
       
-      const response = await fetch('/api/media/upload', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formDataUpload,
         credentials: 'include'
