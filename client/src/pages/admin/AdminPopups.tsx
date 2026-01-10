@@ -67,7 +67,7 @@ export default function AdminPopups() {
     imageUrl: "",
     buttonText: "",
     buttonUrl: "",
-    targetUsers: "all" as "all" | "active" | "expired",
+    targetUsers: "all",
     isActive: true,
     startDate: "",
     endDate: ""
@@ -75,6 +75,15 @@ export default function AdminPopups() {
 
   const { data: popups, isLoading } = useQuery<PopupNotification[]>({
     queryKey: ['/api/admin/popups'],
+  });
+
+  interface TargetGroup {
+    id: number;
+    name: string;
+  }
+
+  const { data: targetGroups } = useQuery<TargetGroup[]>({
+    queryKey: ['/api/admin/target-groups'],
   });
 
   const createMutation = useMutation({
@@ -173,7 +182,7 @@ export default function AdminPopups() {
       imageUrl: popup.imageUrl || "",
       buttonText: popup.buttonText || "",
       buttonUrl: popup.buttonUrl || "",
-      targetUsers: popup.targetUsers as "all" | "active" | "expired",
+      targetUsers: popup.targetUsers || "all",
       isActive: popup.isActive !== false,
       startDate: popup.startDate ? popup.startDate.split('T')[0] : "",
       endDate: popup.endDate ? popup.endDate.split('T')[0] : ""
@@ -542,7 +551,7 @@ export default function AdminPopups() {
               <Label htmlFor="targetUsers">{language === 'ar' ? "الفئة المستهدفة" : "Target Users"}</Label>
               <Select
                 value={formData.targetUsers}
-                onValueChange={(value) => setFormData({ ...formData, targetUsers: value as "all" | "active" | "expired" })}
+                onValueChange={(value) => setFormData({ ...formData, targetUsers: value })}
               >
                 <SelectTrigger data-testid="select-target-users">
                   <SelectValue />
@@ -551,6 +560,18 @@ export default function AdminPopups() {
                   <SelectItem value="all">{language === 'ar' ? "جميع المستخدمين" : "All Users"}</SelectItem>
                   <SelectItem value="active">{language === 'ar' ? "المشتركين النشطين" : "Active Subscribers"}</SelectItem>
                   <SelectItem value="expired">{language === 'ar' ? "المشتركين المنتهين" : "Expired Subscribers"}</SelectItem>
+                  {targetGroups && targetGroups.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
+                        {language === 'ar' ? 'المجموعات المخصصة' : 'Custom Groups'}
+                      </div>
+                      {targetGroups.map((group) => (
+                        <SelectItem key={group.id} value={`group:${group.id}`}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

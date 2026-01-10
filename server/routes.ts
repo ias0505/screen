@@ -2075,6 +2075,121 @@ export async function registerRoutes(
     }
   });
 
+  // ========================
+  // Target Groups (مجموعات الاستهداف)
+  // ========================
+  
+  // Admin: Get all target groups
+  app.get("/api/admin/target-groups", requireAdmin, async (req, res) => {
+    const groups = await storage.getTargetGroups();
+    res.json(groups);
+  });
+  
+  // Admin: Get target group with members count
+  app.get("/api/admin/target-groups/:id", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const group = await storage.getTargetGroup(id);
+    if (!group) {
+      return res.status(404).json({ message: "المجموعة غير موجودة" });
+    }
+    const members = await storage.getTargetGroupMembers(id);
+    res.json({ ...group, membersCount: members.length });
+  });
+  
+  // Admin: Create target group
+  const targetGroupSchema = z.object({
+    name: z.string().min(1, "اسم المجموعة مطلوب"),
+    description: z.string().optional(),
+  });
+
+  app.post("/api/admin/target-groups", requireAdmin, async (req: any, res) => {
+    try {
+      const validation = targetGroupSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: validation.error.errors[0]?.message || "بيانات غير صالحة" });
+      }
+      
+      const adminId = getUserId(req);
+      const group = await storage.createTargetGroup({ ...validation.data, createdBy: adminId });
+      await storage.logAdminActivity(adminId, 'target_group_created', 'target_group', group.id.toString(), undefined, req.ip);
+      res.json(group);
+    } catch (error) {
+      console.error('Error creating target group:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء إنشاء المجموعة" });
+    }
+  });
+  
+  // Admin: Update target group
+  const targetGroupUpdateSchema = z.object({
+    name: z.string().min(1, "اسم المجموعة مطلوب").optional(),
+    description: z.string().optional(),
+  });
+
+  app.patch("/api/admin/target-groups/:id", requireAdmin, async (req: any, res) => {
+    try {
+      const validation = targetGroupUpdateSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: validation.error.errors[0]?.message || "بيانات غير صالحة" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const group = await storage.updateTargetGroup(id, validation.data);
+      const adminId = getUserId(req);
+      await storage.logAdminActivity(adminId, 'target_group_updated', 'target_group', id.toString(), undefined, req.ip);
+      res.json(group);
+    } catch (error) {
+      console.error('Error updating target group:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء تحديث المجموعة" });
+    }
+  });
+  
+  // Admin: Delete target group
+  app.delete("/api/admin/target-groups/:id", requireAdmin, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteTargetGroup(id);
+      const adminId = getUserId(req);
+      await storage.logAdminActivity(adminId, 'target_group_deleted', 'target_group', id.toString(), undefined, req.ip);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting target group:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء حذف المجموعة" });
+    }
+  });
+  
+  // Admin: Get members of a target group
+  app.get("/api/admin/target-groups/:id/members", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const users = await storage.getUsersInTargetGroup(id);
+    res.json(users);
+  });
+  
+  // Admin: Add user to target group
+  app.post("/api/admin/target-groups/:id/members", requireAdmin, async (req: any, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      const { userId } = req.body;
+      const member = await storage.addUserToTargetGroup(groupId, userId);
+      res.json(member);
+    } catch (error) {
+      console.error('Error adding user to target group:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء إضافة المستخدم" });
+    }
+  });
+  
+  // Admin: Remove user from target group
+  app.delete("/api/admin/target-groups/:groupId/members/:userId", requireAdmin, async (req: any, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const userId = req.params.userId;
+      await storage.removeUserFromTargetGroup(groupId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error removing user from target group:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء إزالة المستخدم" });
+    }
+  });
+
   // User: Get active popups for current user
   app.get("/api/popups/active", async (req: any, res) => {
     if (!req.isAuthenticated()) {

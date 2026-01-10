@@ -346,6 +346,25 @@ export const popupViews = pgTable("popup_views", {
   dismissed: boolean("dismissed").default(false),
 });
 
+// مجموعات الاستهداف المخصصة
+export const targetGroups = pgTable("target_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// علاقة المجموعات بالمستخدمين
+export const targetGroupMembers = pgTable("target_group_members", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").references(() => targetGroups.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  addedAt: timestamp("added_at").defaultNow(),
+});
+
+export const insertTargetGroupSchema = createInsertSchema(targetGroups).omit({ id: true, createdAt: true });
+
 // سجل الإيميلات المرسلة
 export const emailCampaigns = pgTable("email_campaigns", {
   id: serial("id").primaryKey(),
@@ -401,3 +420,6 @@ export type PopupNotification = typeof popupNotifications.$inferSelect;
 export type InsertPopupNotification = z.infer<typeof insertPopupNotificationSchema>;
 export type EmailCampaign = typeof emailCampaigns.$inferSelect;
 export type InsertEmailCampaign = z.infer<typeof insertEmailCampaignSchema>;
+export type TargetGroup = typeof targetGroups.$inferSelect;
+export type InsertTargetGroup = z.infer<typeof insertTargetGroupSchema>;
+export type TargetGroupMember = typeof targetGroupMembers.$inferSelect;

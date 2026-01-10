@@ -70,6 +70,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const marketingItems = [
     { title: language === 'ar' ? "الإعلانات المنبثقة" : "Pop-ups", icon: Bell, href: "/admin/popups" },
     { title: language === 'ar' ? "حملات الإيميل" : "Email Campaigns", icon: Mail, href: "/admin/email-campaigns" },
+    { title: language === 'ar' ? "مجموعات الاستهداف" : "Target Groups", icon: Users, href: "/admin/target-groups" },
     { title: language === 'ar' ? "أكواد الخصم" : "Discount Codes", icon: Tag, href: "/admin/discount-codes" },
   ];
 

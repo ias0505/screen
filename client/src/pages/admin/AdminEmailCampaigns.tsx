@@ -57,11 +57,20 @@ export default function AdminEmailCampaigns() {
   const [formData, setFormData] = useState({
     subject: "",
     content: "",
-    targetUsers: "all" as "all" | "active" | "expired",
+    targetUsers: "all",
   });
 
   const { data: campaigns, isLoading } = useQuery<EmailCampaign[]>({
     queryKey: ['/api/admin/email-campaigns'],
+  });
+
+  interface TargetGroup {
+    id: number;
+    name: string;
+  }
+
+  const { data: targetGroups } = useQuery<TargetGroup[]>({
+    queryKey: ['/api/admin/target-groups'],
   });
 
   const createMutation = useMutation({
@@ -133,7 +142,7 @@ export default function AdminEmailCampaigns() {
     setFormData({
       subject: campaign.subject,
       content: campaign.content,
-      targetUsers: campaign.targetUsers as "all" | "active" | "expired",
+      targetUsers: campaign.targetUsers || "all",
     });
   };
 
@@ -402,7 +411,7 @@ export default function AdminEmailCampaigns() {
               <Label htmlFor="targetUsers">{language === 'ar' ? "المستهدفون" : "Target Users"}</Label>
               <Select
                 value={formData.targetUsers}
-                onValueChange={(value) => setFormData({ ...formData, targetUsers: value as "all" | "active" | "expired" })}
+                onValueChange={(value) => setFormData({ ...formData, targetUsers: value })}
               >
                 <SelectTrigger data-testid="select-target-users">
                   <SelectValue />
@@ -411,6 +420,18 @@ export default function AdminEmailCampaigns() {
                   <SelectItem value="all">{language === 'ar' ? "جميع المستخدمين" : "All Users"}</SelectItem>
                   <SelectItem value="active">{language === 'ar' ? "الاشتراكات النشطة" : "Active Subscriptions"}</SelectItem>
                   <SelectItem value="expired">{language === 'ar' ? "الاشتراكات المنتهية" : "Expired Subscriptions"}</SelectItem>
+                  {targetGroups && targetGroups.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
+                        {language === 'ar' ? 'المجموعات المخصصة' : 'Custom Groups'}
+                      </div>
+                      {targetGroups.map((group) => (
+                        <SelectItem key={group.id} value={`group:${group.id}`}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

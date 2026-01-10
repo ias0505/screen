@@ -4,7 +4,7 @@ import {
   subscriptionPlans, userSubscriptions, subscriptions, discountCodes,
   screenActivationCodes, screenDeviceBindings, pendingDeviceBindings,
   admins, adminActivityLogs, invoices, users, teamMembers, systemSettings, contactMessages,
-  popupNotifications, popupViews, emailCampaigns,
+  popupNotifications, popupViews, emailCampaigns, targetGroups, targetGroupMembers,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
   type Schedule, type InsertSchedule,
@@ -16,7 +16,8 @@ import {
   type InsertSubscriptionPlan, type InsertDiscountCode, type SystemSetting,
   type ContactMessage, type InsertContactMessage,
   type PopupNotification, type InsertPopupNotification,
-  type EmailCampaign, type InsertEmailCampaign
+  type EmailCampaign, type InsertEmailCampaign,
+  type TargetGroup, type InsertTargetGroup, type TargetGroupMember
 } from "@shared/schema";
 import { eq, desc, and, gt, gte, lte, isNull, sql, ne, notInArray, lt, or } from "drizzle-orm";
 
@@ -185,6 +186,17 @@ export interface IStorage {
   updateEmailCampaign(id: number, data: Partial<EmailCampaign>): Promise<EmailCampaign>;
   deleteEmailCampaign(id: number): Promise<void>;
   getUsersForEmailCampaign(targetUsers: string): Promise<{id: string, email: string}[]>;
+  
+  // Target Groups (مجموعات الاستهداف)
+  getTargetGroups(): Promise<TargetGroup[]>;
+  getTargetGroup(id: number): Promise<TargetGroup | undefined>;
+  createTargetGroup(data: InsertTargetGroup): Promise<TargetGroup>;
+  updateTargetGroup(id: number, data: Partial<TargetGroup>): Promise<TargetGroup>;
+  deleteTargetGroup(id: number): Promise<void>;
+  getTargetGroupMembers(groupId: number): Promise<TargetGroupMember[]>;
+  addUserToTargetGroup(groupId: number, userId: string): Promise<TargetGroupMember>;
+  removeUserFromTargetGroup(groupId: number, userId: string): Promise<void>;
+  getUsersInTargetGroup(groupId: number): Promise<{id: string, email: string, name: string | null}[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1305,10 +1317,27 @@ export class DatabaseStorage implements IStorage {
     const userActiveSub = await this.getAnyActiveSubscription(userId);
     const userStatus = userActiveSub ? 'active' : 'expired';
     
+    // Get groups the user belongs to
+    const userGroups = await db.select({ groupId: targetGroupMembers.groupId })
+      .from(targetGroupMembers)
+      .where(eq(targetGroupMembers.userId, userId));
+    const userGroupIds = userGroups.map(g => `group:${g.groupId}`);
+    
     // Build the query for active popups not dismissed by user
     // For endDate, add 1 day to include the entire end date
     const endOfToday = new Date(now);
     endOfToday.setHours(0, 0, 0, 0);
+    
+    // Build target conditions including custom groups
+    const targetConditions = [
+      eq(popupNotifications.targetUsers, 'all'),
+      eq(popupNotifications.targetUsers, userStatus),
+    ];
+    
+    // Add conditions for each group the user belongs to
+    userGroupIds.forEach(groupId => {
+      targetConditions.push(eq(popupNotifications.targetUsers, groupId));
+    });
     
     let query = db.select().from(popupNotifications)
       .where(and(
@@ -1318,10 +1347,7 @@ export class DatabaseStorage implements IStorage {
           isNull(popupNotifications.endDate),
           gte(popupNotifications.endDate, endOfToday)
         ),
-        or(
-          eq(popupNotifications.targetUsers, 'all'),
-          eq(popupNotifications.targetUsers, userStatus)
-        ),
+        or(...targetConditions),
         dismissedIds.length > 0 
           ? notInArray(popupNotifications.id, dismissedIds)
           : sql`true`
@@ -1443,7 +1469,70 @@ export class DatabaseStorage implements IStorage {
       return expiredUsers.filter(u => u.email) as {id: string, email: string}[];
     }
     
+    // Custom target groups (format: "group:123")
+    if (targetUsers.startsWith('group:')) {
+      const groupId = parseInt(targetUsers.replace('group:', ''));
+      const groupUsers = await this.getUsersInTargetGroup(groupId);
+      return groupUsers.filter(u => u.email).map(u => ({ id: u.id, email: u.email }));
+    }
+    
     return [];
+  }
+  
+  // Target Groups (مجموعات الاستهداف)
+  async getTargetGroups(): Promise<TargetGroup[]> {
+    return await db.select().from(targetGroups).orderBy(desc(targetGroups.createdAt));
+  }
+  
+  async getTargetGroup(id: number): Promise<TargetGroup | undefined> {
+    const [group] = await db.select().from(targetGroups).where(eq(targetGroups.id, id));
+    return group;
+  }
+  
+  async createTargetGroup(data: InsertTargetGroup): Promise<TargetGroup> {
+    const [created] = await db.insert(targetGroups).values(data).returning();
+    return created;
+  }
+  
+  async updateTargetGroup(id: number, data: Partial<TargetGroup>): Promise<TargetGroup> {
+    const [updated] = await db.update(targetGroups).set(data).where(eq(targetGroups.id, id)).returning();
+    return updated;
+  }
+  
+  async deleteTargetGroup(id: number): Promise<void> {
+    // حذف الأعضاء أولاً ثم المجموعة
+    await db.delete(targetGroupMembers).where(eq(targetGroupMembers.groupId, id));
+    await db.delete(targetGroups).where(eq(targetGroups.id, id));
+  }
+  
+  async getTargetGroupMembers(groupId: number): Promise<TargetGroupMember[]> {
+    return await db.select().from(targetGroupMembers).where(eq(targetGroupMembers.groupId, groupId));
+  }
+  
+  async addUserToTargetGroup(groupId: number, userId: string): Promise<TargetGroupMember> {
+    const [member] = await db.insert(targetGroupMembers).values({ groupId, userId }).returning();
+    return member;
+  }
+  
+  async removeUserFromTargetGroup(groupId: number, userId: string): Promise<void> {
+    await db.delete(targetGroupMembers).where(
+      and(eq(targetGroupMembers.groupId, groupId), eq(targetGroupMembers.userId, userId))
+    );
+  }
+  
+  async getUsersInTargetGroup(groupId: number): Promise<{id: string, email: string, name: string | null}[]> {
+    const members = await db.select({ userId: targetGroupMembers.userId })
+      .from(targetGroupMembers)
+      .where(eq(targetGroupMembers.groupId, groupId));
+    
+    if (members.length === 0) return [];
+    
+    const userIds = members.map(m => m.userId);
+    const groupUsers = await db.select({ id: users.id, email: users.email, name: users.firstName })
+      .from(users)
+      .where(sql`${users.id} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
+    
+    return groupUsers.map(u => ({ id: u.id, email: u.email || '', name: u.name }));
   }
 }
 

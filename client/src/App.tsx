@@ -28,6 +28,7 @@ import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminMessages from "@/pages/admin/AdminMessages";
 import AdminPopups from "@/pages/admin/AdminPopups";
 import AdminEmailCampaigns from "@/pages/admin/AdminEmailCampaigns";
+import AdminTargetGroups from "@/pages/admin/AdminTargetGroups";
 import AdminLayout from "@/components/admin/AdminLayout";
 import Team from "@/pages/Team";
 import Settings from "@/pages/Settings";
@@ -184,6 +185,9 @@ function Router() {
       </Route>
       <Route path="/admin/email-campaigns">
         <AdminRoute component={AdminEmailCampaigns} />
+      </Route>
+      <Route path="/admin/target-groups">
+        <AdminRoute component={AdminTargetGroups} />
       </Route>
 
       <Route component={NotFound} />
