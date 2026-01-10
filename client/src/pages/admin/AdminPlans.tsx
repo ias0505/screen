@@ -42,6 +42,7 @@ interface SubscriptionPlan {
   minScreens: number | null;
   maxScreens: number | null;
   discountPercentage: number | null;
+  storagePerScreenMb: number | null;
   features: string | null;
   billingPeriod: 'monthly' | 'annual' | null;
   isActive: boolean | null;
@@ -63,6 +64,7 @@ export default function AdminPlans() {
     minScreens: 1,
     maxScreens: "",
     discountPercentage: 0,
+    storagePerScreenMb: 1024,
     features: "",
     billingPeriod: "annual" as 'monthly' | 'annual',
     isActive: true,
@@ -126,6 +128,7 @@ export default function AdminPlans() {
       minScreens: 1,
       maxScreens: "",
       discountPercentage: 0,
+      storagePerScreenMb: 1024,
       features: "",
       billingPeriod: "annual",
       isActive: true,
@@ -157,6 +160,7 @@ export default function AdminPlans() {
       minScreens: plan.minScreens || 1,
       maxScreens: plan.maxScreens?.toString() || "",
       discountPercentage: plan.discountPercentage || 0,
+      storagePerScreenMb: plan.storagePerScreenMb || 1024,
       features: featuresText,
       billingPeriod: plan.billingPeriod || "annual",
       isActive: plan.isActive !== false,
@@ -413,6 +417,24 @@ export default function AdminPlans() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="storagePerScreenMb">
+                  {language === 'ar' ? "المساحة لكل شاشة (ميجابايت)" : "Storage per Screen (MB)"}
+                </Label>
+                <Input
+                  id="storagePerScreenMb"
+                  type="number"
+                  min={0}
+                  value={formData.storagePerScreenMb}
+                  onChange={(e) => setFormData({ ...formData, storagePerScreenMb: Number(e.target.value) })}
+                  data-testid="input-plan-storage"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {language === 'ar' ? "1024 = 1 جيجا" : "1024 = 1 GB"}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label htmlFor="discountPercentage">
                   {language === 'ar' ? "نسبة الخصم %" : "Discount %"}
                 </Label>
@@ -426,6 +448,7 @@ export default function AdminPlans() {
                   data-testid="input-plan-discount"
                 />
               </div>
+              <div></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
