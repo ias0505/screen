@@ -4,6 +4,7 @@ import {
   subscriptionPlans, userSubscriptions, subscriptions, discountCodes,
   screenActivationCodes, screenDeviceBindings, pendingDeviceBindings,
   admins, adminActivityLogs, invoices, users, teamMembers, systemSettings, contactMessages,
+  popupNotifications, popupViews, emailCampaigns,
   type Screen, type InsertScreen,
   type MediaItem, type InsertMediaItem,
   type Schedule, type InsertSchedule,
@@ -13,9 +14,11 @@ import {
   type ScreenActivationCode, type ScreenDeviceBinding,
   type Admin, type AdminActivityLog, type Invoice, type User, type TeamMember,
   type InsertSubscriptionPlan, type InsertDiscountCode, type SystemSetting,
-  type ContactMessage, type InsertContactMessage
+  type ContactMessage, type InsertContactMessage,
+  type PopupNotification, type InsertPopupNotification,
+  type EmailCampaign, type InsertEmailCampaign
 } from "@shared/schema";
-import { eq, desc, and, gt, lte, isNull, sql, ne } from "drizzle-orm";
+import { eq, desc, and, gt, lte, isNull, sql, ne, notInArray, lt, or } from "drizzle-orm";
 
 export interface IStorage {
   // Screen Groups
@@ -166,6 +169,22 @@ export interface IStorage {
   
   // Storage usage
   getUserStorageUsage(userId: string): Promise<{ usedBytes: number; limitBytes: number; remainingBytes: number; percentage: number }>;
+  
+  // Popup Notifications
+  getPopupNotifications(): Promise<PopupNotification[]>;
+  createPopupNotification(data: InsertPopupNotification): Promise<PopupNotification>;
+  updatePopupNotification(id: number, data: Partial<PopupNotification>): Promise<PopupNotification>;
+  deletePopupNotification(id: number): Promise<void>;
+  getActivePopupsForUser(userId: string): Promise<PopupNotification[]>;
+  dismissPopup(popupId: number, userId: string): Promise<void>;
+  
+  // Email Campaigns
+  getEmailCampaigns(): Promise<EmailCampaign[]>;
+  getEmailCampaign(id: number): Promise<EmailCampaign | undefined>;
+  createEmailCampaign(data: InsertEmailCampaign): Promise<EmailCampaign>;
+  updateEmailCampaign(id: number, data: Partial<EmailCampaign>): Promise<EmailCampaign>;
+  deleteEmailCampaign(id: number): Promise<void>;
+  getUsersForEmailCampaign(targetUsers: string): Promise<{id: string, email: string}[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1235,6 +1254,183 @@ export class DatabaseStorage implements IStorage {
     const percentage = isUnlimited ? 0 : (limitBytes > 0 ? Math.round((usedBytes / limitBytes) * 100) : 0);
     
     return { usedBytes, limitBytes, remainingBytes, percentage };
+  }
+
+  // Popup Notifications
+  async getPopupNotifications(): Promise<PopupNotification[]> {
+    return await db.select().from(popupNotifications).orderBy(desc(popupNotifications.createdAt));
+  }
+
+  async createPopupNotification(data: InsertPopupNotification): Promise<PopupNotification> {
+    const [created] = await db.insert(popupNotifications).values(data).returning();
+    return created;
+  }
+
+  async updatePopupNotification(id: number, data: Partial<PopupNotification>): Promise<PopupNotification> {
+    const [updated] = await db.update(popupNotifications)
+      .set(data)
+      .where(eq(popupNotifications.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePopupNotification(id: number): Promise<void> {
+    await db.delete(popupViews).where(eq(popupViews.popupId, id));
+    await db.delete(popupNotifications).where(eq(popupNotifications.id, id));
+  }
+
+  async getActivePopupsForUser(userId: string): Promise<PopupNotification[]> {
+    const now = new Date();
+    
+    // Get popup IDs that the user has dismissed
+    const dismissedPopups = await db.select({ popupId: popupViews.popupId })
+      .from(popupViews)
+      .where(and(
+        eq(popupViews.userId, userId),
+        eq(popupViews.dismissed, true)
+      ));
+    
+    const dismissedIds = dismissedPopups.map(p => p.popupId);
+    
+    // Get user's subscription status to filter by targetUsers
+    const userActiveSub = await this.getAnyActiveSubscription(userId);
+    const userStatus = userActiveSub ? 'active' : 'expired';
+    
+    // Build the query for active popups not dismissed by user
+    let query = db.select().from(popupNotifications)
+      .where(and(
+        eq(popupNotifications.isActive, true),
+        lte(popupNotifications.startDate, now),
+        or(
+          isNull(popupNotifications.endDate),
+          gt(popupNotifications.endDate, now)
+        ),
+        or(
+          eq(popupNotifications.targetUsers, 'all'),
+          eq(popupNotifications.targetUsers, userStatus)
+        ),
+        dismissedIds.length > 0 
+          ? notInArray(popupNotifications.id, dismissedIds)
+          : sql`true`
+      ))
+      .orderBy(desc(popupNotifications.createdAt));
+    
+    return await query;
+  }
+
+  async dismissPopup(popupId: number, userId: string): Promise<void> {
+    // Check if already viewed
+    const [existing] = await db.select().from(popupViews)
+      .where(and(
+        eq(popupViews.popupId, popupId),
+        eq(popupViews.userId, userId)
+      ));
+    
+    if (existing) {
+      // Update existing record
+      await db.update(popupViews)
+        .set({ dismissed: true, viewedAt: new Date() })
+        .where(eq(popupViews.id, existing.id));
+    } else {
+      // Create new record
+      await db.insert(popupViews).values({
+        popupId,
+        userId,
+        dismissed: true
+      });
+    }
+  }
+
+  // Email Campaigns
+  async getEmailCampaigns(): Promise<EmailCampaign[]> {
+    return await db.select().from(emailCampaigns).orderBy(desc(emailCampaigns.createdAt));
+  }
+
+  async getEmailCampaign(id: number): Promise<EmailCampaign | undefined> {
+    const [campaign] = await db.select().from(emailCampaigns).where(eq(emailCampaigns.id, id));
+    return campaign;
+  }
+
+  async createEmailCampaign(data: InsertEmailCampaign): Promise<EmailCampaign> {
+    const [created] = await db.insert(emailCampaigns).values(data).returning();
+    return created;
+  }
+
+  async updateEmailCampaign(id: number, data: Partial<EmailCampaign>): Promise<EmailCampaign> {
+    const [updated] = await db.update(emailCampaigns)
+      .set(data)
+      .where(eq(emailCampaigns.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteEmailCampaign(id: number): Promise<void> {
+    await db.delete(emailCampaigns).where(eq(emailCampaigns.id, id));
+  }
+
+  async getUsersForEmailCampaign(targetUsers: string): Promise<{id: string, email: string}[]> {
+    const now = new Date();
+    
+    if (targetUsers === 'all') {
+      // All users with email
+      const allUsers = await db.select({ id: users.id, email: users.email })
+        .from(users)
+        .where(sql`${users.email} IS NOT NULL AND ${users.email} != ''`);
+      return allUsers.filter(u => u.email) as {id: string, email: string}[];
+    }
+    
+    if (targetUsers === 'active') {
+      // Users with active subscriptions
+      const activeSubUsers = await db.selectDistinct({ userId: subscriptions.userId })
+        .from(subscriptions)
+        .where(and(
+          eq(subscriptions.status, 'active'),
+          gt(subscriptions.endDate, now)
+        ));
+      
+      const userIds = activeSubUsers.map(s => s.userId);
+      if (userIds.length === 0) return [];
+      
+      const activeUsers = await db.select({ id: users.id, email: users.email })
+        .from(users)
+        .where(and(
+          sql`${users.id} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`,
+          sql`${users.email} IS NOT NULL AND ${users.email} != ''`
+        ));
+      
+      return activeUsers.filter(u => u.email) as {id: string, email: string}[];
+    }
+    
+    if (targetUsers === 'expired') {
+      // Users without active subscriptions (expired or no subscription)
+      const activeSubUsers = await db.selectDistinct({ userId: subscriptions.userId })
+        .from(subscriptions)
+        .where(and(
+          eq(subscriptions.status, 'active'),
+          gt(subscriptions.endDate, now)
+        ));
+      
+      const activeUserIds = activeSubUsers.map(s => s.userId);
+      
+      let expiredUsers;
+      if (activeUserIds.length === 0) {
+        // No active users, all users are "expired"
+        expiredUsers = await db.select({ id: users.id, email: users.email })
+          .from(users)
+          .where(sql`${users.email} IS NOT NULL AND ${users.email} != ''`);
+      } else {
+        expiredUsers = await db.select({ id: users.id, email: users.email })
+          .from(users)
+          .where(and(
+            sql`${users.id} NOT IN (${sql.join(activeUserIds.map(id => sql`${id}`), sql`, `)})`,
+            sql`${users.email} IS NOT NULL AND ${users.email} != ''`
+          ));
+      }
+      
+      return expiredUsers.filter(u => u.email) as {id: string, email: string}[];
+    }
+    
+    return [];
   }
 }
 

@@ -1908,7 +1908,7 @@ export async function registerRoutes(
     await storage.markContactMessageAsRead(id);
     
     const adminId = getUserId(req);
-    await storage.logAdminActivity(adminId, 'message_read', 'contact_message', id.toString(), null, req.ip);
+    await storage.logAdminActivity(adminId, 'message_read', 'contact_message', id.toString(), undefined, req.ip);
     
     res.json({ success: true });
   });
@@ -1919,8 +1919,182 @@ export async function registerRoutes(
     await storage.deleteContactMessage(id);
     
     const adminId = getUserId(req);
-    await storage.logAdminActivity(adminId, 'message_deleted', 'contact_message', id.toString(), null, req.ip);
+    await storage.logAdminActivity(adminId, 'message_deleted', 'contact_message', id.toString(), undefined, req.ip);
     
+    res.json({ success: true });
+  });
+
+  // ===================== Popup Notifications =====================
+  
+  // Admin: Get all popups
+  app.get("/api/admin/popups", requireAdmin, async (req, res) => {
+    const popups = await storage.getPopupNotifications();
+    res.json(popups);
+  });
+
+  // Admin: Create popup
+  app.post("/api/admin/popups", requireAdmin, async (req: any, res) => {
+    try {
+      const adminId = getUserId(req);
+      const popup = await storage.createPopupNotification({ ...req.body, createdBy: adminId });
+      
+      await storage.logAdminActivity(adminId, 'popup_created', 'popup', popup.id.toString(), undefined, req.ip);
+      
+      res.json(popup);
+    } catch (error) {
+      console.error('Error creating popup:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء إنشاء الإعلان" });
+    }
+  });
+
+  // Admin: Update popup
+  app.patch("/api/admin/popups/:id", requireAdmin, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const popup = await storage.updatePopupNotification(id, req.body);
+      
+      const adminId = getUserId(req);
+      await storage.logAdminActivity(adminId, 'popup_updated', 'popup', id.toString(), undefined, req.ip);
+      
+      res.json(popup);
+    } catch (error) {
+      console.error('Error updating popup:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء تحديث الإعلان" });
+    }
+  });
+
+  // Admin: Delete popup
+  app.delete("/api/admin/popups/:id", requireAdmin, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deletePopupNotification(id);
+      
+      const adminId = getUserId(req);
+      await storage.logAdminActivity(adminId, 'popup_deleted', 'popup', id.toString(), undefined, req.ip);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting popup:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء حذف الإعلان" });
+    }
+  });
+
+  // ===================== Email Campaigns =====================
+  
+  // Admin: Get all email campaigns
+  app.get("/api/admin/email-campaigns", requireAdmin, async (req, res) => {
+    const campaigns = await storage.getEmailCampaigns();
+    res.json(campaigns);
+  });
+
+  // Admin: Create email campaign
+  app.post("/api/admin/email-campaigns", requireAdmin, async (req: any, res) => {
+    try {
+      const adminId = getUserId(req);
+      const campaign = await storage.createEmailCampaign({ ...req.body, createdBy: adminId });
+      
+      await storage.logAdminActivity(adminId, 'email_campaign_created', 'email_campaign', campaign.id.toString(), undefined, req.ip);
+      
+      res.json(campaign);
+    } catch (error) {
+      console.error('Error creating email campaign:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء إنشاء الحملة" });
+    }
+  });
+
+  // Admin: Update email campaign
+  app.patch("/api/admin/email-campaigns/:id", requireAdmin, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const campaign = await storage.updateEmailCampaign(id, req.body);
+      
+      const adminId = getUserId(req);
+      await storage.logAdminActivity(adminId, 'email_campaign_updated', 'email_campaign', id.toString(), undefined, req.ip);
+      
+      res.json(campaign);
+    } catch (error) {
+      console.error('Error updating email campaign:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء تحديث الحملة" });
+    }
+  });
+
+  // Admin: Delete email campaign
+  app.delete("/api/admin/email-campaigns/:id", requireAdmin, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteEmailCampaign(id);
+      
+      const adminId = getUserId(req);
+      await storage.logAdminActivity(adminId, 'email_campaign_deleted', 'email_campaign', id.toString(), undefined, req.ip);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting email campaign:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء حذف الحملة" });
+    }
+  });
+
+  // Admin: Send email campaign
+  app.post("/api/admin/email-campaigns/:id/send", requireAdmin, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const campaign = await storage.getEmailCampaign(id);
+      
+      if (!campaign) {
+        return res.status(404).json({ message: "الحملة غير موجودة" });
+      }
+      
+      if (campaign.status !== 'draft') {
+        return res.status(400).json({ message: "لا يمكن إرسال حملة تم إرسالها مسبقاً" });
+      }
+      
+      // Update status to sending
+      await storage.updateEmailCampaign(id, { status: 'sending' });
+      
+      // Get target users
+      const users = await storage.getUsersForEmailCampaign(campaign.targetUsers || 'all');
+      
+      // TODO: Integrate with email service (Resend) to send emails
+      // For now, just mark as sent with count
+      await storage.updateEmailCampaign(id, { 
+        status: 'sent', 
+        sentCount: users.length,
+        sentAt: new Date()
+      });
+      
+      const adminId = getUserId(req);
+      await storage.logAdminActivity(adminId, 'email_campaign_sent', 'email_campaign', id.toString(), JSON.stringify({ sentTo: users.length }), req.ip);
+      
+      res.json({ success: true, sentCount: users.length });
+    } catch (error) {
+      console.error('Error sending email campaign:', error);
+      // Mark as failed
+      const id = parseInt(req.params.id);
+      await storage.updateEmailCampaign(id, { status: 'failed' });
+      res.status(500).json({ message: "حدث خطأ أثناء إرسال الحملة" });
+    }
+  });
+
+  // User: Get active popups for current user
+  app.get("/api/popups/active", async (req: any, res) => {
+    if (!req.isAuthenticated()) {
+      return res.json([]);
+    }
+    
+    const userId = getUserId(req);
+    const popups = await storage.getActivePopupsForUser(userId);
+    res.json(popups);
+  });
+
+  // User: Dismiss popup
+  app.post("/api/popups/:id/dismiss", async (req: any, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "غير مسجل الدخول" });
+    }
+    
+    const popupId = parseInt(req.params.id);
+    const userId = getUserId(req);
+    await storage.dismissPopup(popupId, userId);
     res.json({ success: true });
   });
 
