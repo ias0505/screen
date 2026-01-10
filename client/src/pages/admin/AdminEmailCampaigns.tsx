@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
-import { Mail, ArrowRight, Plus, Pencil, Trash2, Send, Clock, CheckCircle, XCircle, AlertCircle, ImagePlus, Copy, X } from "lucide-react";
+import { Mail, ArrowRight, Plus, Pencil, Trash2, Send, Clock, CheckCircle, XCircle, AlertCircle, ImagePlus, Copy, X, CopyPlus } from "lucide-react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -195,6 +195,16 @@ export default function AdminEmailCampaigns() {
       content: campaign.content,
       targetUsers: campaign.targetUsers || "all",
     });
+  };
+
+  const duplicateCampaign = (campaign: EmailCampaign) => {
+    setFormData({
+      subject: campaign.subject,
+      content: campaign.content,
+      targetUsers: campaign.targetUsers || "all",
+    });
+    setIsCreateOpen(true);
+    toast({ title: language === 'ar' ? "تم نسخ الحملة - يمكنك التعديل والإرسال" : "Campaign duplicated - you can edit and send" });
   };
 
   const handleSubmit = () => {
@@ -401,6 +411,17 @@ export default function AdminEmailCampaigns() {
                               <Pencil className="w-4 h-4" />
                             </Button>
                           </>
+                        )}
+                        {campaign.status !== 'draft' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => duplicateCampaign(campaign)}
+                            data-testid={`button-duplicate-campaign-${campaign.id}`}
+                            title={language === 'ar' ? "نسخ وإعادة الإرسال" : "Duplicate & Resend"}
+                          >
+                            <CopyPlus className="w-4 h-4 text-primary" />
+                          </Button>
                         )}
                         <Button
                           variant="ghost"
