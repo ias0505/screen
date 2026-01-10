@@ -187,7 +187,7 @@ export async function registerRoutes(
 
   app.post("/api/subscriptions", requireAuth, async (req: any, res) => {
     const userId = await getEffectiveUserId(req);
-    const { screenCount, durationYears, durationMonths, billingPeriod, discountCode, pricePerScreen } = req.body;
+    const { screenCount, durationYears, durationMonths, billingPeriod, discountCode, pricePerScreen, storagePerScreenMb } = req.body;
     const period = billingPeriod || 'annual';
     
     if (!screenCount) {
@@ -226,7 +226,7 @@ export async function registerRoutes(
       }
     }
 
-    const sub = await storage.createSubscription(userId, screenCount, durationYears || 1, validatedDiscountCode, pricePerScreen, durationMonths, period);
+    const sub = await storage.createSubscription(userId, screenCount, durationYears || 1, validatedDiscountCode, pricePerScreen, durationMonths, period, storagePerScreenMb);
     
     // Create invoice for the subscription (base amount before tax)
     await storage.createInvoice(sub.id, userId, sub.totalPrice, userId);
@@ -1324,7 +1324,7 @@ export async function registerRoutes(
   app.post("/api/admin/users/:id/subscriptions", requireAdmin, async (req: any, res) => {
     const adminId = getUserId(req);
     const userId = req.params.id;
-    const { screenCount, durationYears } = req.body;
+    const { screenCount, durationYears, storagePerScreenMb } = req.body;
     
     if (!screenCount || !durationYears) {
       return res.status(400).json({ message: "يرجى تحديد عدد الشاشات ومدة الاشتراك" });
@@ -1335,7 +1335,7 @@ export async function registerRoutes(
       return res.status(404).json({ message: "المستخدم غير موجود" });
     }
     
-    const subscription = await storage.createSubscription(userId, screenCount, durationYears);
+    const subscription = await storage.createSubscription(userId, screenCount, durationYears, null, undefined, undefined, 'annual', storagePerScreenMb);
     
     // Create invoice for the subscription - use price from settings
     const priceFromSettings = await storage.getSystemSetting('price_per_screen');

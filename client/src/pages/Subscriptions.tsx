@@ -231,7 +231,8 @@ export default function Subscriptions() {
         durationMonths: billingPeriod === 'monthly' ? form.durationMonths : 0,
         billingPeriod,
         discountCode: discountResult?.valid ? discountCode : undefined,
-        pricePerScreen: getPricePerScreen()
+        pricePerScreen: getPricePerScreen(),
+        storagePerScreenMb: (selectedPlan as any)?.storagePerScreenMb || 1024
       });
       setIsOpen(false);
       setForm({ screenCount: 1, durationYears: 1, durationMonths: 1 });

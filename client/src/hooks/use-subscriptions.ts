@@ -22,7 +22,8 @@ export function useCreateSubscription() {
       durationMonths,
       billingPeriod,
       discountCode, 
-      pricePerScreen 
+      pricePerScreen,
+      storagePerScreenMb
     }: { 
       screenCount: number; 
       durationYears: number; 
@@ -30,6 +31,7 @@ export function useCreateSubscription() {
       billingPeriod?: 'monthly' | 'annual';
       discountCode?: string; 
       pricePerScreen?: number;
+      storagePerScreenMb?: number;
     }) => {
       const res = await apiRequest('POST', '/api/subscriptions', { 
         screenCount, 
@@ -37,7 +39,8 @@ export function useCreateSubscription() {
         durationMonths,
         billingPeriod,
         discountCode, 
-        pricePerScreen 
+        pricePerScreen,
+        storagePerScreenMb
       });
       return res.json();
     },

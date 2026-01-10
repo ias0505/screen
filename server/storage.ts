@@ -55,7 +55,7 @@ export interface IStorage {
   // Subscriptions (independent)
   getSubscriptions(userId: string): Promise<Subscription[]>;
   getSubscription(id: number): Promise<Subscription | undefined>;
-  createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, pricePerScreen?: number, durationMonths?: number, billingPeriod?: 'monthly' | 'annual'): Promise<Subscription>;
+  createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, pricePerScreen?: number, durationMonths?: number, billingPeriod?: 'monthly' | 'annual', storagePerScreenMb?: number): Promise<Subscription>;
   getAvailableScreenSlots(userId: string): Promise<number>;
   findSubscriptionWithAvailableSlot(userId: string): Promise<Subscription | null>;
   getAnyActiveSubscription(userId: string): Promise<Subscription | null>;
@@ -213,7 +213,7 @@ export class DatabaseStorage implements IStorage {
     return sub;
   }
 
-  async createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, customPricePerScreen?: number, durationMonths?: number, billingPeriod?: 'monthly' | 'annual'): Promise<Subscription> {
+  async createSubscription(userId: string, screenCount: number, durationYears: number, discountCode?: DiscountCode | null, customPricePerScreen?: number, durationMonths?: number, billingPeriod?: 'monthly' | 'annual', storagePerScreenMb?: number): Promise<Subscription> {
     const endDate = new Date();
     const period = billingPeriod || 'annual';
     
@@ -262,6 +262,7 @@ export class DatabaseStorage implements IStorage {
       endDate,
       pricePerScreen,
       totalPrice,
+      storagePerScreenMb: storagePerScreenMb || 1024,
       status: 'active'
     }).returning();
     
