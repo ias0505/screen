@@ -1240,7 +1240,47 @@ export async function registerRoutes(
     }
     const userSubscriptions = await storage.getSubscriptions(userId);
     const userScreens = await storage.getScreens(userId);
-    res.json({ user, subscriptions: userSubscriptions, screens: userScreens });
+    const storageUsage = await storage.getUserStorageUsage(userId);
+    res.json({ user, subscriptions: userSubscriptions, screens: userScreens, storageUsage });
+  });
+
+  // Admin: Update user storage quota
+  const storageQuotaSchema = z.object({
+    storageQuotaMb: z.union([z.number().int(), z.null()]),
+  });
+
+  app.patch("/api/admin/users/:id/storage-quota", requireAdmin, async (req: any, res) => {
+    try {
+      const validation = storageQuotaSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "حد المساحة يجب أن يكون رقماً صحيحاً أو فارغاً" });
+      }
+      
+      const adminId = getUserId(req);
+      const userId = req.params.id;
+      const { storageQuotaMb } = validation.data;
+      
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "المستخدم غير موجود" });
+      }
+      
+      await storage.updateUserStorageQuota(userId, storageQuotaMb);
+      
+      await storage.logAdminActivity(
+        adminId,
+        'storage_quota_updated',
+        'user',
+        userId,
+        JSON.stringify({ storageQuotaMb }),
+        req.ip
+      );
+      
+      res.json({ success: true, storageQuotaMb });
+    } catch (error) {
+      console.error('Error updating storage quota:', error);
+      res.status(500).json({ message: "حدث خطأ أثناء تحديث حد المساحة" });
+    }
   });
 
   // Admin: Add screen to user without subscription

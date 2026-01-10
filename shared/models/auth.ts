@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, jsonb, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 
 // Session storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
@@ -24,6 +24,7 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   companyName: varchar("company_name"), // اسم الشركة أو المؤسسة
   authProvider: varchar("auth_provider").default("local"), // local, replit
+  storageQuotaMb: integer("storage_quota_mb"), // حد المساحة التخزينية بالميجابايت (null = حساب تلقائي)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

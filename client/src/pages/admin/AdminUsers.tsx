@@ -41,7 +41,9 @@ import {
   CreditCard,
   Eye,
   Filter,
-  X
+  X,
+  HardDrive,
+  Edit
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
@@ -53,6 +55,15 @@ interface User {
   lastName: string | null;
   profileImageUrl: string | null;
   createdAt: string;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  if (bytes < 0) return 'غير محدود';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 interface UserWithStats extends User {
@@ -72,6 +83,8 @@ export default function AdminUsers() {
   const [screenLocation, setScreenLocation] = useState("");
   const [screenCount, setScreenCount] = useState(1);
   const [durationYears, setDurationYears] = useState(1);
+  const [showStorageDialog, setShowStorageDialog] = useState(false);
+  const [storageQuotaMb, setStorageQuotaMb] = useState<string>("");
   const { toast } = useToast();
 
   const { data: users, isLoading } = useQuery<UserWithStats[]>({
@@ -116,6 +129,23 @@ export default function AdminUsers() {
       setShowAddSubscription(false);
       setScreenCount(1);
       setDurationYears(1);
+    },
+    onError: () => {
+      toast({ title: language === 'ar' ? "حدث خطأ" : "An error occurred", variant: "destructive" });
+    }
+  });
+
+  const updateStorageMutation = useMutation({
+    mutationFn: async (quotaMb: number | null) => {
+      return await apiRequest("PATCH", `/api/admin/users/${selectedUser?.id}/storage-quota`, {
+        storageQuotaMb: quotaMb
+      });
+    },
+    onSuccess: () => {
+      toast({ title: language === 'ar' ? "تم تحديث حد المساحة بنجاح" : "Storage quota updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users', selectedUser?.id] });
+      setShowStorageDialog(false);
+      setStorageQuotaMb("");
     },
     onError: () => {
       toast({ title: language === 'ar' ? "حدث خطأ" : "An error occurred", variant: "destructive" });
@@ -409,6 +439,53 @@ export default function AdminUsers() {
                   )}
                 </div>
 
+                <div className="pt-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium flex items-center gap-1">
+                      <HardDrive className="w-4 h-4" />
+                      {language === 'ar' ? "المساحة التخزينية" : "Storage"}
+                    </p>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6"
+                      onClick={() => {
+                        const details = userDetails as any;
+                        const currentQuota = details?.user?.storageQuotaMb;
+                        setStorageQuotaMb(currentQuota !== null && currentQuota !== undefined ? String(currentQuota) : "");
+                        setShowStorageDialog(true);
+                      }}
+                      data-testid="button-edit-storage"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  {(userDetails as any)?.storageUsage && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{language === 'ar' ? "المستخدم" : "Used"}</span>
+                        <span>{formatBytes((userDetails as any).storageUsage.usedBytes)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{language === 'ar' ? "الحد الأقصى" : "Limit"}</span>
+                        <span>
+                          {(userDetails as any).storageUsage.limitBytes === -1 
+                            ? (language === 'ar' ? "غير محدود" : "Unlimited")
+                            : formatBytes((userDetails as any).storageUsage.limitBytes)}
+                        </span>
+                      </div>
+                      {(userDetails as any).storageUsage.limitBytes !== -1 && (
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div 
+                            className="bg-primary h-2 rounded-full transition-all"
+                            style={{ width: `${Math.min((userDetails as any).storageUsage.percentage, 100)}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="pt-4 flex flex-col gap-2">
                   <Dialog open={showAddScreen} onOpenChange={setShowAddScreen}>
                     <DialogTrigger asChild>
@@ -515,6 +592,67 @@ export default function AdminUsers() {
                             ? (language === 'ar' ? "جاري الإضافة..." : "Adding...")
                             : (language === 'ar' ? "إضافة الاشتراك" : "Add Subscription")}
                         </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog open={showStorageDialog} onOpenChange={setShowStorageDialog}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {language === 'ar' ? "تعديل حد المساحة التخزينية" : "Edit Storage Quota"}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <label className="text-sm font-medium">
+                            {language === 'ar' ? "الحد الأقصى (ميجابايت)" : "Quota (MB)"}
+                          </label>
+                          <Input
+                            type="number"
+                            min={-1}
+                            value={storageQuotaMb}
+                            onChange={(e) => setStorageQuotaMb(e.target.value)}
+                            placeholder={language === 'ar' ? "اترك فارغاً للحساب التلقائي" : "Leave empty for auto-calculation"}
+                            data-testid="input-storage-quota"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {language === 'ar' 
+                              ? "-1 = غير محدود، فارغ = حساب تلقائي حسب الاشتراك" 
+                              : "-1 = unlimited, empty = auto-calculate from subscription"}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={() => {
+                              if (storageQuotaMb.trim() === "") {
+                                updateStorageMutation.mutate(null);
+                              } else {
+                                const parsed = parseInt(storageQuotaMb);
+                                if (!isNaN(parsed)) {
+                                  updateStorageMutation.mutate(parsed);
+                                }
+                              }
+                            }}
+                            disabled={updateStorageMutation.isPending || (storageQuotaMb.trim() !== "" && isNaN(parseInt(storageQuotaMb)))}
+                            className="flex-1"
+                            data-testid="button-confirm-storage"
+                          >
+                            {updateStorageMutation.isPending 
+                              ? (language === 'ar' ? "جاري الحفظ..." : "Saving...")
+                              : (language === 'ar' ? "حفظ" : "Save")}
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              updateStorageMutation.mutate(null);
+                            }}
+                            disabled={updateStorageMutation.isPending}
+                            data-testid="button-reset-storage"
+                          >
+                            {language === 'ar' ? "إعادة للتلقائي" : "Reset to Auto"}
+                          </Button>
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>

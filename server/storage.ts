@@ -170,6 +170,7 @@ export interface IStorage {
   
   // Storage usage
   getUserStorageUsage(userId: string): Promise<{ usedBytes: number; limitBytes: number; remainingBytes: number; percentage: number }>;
+  updateUserStorageQuota(userId: string, storageQuotaMb: number | null): Promise<void>;
   
   // Popup Notifications
   getPopupNotifications(): Promise<PopupNotification[]>;
@@ -1234,38 +1235,57 @@ export class DatabaseStorage implements IStorage {
     
     const usedBytes = Number(usageResult[0]?.totalBytes || 0);
     
-    // حساب الحد الأقصى من الاشتراكات النشطة
-    const now = new Date();
-    const activeSubscriptions = await db.select({
-      screenCount: subscriptions.screenCount,
-      storagePerScreenMb: subscriptions.storagePerScreenMb
-    }).from(subscriptions).where(
-      and(
-        eq(subscriptions.userId, userId),
-        eq(subscriptions.status, "active"),
-        gt(subscriptions.endDate, now)
-      )
-    );
+    // التحقق من وجود حد مخصص للمستخدم
+    const [user] = await db.select({ storageQuotaMb: users.storageQuotaMb }).from(users).where(eq(users.id, userId));
     
-    // حساب إجمالي عدد الشاشات والمساحة المتاحة
-    let totalScreens = 0;
     let limitBytes = 0;
-    for (const sub of activeSubscriptions) {
-      totalScreens += sub.screenCount;
-      const storagePerScreen = sub.storagePerScreenMb || 1024; // 1GB افتراضياً
-      limitBytes += sub.screenCount * storagePerScreen * 1024 * 1024; // تحويل من ميجابايت إلى بايت
-    }
+    let isUnlimited = false;
     
-    // إذا كان لدى المستخدم أكثر من 50 شاشة، التخزين غير محدود
-    const isUnlimited = totalScreens > 50;
-    if (isUnlimited) {
-      limitBytes = -1; // -1 يعني غير محدود
+    if (user?.storageQuotaMb !== null && user?.storageQuotaMb !== undefined) {
+      // استخدام الحد المخصص من الأدمن
+      if (user.storageQuotaMb === -1) {
+        isUnlimited = true;
+        limitBytes = -1;
+      } else {
+        limitBytes = user.storageQuotaMb * 1024 * 1024; // تحويل من ميجابايت إلى بايت
+      }
+    } else {
+      // حساب الحد الأقصى من الاشتراكات النشطة (الطريقة الافتراضية)
+      const now = new Date();
+      const activeSubscriptions = await db.select({
+        screenCount: subscriptions.screenCount,
+        storagePerScreenMb: subscriptions.storagePerScreenMb
+      }).from(subscriptions).where(
+        and(
+          eq(subscriptions.userId, userId),
+          eq(subscriptions.status, "active"),
+          gt(subscriptions.endDate, now)
+        )
+      );
+      
+      // حساب إجمالي عدد الشاشات والمساحة المتاحة
+      let totalScreens = 0;
+      for (const sub of activeSubscriptions) {
+        totalScreens += sub.screenCount;
+        const storagePerScreen = sub.storagePerScreenMb || 1024; // 1GB افتراضياً
+        limitBytes += sub.screenCount * storagePerScreen * 1024 * 1024; // تحويل من ميجابايت إلى بايت
+      }
+      
+      // إذا كان لدى المستخدم أكثر من 50 شاشة، التخزين غير محدود
+      isUnlimited = totalScreens > 50;
+      if (isUnlimited) {
+        limitBytes = -1; // -1 يعني غير محدود
+      }
     }
     
     const remainingBytes = isUnlimited ? -1 : Math.max(0, limitBytes - usedBytes);
     const percentage = isUnlimited ? 0 : (limitBytes > 0 ? Math.round((usedBytes / limitBytes) * 100) : 0);
     
     return { usedBytes, limitBytes, remainingBytes, percentage };
+  }
+
+  async updateUserStorageQuota(userId: string, storageQuotaMb: number | null): Promise<void> {
+    await db.update(users).set({ storageQuotaMb }).where(eq(users.id, userId));
   }
 
   // Popup Notifications
