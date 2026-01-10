@@ -494,6 +494,11 @@ export default function AdminPopups() {
                       </div>
                     )}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    {language === 'ar' 
+                      ? "الأبعاد المطلوبة: 1000×1400 بكسل (عرض × ارتفاع)" 
+                      : "Required dimensions: 1000×1400 px (W × H)"}
+                  </p>
                 </TabsContent>
                 <TabsContent value="url" className="mt-2">
                   <Input
