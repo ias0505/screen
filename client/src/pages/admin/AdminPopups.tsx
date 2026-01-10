@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -32,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
-import { Bell, ArrowRight, Plus, Pencil, Trash2, CheckCircle, XCircle, Image, Users } from "lucide-react";
+import { Bell, ArrowRight, Plus, Pencil, Trash2, CheckCircle, XCircle, Image, Users, Upload, Link as LinkIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -57,6 +58,9 @@ export default function AdminPopups() {
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPopup, setEditingPopup] = useState<PopupNotification | null>(null);
+  const [imageUploadType, setImageUploadType] = useState<"url" | "file">("file");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     title: "",
     message: "",
@@ -128,6 +132,37 @@ export default function AdminPopups() {
       startDate: "",
       endDate: ""
     });
+    setImageUploadType("file");
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      formDataUpload.append('title', file.name);
+      
+      const response = await fetch('/api/media/upload', {
+        method: 'POST',
+        body: formDataUpload,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('فشل رفع الصورة');
+      }
+      
+      const data = await response.json();
+      setFormData({ ...formData, imageUrl: data.url });
+      toast({ title: language === 'ar' ? "تم رفع الصورة بنجاح" : "Image uploaded successfully" });
+    } catch (error) {
+      toast({ 
+        title: language === 'ar' ? "خطأ في رفع الصورة" : "Error uploading image", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const openEdit = (popup: PopupNotification) => {
@@ -411,14 +446,70 @@ export default function AdminPopups() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">{language === 'ar' ? "رابط الصورة" : "Image URL"}</Label>
-              <Input
-                id="imageUrl"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                placeholder="https://example.com/image.jpg"
-                data-testid="input-popup-image-url"
-              />
+              <Label>{language === 'ar' ? "الصورة" : "Image"}</Label>
+              <Tabs value={imageUploadType} onValueChange={(v) => setImageUploadType(v as "url" | "file")}>
+                <TabsList className="w-full">
+                  <TabsTrigger value="file" className="flex-1 gap-1">
+                    <Upload className="w-4 h-4" />
+                    {language === 'ar' ? "رفع صورة" : "Upload"}
+                  </TabsTrigger>
+                  <TabsTrigger value="url" className="flex-1 gap-1">
+                    <LinkIcon className="w-4 h-4" />
+                    {language === 'ar' ? "رابط" : "URL"}
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="file" className="mt-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file);
+                    }}
+                  />
+                  <div 
+                    className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {isUploading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>{language === 'ar' ? "جاري الرفع..." : "Uploading..."}</span>
+                      </div>
+                    ) : formData.imageUrl && !formData.imageUrl.startsWith("http") ? (
+                      <div className="space-y-2">
+                        <img src={formData.imageUrl} alt="Preview" className="max-h-32 mx-auto rounded" />
+                        <p className="text-sm text-muted-foreground">
+                          {language === 'ar' ? "اضغط لتغيير الصورة" : "Click to change image"}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          {language === 'ar' ? "اضغط لاختيار صورة من جهازك" : "Click to select an image"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+                <TabsContent value="url" className="mt-2">
+                  <Input
+                    id="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                    data-testid="input-popup-image-url"
+                  />
+                </TabsContent>
+              </Tabs>
+              {formData.imageUrl && formData.imageUrl.startsWith("http") && (
+                <div className="mt-2">
+                  <img src={formData.imageUrl} alt="Preview" className="max-h-32 rounded" />
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
