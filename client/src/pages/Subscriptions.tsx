@@ -404,10 +404,21 @@ export default function Subscriptions() {
                             </div>
                           </CardHeader>
                           <CardContent className="space-y-2">
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-2xl font-bold inline-flex items-center gap-1">
-                                {plan.pricePerScreen} <SARIcon size={18} />
-                              </span>
+                            <div className="flex items-baseline gap-1 flex-wrap">
+                              {plan.discountPercentage && plan.discountPercentage > 0 ? (
+                                <>
+                                  <span className="text-2xl font-bold inline-flex items-center gap-1 text-green-600">
+                                    {Math.round(plan.pricePerScreen * (1 - plan.discountPercentage / 100))} <SARIcon size={18} />
+                                  </span>
+                                  <span className="text-base text-muted-foreground line-through inline-flex items-center gap-1">
+                                    {plan.pricePerScreen} <SARIcon size={12} />
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-2xl font-bold inline-flex items-center gap-1">
+                                  {plan.pricePerScreen} <SARIcon size={18} />
+                                </span>
+                              )}
                               <span className="text-muted-foreground text-sm">
                                 {billingPeriod === 'monthly' 
                                   ? t.subscriptions.pricePerScreenPerMonth
