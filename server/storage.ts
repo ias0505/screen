@@ -18,7 +18,7 @@ import {
   type PopupNotification, type InsertPopupNotification,
   type EmailCampaign, type InsertEmailCampaign
 } from "@shared/schema";
-import { eq, desc, and, gt, lte, isNull, sql, ne, notInArray, lt, or } from "drizzle-orm";
+import { eq, desc, and, gt, gte, lte, isNull, sql, ne, notInArray, lt, or } from "drizzle-orm";
 
 export interface IStorage {
   // Screen Groups
@@ -1306,13 +1306,17 @@ export class DatabaseStorage implements IStorage {
     const userStatus = userActiveSub ? 'active' : 'expired';
     
     // Build the query for active popups not dismissed by user
+    // For endDate, add 1 day to include the entire end date
+    const endOfToday = new Date(now);
+    endOfToday.setHours(0, 0, 0, 0);
+    
     let query = db.select().from(popupNotifications)
       .where(and(
         eq(popupNotifications.isActive, true),
         lte(popupNotifications.startDate, now),
         or(
           isNull(popupNotifications.endDate),
-          gt(popupNotifications.endDate, now)
+          gte(popupNotifications.endDate, endOfToday)
         ),
         or(
           eq(popupNotifications.targetUsers, 'all'),
