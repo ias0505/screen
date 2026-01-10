@@ -1262,13 +1262,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPopupNotification(data: InsertPopupNotification): Promise<PopupNotification> {
-    const [created] = await db.insert(popupNotifications).values(data).returning();
+    const processedData = {
+      ...data,
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      endDate: data.endDate ? new Date(data.endDate) : null,
+    };
+    const [created] = await db.insert(popupNotifications).values(processedData).returning();
     return created;
   }
 
   async updatePopupNotification(id: number, data: Partial<PopupNotification>): Promise<PopupNotification> {
+    const processedData = { ...data };
+    if (data.startDate) processedData.startDate = new Date(data.startDate);
+    if (data.endDate) processedData.endDate = new Date(data.endDate);
+    
     const [updated] = await db.update(popupNotifications)
-      .set(data)
+      .set(processedData)
       .where(eq(popupNotifications.id, id))
       .returning();
     return updated;
