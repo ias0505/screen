@@ -83,7 +83,7 @@ export function PopupNotifications() {
             <img
               src={currentPopup.imageUrl}
               alt={currentPopup.title}
-              className="w-full rounded-lg object-cover max-h-48"
+              className="w-full rounded-lg object-contain max-h-[70vh]"
               data-testid="img-popup-image"
             />
           )}
