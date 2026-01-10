@@ -2094,11 +2094,14 @@ export async function registerRoutes(
       // Get target users
       const users = await storage.getUsersForEmailCampaign(campaign.targetUsers || 'all');
       
-      // Send emails to all users
+      // Send emails to all users with rate limiting (max 2 per second for Resend)
       let successCount = 0;
       let failedCount = 0;
       
-      for (const user of users) {
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      
+      for (let i = 0; i < users.length; i++) {
+        const user = users[i];
         if (user.email) {
           const sent = await sendCampaignEmail(
             user.email,
@@ -2110,6 +2113,10 @@ export async function registerRoutes(
             successCount++;
           } else {
             failedCount++;
+          }
+          // Wait 600ms between emails to stay under rate limit (2 per second)
+          if (i < users.length - 1) {
+            await delay(600);
           }
         }
       }
