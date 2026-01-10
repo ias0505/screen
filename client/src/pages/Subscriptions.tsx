@@ -425,6 +425,9 @@ export default function Subscriptions() {
                                   : t.subscriptions.pricePerScreenPerYear}
                               </span>
                             </div>
+                            <p className="text-xs text-muted-foreground">
+                              {t.subscriptions.priceIncludesVat}
+                            </p>
                             {(plan.description || plan.descriptionEn) && (
                               <p className="text-sm text-muted-foreground">{language === 'en' && plan.descriptionEn ? plan.descriptionEn : plan.description}</p>
                             )}
@@ -532,48 +535,60 @@ export default function Subscriptions() {
                 
                 <Card className="bg-muted/50">
                   <CardContent className="pt-4 space-y-2">
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                      <span>{t.subscriptions.basePrice}:</span>
-                      <span className="inline-flex items-center gap-1">
-                        {billingPeriod === 'monthly' 
-                          ? form.screenCount * getPricePerScreen() * form.durationMonths
-                          : form.screenCount * getPricePerScreen() * form.durationYears
-                        } <SARIcon size={12} />
-                      </span>
-                    </div>
-                    {selectedPlan?.discountPercentage && selectedPlan.discountPercentage > 0 && (
-                      <div className="flex justify-between items-center text-sm text-green-600">
-                        <span>{t.subscriptions.planDiscount} ({selectedPlan.discountPercentage}%):</span>
-                        <span className="inline-flex items-center gap-1">
-                          -{billingPeriod === 'monthly'
-                            ? Math.round(form.screenCount * getPricePerScreen() * form.durationMonths * selectedPlan.discountPercentage / 100)
-                            : Math.round(form.screenCount * getPricePerScreen() * form.durationYears * selectedPlan.discountPercentage / 100)
-                          } <SARIcon size={12} />
-                        </span>
-                      </div>
-                    )}
-                    {discountResult?.valid && (
-                      <div className="flex justify-between items-center text-sm text-green-600">
-                        <span>{t.subscriptions.discountCodeLabel}:</span>
-                        <span className="inline-flex items-center gap-1">
-                          {discountResult.discountType === 'percentage' 
-                            ? `-${discountResult.discountValue}%` 
-                            : <><span>-{discountResult.discountValue}</span> <SARIcon size={12} /></>}
-                        </span>
-                      </div>
-                    )}
-                    <div className="border-t pt-2 flex justify-between items-center">
-                      <span className="font-medium">{t.subscriptions.totalPrice}:</span>
-                      <span className="text-2xl font-bold text-primary inline-flex items-center gap-1">
-                        {calculateFinalPrice()} <SARIcon size={18} />
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground inline-flex items-center gap-1 flex-wrap">
-                      {billingPeriod === 'monthly'
-                        ? <>{form.screenCount} {t.subscriptions.screens} × {getPricePerScreen()} <SARIcon size={10} /> × {form.durationMonths} {t.subscriptions.month}</>
-                        : <>{form.screenCount} {t.subscriptions.screens} × {getPricePerScreen()} <SARIcon size={10} /> × {form.durationYears} {t.subscriptions.year}</>
-                      }
-                    </p>
+                    {(() => {
+                      const finalPrice = calculateFinalPrice();
+                      const priceBeforeVat = Math.round(finalPrice / 1.15);
+                      const vatAmount = finalPrice - priceBeforeVat;
+                      return (
+                        <>
+                          <div className="flex justify-between items-center text-sm text-muted-foreground">
+                            <span>{t.subscriptions.beforeTax}:</span>
+                            <span className="inline-flex items-center gap-1">
+                              {priceBeforeVat} <SARIcon size={12} />
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm text-muted-foreground">
+                            <span>{t.subscriptions.vat} (15%):</span>
+                            <span className="inline-flex items-center gap-1">
+                              {vatAmount} <SARIcon size={12} />
+                            </span>
+                          </div>
+                          {selectedPlan?.discountPercentage && selectedPlan.discountPercentage > 0 && (
+                            <div className="flex justify-between items-center text-sm text-green-600">
+                              <span>{t.subscriptions.planDiscount} ({selectedPlan.discountPercentage}%):</span>
+                              <span className="inline-flex items-center gap-1">
+                                -{billingPeriod === 'monthly'
+                                  ? Math.round(form.screenCount * getPricePerScreen() * form.durationMonths * selectedPlan.discountPercentage / 100)
+                                  : Math.round(form.screenCount * getPricePerScreen() * form.durationYears * selectedPlan.discountPercentage / 100)
+                                } <SARIcon size={12} />
+                              </span>
+                            </div>
+                          )}
+                          {discountResult?.valid && (
+                            <div className="flex justify-between items-center text-sm text-green-600">
+                              <span>{t.subscriptions.discountCodeLabel}:</span>
+                              <span className="inline-flex items-center gap-1">
+                                {discountResult.discountType === 'percentage' 
+                                  ? `-${discountResult.discountValue}%` 
+                                  : <><span>-{discountResult.discountValue}</span> <SARIcon size={12} /></>}
+                              </span>
+                            </div>
+                          )}
+                          <div className="border-t pt-2 flex justify-between items-center">
+                            <span className="font-medium">{t.subscriptions.totalWithVat}:</span>
+                            <span className="text-2xl font-bold text-primary inline-flex items-center gap-1">
+                              {finalPrice} <SARIcon size={18} />
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground inline-flex items-center gap-1 flex-wrap">
+                            {billingPeriod === 'monthly'
+                              ? <>{form.screenCount} {t.subscriptions.screens} × {getPricePerScreen()} <SARIcon size={10} /> × {form.durationMonths} {t.subscriptions.month}</>
+                              : <>{form.screenCount} {t.subscriptions.screens} × {getPricePerScreen()} <SARIcon size={10} /> × {form.durationYears} {t.subscriptions.year}</>
+                            }
+                          </p>
+                        </>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
                 <Button type="submit" disabled={createSubscription.isPending} className="w-full bg-primary rounded-xl" data-testid="button-confirm-subscription">
