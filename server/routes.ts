@@ -8,7 +8,7 @@ import multer from "multer";
 import path from "path";
 import express from "express";
 import crypto from "crypto";
-import { sendSubscriptionEmail, sendTeamInviteEmail, sendContactNotificationEmail } from "./email";
+import { sendSubscriptionEmail, sendTeamInviteEmail, sendContactNotificationEmail, sendCampaignEmail } from "./email";
 
 // Rate limiting for activation attempts (in-memory store)
 const activationAttempts = new Map<string, { count: number; blockedUntil: number }>();
@@ -2094,11 +2094,31 @@ export async function registerRoutes(
       // Get target users
       const users = await storage.getUsersForEmailCampaign(campaign.targetUsers || 'all');
       
-      // TODO: Integrate with email service (Resend) to send emails
-      // For now, just mark as sent with count
+      // Send emails to all users
+      let successCount = 0;
+      let failedCount = 0;
+      
+      for (const user of users) {
+        if (user.email) {
+          const sent = await sendCampaignEmail(
+            user.email,
+            campaign.subject,
+            campaign.content,
+            user.firstName || undefined
+          );
+          if (sent) {
+            successCount++;
+          } else {
+            failedCount++;
+          }
+        }
+      }
+      
+      console.log(`Campaign ${id}: Sent ${successCount}/${users.length}, Failed: ${failedCount}`);
+      
       await storage.updateEmailCampaign(id, { 
-        status: 'sent', 
-        sentCount: users.length,
+        status: failedCount === users.length ? 'failed' : 'sent', 
+        sentCount: successCount,
         sentAt: new Date()
       });
       

@@ -390,3 +390,57 @@ export async function sendContactNotificationEmail(
     return false;
   }
 }
+
+// Send campaign email to a single recipient
+export async function sendCampaignEmail(
+  to: string, 
+  subject: string, 
+  content: string, 
+  recipientName?: string
+): Promise<boolean> {
+  if (!resend) {
+    console.warn('Resend API key not configured (RESEND_API_KEY). Campaign email not sent.');
+    return false;
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Meror <noreply@meror.net>',
+      to: to,
+      subject: subject,
+      html: `
+        <div dir="rtl" style="font-family: 'Tajawal', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: white; padding: 20px; border-radius: 12px 12px 0 0; text-align: center; border: 1px solid #e2e8f0; border-bottom: none;">
+            <img src="https://meror.net/logo.png" alt="Meror" style="height: 60px;" />
+          </div>
+          <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 20px; border-radius: 0 0 12px 12px; text-align: center; margin-bottom: 20px;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">${subject}</h1>
+          </div>
+          
+          <div style="background: #f8fafc; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            ${recipientName ? `<p style="font-size: 18px; color: #334155; margin-bottom: 20px;">مرحباً ${recipientName}،</p>` : ''}
+            <div style="font-size: 16px; color: #334155; line-height: 1.8; white-space: pre-wrap;">${content}</div>
+          </div>
+          
+          <p style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 20px;">
+            Meror - منصة إدارة الشاشات الرقمية
+          </p>
+          <p style="text-align: center; font-size: 10px; color: #cbd5e1; margin-top: 10px;">
+            لإلغاء الاشتراك من هذه الرسائل، يرجى التواصل معنا
+          </p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error('Error sending campaign email to', to, ':', error);
+      return false;
+    }
+
+    console.log('Campaign email sent to', to, ':', data?.id);
+    return true;
+  } catch (error) {
+    console.error('Error sending campaign email to', to, ':', error);
+    return false;
+  }
+}
