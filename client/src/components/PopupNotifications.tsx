@@ -94,16 +94,13 @@ export function PopupNotifications() {
             </p>
           )}
           
-          <div className="flex gap-2 justify-end pt-2">
-            {currentPopup.buttonText && currentPopup.buttonUrl && (
+          {currentPopup.buttonText && currentPopup.buttonUrl && (
+            <div className="flex gap-2 justify-end pt-2">
               <Button onClick={handleButtonClick} data-testid="button-popup-action">
                 {currentPopup.buttonText}
               </Button>
-            )}
-            <Button variant="outline" onClick={handleDismiss} data-testid="button-popup-close">
-              إغلاق
-            </Button>
-          </div>
+            </div>
+          )}
           
           {popups.length > 1 && (
             <p className="text-xs text-muted-foreground text-center">
