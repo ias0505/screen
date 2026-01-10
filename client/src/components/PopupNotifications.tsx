@@ -2,7 +2,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface PopupNotification {
@@ -76,18 +75,7 @@ export function PopupNotifications() {
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleDismiss()}>
       <DialogContent className="max-w-md" dir="rtl">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">{currentPopup.title}</DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDismiss}
-              className="h-8 w-8"
-              data-testid="button-dismiss-popup"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-xl font-bold">{currentPopup.title}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
