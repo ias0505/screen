@@ -423,15 +423,16 @@ export default function AdminEmailCampaigns() {
                             <CopyPlus className="w-4 h-4 text-primary" />
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteMutation.mutate(campaign.id)}
-                          disabled={campaign.status === 'sending'}
-                          data-testid={`button-delete-campaign-${campaign.id}`}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
+                        {campaign.status === 'draft' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteMutation.mutate(campaign.id)}
+                            data-testid={`button-delete-campaign-${campaign.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
