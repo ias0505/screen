@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
-import { Mail, ArrowRight, Plus, Pencil, Trash2, Send, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Mail, ArrowRight, Plus, Pencil, Trash2, Send, Clock, CheckCircle, XCircle, AlertCircle, ImagePlus, Copy, X } from "lucide-react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -59,6 +59,8 @@ export default function AdminEmailCampaigns() {
     content: "",
     targetUsers: "all",
   });
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: campaigns, isLoading } = useQuery<EmailCampaign[]>({
     queryKey: ['/api/admin/email-campaigns'],
@@ -135,6 +137,55 @@ export default function AdminEmailCampaigns() {
       content: "",
       targetUsers: "all",
     });
+    setUploadedImages([]);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', files[0]);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formDataUpload,
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+
+      const result = await response.json();
+      const baseUrl = window.location.hostname === 'localhost' || window.location.hostname.includes('replit')
+        ? window.location.origin
+        : 'https://meror.net';
+      const imageUrl = result.url.startsWith('http') ? result.url : `${baseUrl}${result.url}`;
+      setUploadedImages(prev => [...prev, imageUrl]);
+      toast({ title: language === 'ar' ? "تم رفع الصورة بنجاح" : "Image uploaded successfully" });
+    } catch (error) {
+      toast({ title: language === 'ar' ? "فشل رفع الصورة" : "Failed to upload image", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const insertImageInContent = (imageUrl: string) => {
+    const imgTag = `<img src="${imageUrl}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0;" alt="صورة" />`;
+    setFormData({ ...formData, content: formData.content + '\n' + imgTag });
+    toast({ title: language === 'ar' ? "تم إضافة الصورة للمحتوى" : "Image added to content" });
+  };
+
+  const copyImageCode = (imageUrl: string) => {
+    const imgTag = `<img src="${imageUrl}" style="max-width: 100%; height: auto;" alt="صورة" />`;
+    navigator.clipboard.writeText(imgTag);
+    toast({ title: language === 'ar' ? "تم نسخ كود الصورة" : "Image code copied" });
+  };
+
+  const removeImage = (index: number) => {
+    setUploadedImages(uploadedImages.filter((_, i) => i !== index));
   };
 
   const openEdit = (campaign: EmailCampaign) => {
@@ -406,6 +457,82 @@ export default function AdminEmailCampaigns() {
                 rows={6}
                 data-testid="input-content"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ar' ? "إضافة صور" : "Add Images"}</Label>
+              <div className="flex gap-2">
+                <label className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={isUploading}
+                    data-testid="input-upload-image"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={isUploading}
+                    onClick={(e) => {
+                      const input = (e.currentTarget.parentElement as HTMLLabelElement).querySelector('input');
+                      input?.click();
+                    }}
+                  >
+                    <ImagePlus className="w-4 h-4 ml-2" />
+                    {isUploading 
+                      ? (language === 'ar' ? "جاري الرفع..." : "Uploading...") 
+                      : (language === 'ar' ? "رفع صورة" : "Upload Image")}
+                  </Button>
+                </label>
+              </div>
+              {uploadedImages.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {uploadedImages.map((url, index) => (
+                    <div key={index} className="relative group border rounded-md overflow-hidden">
+                      <img src={url} alt="" className="w-full h-20 object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="secondary"
+                          className="h-7 w-7"
+                          onClick={() => insertImageInContent(url)}
+                          title={language === 'ar' ? "إدراج في المحتوى" : "Insert in content"}
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="secondary"
+                          className="h-7 w-7"
+                          onClick={() => copyImageCode(url)}
+                          title={language === 'ar' ? "نسخ الكود" : "Copy code"}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="destructive"
+                          className="h-7 w-7"
+                          onClick={() => removeImage(index)}
+                          title={language === 'ar' ? "حذف" : "Remove"}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {language === 'ar' 
+                  ? "ارفع صورة ثم اضغط + لإدراجها في المحتوى أو انسخ كودها" 
+                  : "Upload an image then click + to insert it in content or copy its code"}
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="targetUsers">{language === 'ar' ? "المستهدفون" : "Target Users"}</Label>
