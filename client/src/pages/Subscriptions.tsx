@@ -225,6 +225,7 @@ export default function Subscriptions() {
     );
     
     if (confirmed) {
+      const planStorage = selectedPlan?.storagePerScreenMb;
       await createSubscription.mutateAsync({
         screenCount: form.screenCount,
         durationYears: billingPeriod === 'annual' ? form.durationYears : 0,
@@ -232,7 +233,7 @@ export default function Subscriptions() {
         billingPeriod,
         discountCode: discountResult?.valid ? discountCode : undefined,
         pricePerScreen: getPricePerScreen(),
-        storagePerScreenMb: (selectedPlan as any)?.storagePerScreenMb || 1024
+        storagePerScreenMb: planStorage !== null && planStorage !== undefined ? planStorage : 1024
       });
       setIsOpen(false);
       setForm({ screenCount: 1, durationYears: 1, durationMonths: 1 });
