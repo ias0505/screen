@@ -17,7 +17,12 @@ import {
   Home,
   MessageSquare,
   Menu,
-  X
+  X,
+  Megaphone,
+  Bell,
+  Mail,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
@@ -36,6 +41,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
   const { language } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [marketingOpen, setMarketingOpen] = useState(true);
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -58,8 +64,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { title: language === 'ar' ? "سجل النشاط" : "Activity Log", icon: Activity, href: "/admin/activity" },
     { title: language === 'ar' ? "المديرين" : "Admins", icon: Shield, href: "/admin/admins" },
     { title: language === 'ar' ? "الخطط" : "Plans", icon: Package, href: "/admin/plans" },
-    { title: language === 'ar' ? "أكواد الخصم" : "Discount Codes", icon: Tag, href: "/admin/discount-codes" },
     { title: language === 'ar' ? "رسائل التواصل" : "Messages", icon: MessageSquare, href: "/admin/messages", badge: unreadCount },
+  ];
+
+  const marketingItems = [
+    { title: language === 'ar' ? "الإعلانات المنبثقة" : "Pop-ups", icon: Bell, href: "/admin/popups" },
+    { title: language === 'ar' ? "حملات الإيميل" : "Email Campaigns", icon: Mail, href: "/admin/email-campaigns" },
+    { title: language === 'ar' ? "أكواد الخصم" : "Discount Codes", icon: Tag, href: "/admin/discount-codes" },
   ];
 
   const isActive = (href: string) => {
@@ -104,6 +115,41 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </Link>
           );
         })}
+
+        {/* قسم أدوات التسويق */}
+        <div className="pt-2">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 text-muted-foreground"
+            onClick={() => setMarketingOpen(!marketingOpen)}
+            data-testid="button-marketing-toggle"
+          >
+            <Megaphone className="w-4 h-4" />
+            <span className="flex-1 text-start">{language === 'ar' ? "أدوات التسويق" : "Marketing Tools"}</span>
+            {marketingOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </Button>
+          
+          {marketingOpen && (
+            <div className="mr-4 mt-1 space-y-1 border-r-2 border-muted pr-2">
+              {marketingItems.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <Button 
+                      variant={active ? "default" : "ghost"}
+                      size="sm"
+                      className={`w-full justify-start gap-3 ${active ? "" : "text-muted-foreground"}`}
+                      data-testid={`link-admin-${item.href.split('/').pop() || 'marketing'}`}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span className="flex-1 text-start">{item.title}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </nav>
 
       <div className="p-3 border-t space-y-2">

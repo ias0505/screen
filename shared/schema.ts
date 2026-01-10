@@ -321,6 +321,47 @@ export const contactMessages = pgTable("contact_messages", {
 
 export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({ id: true, isRead: true, createdAt: true });
 
+// الإعلانات المنبثقة للمستخدمين (Pop-ups)
+export const popupNotifications = pgTable("popup_notifications", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  message: text("message"),
+  imageUrl: text("image_url"),
+  buttonText: text("button_text"),
+  buttonUrl: text("button_url"),
+  targetUsers: text("target_users").default("all"), // all, active, expired
+  isActive: boolean("is_active").default(true),
+  startDate: timestamp("start_date").defaultNow(),
+  endDate: timestamp("end_date"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// سجل عرض الإعلانات للمستخدمين
+export const popupViews = pgTable("popup_views", {
+  id: serial("id").primaryKey(),
+  popupId: integer("popup_id").references(() => popupNotifications.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  viewedAt: timestamp("viewed_at").defaultNow(),
+  dismissed: boolean("dismissed").default(false),
+});
+
+// سجل الإيميلات المرسلة
+export const emailCampaigns = pgTable("email_campaigns", {
+  id: serial("id").primaryKey(),
+  subject: text("subject").notNull(),
+  content: text("content").notNull(),
+  targetUsers: text("target_users").default("all"), // all, active, expired
+  sentCount: integer("sent_count").default(0),
+  status: text("status").default("draft"), // draft, sending, sent, failed
+  sentAt: timestamp("sent_at"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPopupNotificationSchema = createInsertSchema(popupNotifications).omit({ id: true, createdAt: true });
+export const insertEmailCampaignSchema = createInsertSchema(emailCampaigns).omit({ id: true, createdAt: true, sentAt: true, sentCount: true });
+
 // Types
 export type ScreenGroup = typeof screenGroups.$inferSelect;
 export type MediaGroup = typeof mediaGroups.$inferSelect;
@@ -356,3 +397,7 @@ export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
+export type PopupNotification = typeof popupNotifications.$inferSelect;
+export type InsertPopupNotification = z.infer<typeof insertPopupNotificationSchema>;
+export type EmailCampaign = typeof emailCampaigns.$inferSelect;
+export type InsertEmailCampaign = z.infer<typeof insertEmailCampaignSchema>;
